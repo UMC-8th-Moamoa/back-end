@@ -1,0 +1,48 @@
+name: "🐛 Bug"
+description: "버그 발견"
+title: "[BUG] "
+labels: ["bug"]
+body:
+  - type: textarea
+    attributes:
+      label: 🐛 버그 설명
+      description: 발생한 버그에 대해 설명해주세요.
+      placeholder: 어떤 문제가 발생했나요?
+    validations:
+      required: true
+  
+  - type: textarea
+    attributes:
+      label: 🔄 재현 단계
+      description: 버그를 재현하는 방법을 단계별로 작성해주세요.
+      placeholder: |
+        1. '...' 페이지로 이동
+        2. '...' 버튼 클릭
+        3. 오류 발생
+    validations:
+      required: true
+  
+  - type: textarea
+    attributes:
+      label: 🎯 예상 결과
+      description: 어떻게 동작해야 하는지 설명해주세요.
+      placeholder: 정상적으로는 어떻게 되어야 하나요?
+    validations:
+      required: true
+  
+  - type: textarea
+    attributes:
+      label: 💻 환경 정보
+      description: 사용 중인 환경을 알려주세요.
+      placeholder: |
+        - OS: 
+        - 브라우저: 
+        - 디바이스: 
+    validations:
+      required: true
+  
+  - type: textarea
+    attributes:
+      label: 📸 스크린샷
+      description: 스크린샷이나 에러 로그가 있다면 첨부해주세요.
+      placeholder: 이미지를 드래그하거나 붙여넣기 하세요.
