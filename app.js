@@ -8,6 +8,24 @@ const swaggerJsdoc = require('swagger-jsdoc');
 
 const app = express();
 
+
+
+app.use((req, res, next) => {
+  res.success = (success) => {
+    return res.json({ resultType: "SUCCESS", error: null, success });
+  };
+
+  res.error = ({ errorCode = "unknown", reason = null, data = null }) => {
+    return res.json({
+      resultType: "FAIL",
+      error: { errorCode, reason, data },
+      success: null,
+    });
+  };
+
+  next();
+});
+
 // Swagger 설정
 const swaggerOptions = {
   definition: {
@@ -45,4 +63,18 @@ const PORT = 3000;
 app.listen(PORT, () => {
   console.log(`서버 실행 중: http://localhost:${PORT}`);
   console.log(`API 문서: http://localhost:${PORT}/api-docs`);
+});
+
+// 에러 핸들러
+// 모든 에러를 처리하는 미들웨어
+app.use((err, req, res, next) => {
+  if (res.headersSent) {
+    return next(err);
+  }
+
+  res.status(err.statusCode || 500).error({
+    errorCode: err.errorCode || "unknown",
+    reason: err.reason || err.message || null,
+    data: err.data || null,
+  });
 });
