@@ -48,7 +48,7 @@ moamoa-back-end/
 ├── .env                            # 환경변수
 ├── .gitignore
 ├── package.json
-├── package-lock.json
+└── package-lock.json
 ```
 
 ## 📝 코드 컨벤션
