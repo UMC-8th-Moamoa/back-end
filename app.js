@@ -8,7 +8,11 @@ const swaggerJsdoc = require('swagger-jsdoc');
 
 const app = express();
 
+const { globalErrorHandler, notFoundHandler } = require('./src/middlewares/errorHandler');
 
+// 기본 미들웨어
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
 app.use((req, res, next) => {
   res.success = (success) => {
@@ -58,6 +62,21 @@ app.get('/', (req, res) => {
   });
 });
 
+
+// 여기에 실제 API 라우트들 추가
+/*
+
+
+
+*/
+
+
+// 404 에러 처리
+app.use(notFoundHandler);
+
+// 글로벌 에러 핸들러
+app.use(globalErrorHandler);
+
 // 서버 실행
 const PORT = 3000;
 app.listen(PORT, () => {
@@ -65,16 +84,4 @@ app.listen(PORT, () => {
   console.log(`API 문서: http://localhost:${PORT}/api-docs`);
 });
 
-// 에러 핸들러
-// 모든 에러를 처리하는 미들웨어
-app.use((err, req, res, next) => {
-  if (res.headersSent) {
-    return next(err);
-  }
-
-  res.status(err.statusCode || 500).error({
-    errorCode: err.errorCode || "unknown",
-    reason: err.reason || err.message || null,
-    data: err.data || null,
-  });
-});
+module.exports = app;
