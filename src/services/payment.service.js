@@ -94,4 +94,3 @@ class PaymentService {
   // TODO: 구현 예정
 }
 
-module.exports = PaymentService;

@@ -1,4 +1,4 @@
-# 🎁 Moamoa backend 팀 협업 가이드
+# 🎁 Moamoa back-end 팀 협업 가이드
 
 > 생일 선물 공동 구매 플랫폼
 > 
@@ -11,7 +11,7 @@
 | 브랜치 | 용도 | 병합대상 | 설명 |
 | --- | --- | --- | --- |
 | `main` | 배포용 안전 버전 | - | 실제 서비스에 배포되는 안정화된 코드 |
-| `dev` | 개발 통합 브랜 | `main` | 모든 기능이 통합되어 테스트되는 브랜치 |
+| `dev` | 개발 통합 브랜치 | `main` | 모든 기능이 통합되어 테스트되는 브랜치 |
 | `feat/기능명` | 기능 개발 브랜치 | `dev` | 새로운 기능을 개발하는 브랜치 |
 - PR은 `feat/*` → `develop`, 이후 QA 완료 시 `develop` → `main`
 
@@ -29,16 +29,26 @@ feat/group-management    # 선물 그룹 관리
 ## 📁 프로젝트 구조
 
 ```bash
-src/
-├── controllers/          # 요청 처리 핸들러
-├── services/             # 핵심 비즈니스 로직
-├── repositories/         # 데이터 접근 계층
-├── dtos/                 # 데이터 전송 객체
-├── middlewares/          # 인증, 오류 처리 등
-├── routes/               # API 라우팅
-├── config/               # 환경설정, Swagger, Passport 등
-├── utils/                # 유틸리티 함수
-└── app.js              # 메인 애플리케이션 파일
+moamoa-back-end/
+├── src/
+│   ├── controllers/                # 요청 처리 핸들러
+│   ├── services/                   # 핵심 비즈니스 로직
+│   ├── repositories/               # 데이터 접근 계층
+│   ├── dtos/                       # 데이터 전송 객체
+│   ├── middlewares/                # 미들웨어 / 인증, 오류 처리 등
+│   │   ├── errorHandler.js
+│   │   └── validator.middleware.js
+│   ├── routes/                     # API 라우팅
+│   ├── utils/                      # 유틸리티 함수
+│   └── config/                     # 환경설정, Swagger, Passport 등
+│   │   ├── app.config.js
+│   │   └── db.config.js
+├── app.js                          # Express 앱 설정
+├── prisma/                         # Prisma 설정
+├── .env                            # 환경변수
+├── .gitignore
+├── package.json
+└── package-lock.json
 ```
 
 ## 📝 코드 컨벤션
@@ -59,7 +69,7 @@ src/
 
 - [타입] 간단한 설명
 
-```less
+```bash
 [기능] feat: 로그인 API 구현
 [버그] fix: 응답 코드 오류 수정
 [문서] docs: README 업데이트
@@ -67,7 +77,7 @@ src/
 
 ### 타입 분류
 
-```less
+```bash
 feat: 새로운 기능 추가
 fix: 버그 수정
 docs: 문서 수정
