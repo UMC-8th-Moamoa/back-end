@@ -1,0 +1,346 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+// Enum 정의
+enum FriendStatus {
+  PENDING  // 대기
+  ACCEPTED // 수락
+  BLOCKED  // 차단
+}
+
+enum NotificationType {
+  FOLLOW_REQUEST    // 팔로우 요청
+  BIRTHDAY_REMINDER // 생일 알림
+  PRIVATE_EVENT     // 나를 팔로우한 사람만 모아 참여
+}
+
+enum PointType {
+  CHARGE        // 충전
+  USE           // 사용
+  ADVERTISEMENT // 광고
+  ITEM_PURCHASE // 아이템 구매
+}
+
+enum PaymentMethod {
+  BANK_TRANSFER // 무통장입금
+  KAKAO_PAY     // 카카오페이
+}
+
+enum PaymentStatus {
+  PENDING   // 대기
+  COMPLETED // 완료
+  FAILED    // 실패
+  CANCELLED // 취소
+}
+
+enum InsertType {
+  URL   // URL 입력
+  IMAGE // 이미지 업로드
+}
+
+enum ItemCategory {
+  FONT        // 폰트
+  LETTER_PAPER // 편지지
+  STICKER     // 스티커
+}
+
+// 사용자 테이블
+model User {
+  id                Int       @id @default(autoincrement())
+  name              String    @db.VarChar(50)
+  email             String    @unique @db.VarChar(100)
+  emailVerified     Boolean   @default(false)
+  password          String    @db.VarChar(255)
+  birthday          DateTime?
+  cash              Int       @default(0)
+  phone             String?   @db.VarChar(20)
+  photo             String?   @db.VarChar(255)
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  lastLoginAt       DateTime?
+
+  // 관계
+  socialLogins         SocialLogin[]
+  sentFriendRequests   Friend[]              @relation("FriendRequester")
+  receivedFriendRequests Friend[]            @relation("FriendReceiver")
+  notifications        Notification[]
+  wishlists           Wishlist[]
+  birthdayEvents      BirthdayEvent[]       @relation("BirthdayPerson")
+  createdEvents       BirthdayEvent[]       @relation("EventCreator")
+  eventParticipants   BirthdayEventParticipant[]
+  pointHistories      PointHistory[]
+  advertisements      Advertisement[]
+  paymentInfos        PaymentInfo[]
+  sentLetters         Letter[]              @relation("LetterSender")
+  receivedLetters     Letter[]              @relation("LetterReceiver")
+  followers           Follow[]              @relation("Following")
+  following           Follow[]              @relation("Follower")
+  userItems           UserItem[]
+
+  @@map("users")
+}
+
+// 소셜 로그인 테이블
+model SocialLogin {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  token     String   @db.Text
+  provider  String   @db.VarChar(50)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("social_logins")
+}
+
+// 친구 테이블
+model Friend {
+  id          Int          @id @default(autoincrement())
+  requesterId Int
+  receiverId  Int
+  status      FriendStatus @default(PENDING)
+  createdAt   DateTime     @default(now())
+  acceptedAt  DateTime?
+
+  requester User @relation("FriendRequester", fields: [requesterId], references: [id], onDelete: Cascade)
+  receiver  User @relation("FriendReceiver", fields: [receiverId], references: [id], onDelete: Cascade)
+
+  @@unique([requesterId, receiverId])
+  @@map("friends")
+}
+
+// 팔로우 관계 테이블
+model Follow {
+  id          Int      @id @default(autoincrement())
+  followerId  Int
+  followingId Int
+  createdAt   DateTime @default(now())
+
+  follower  User @relation("Follower", fields: [followerId], references: [id], onDelete: Cascade)
+  following User @relation("Following", fields: [followingId], references: [id], onDelete: Cascade)
+
+  @@unique([followerId, followingId])
+  @@map("follows")
+}
+
+// 알림 테이블
+model Notification {
+  id           Int              @id @default(autoincrement())
+  userId       Int
+  type         NotificationType
+  title        String           @db.VarChar(100)
+  message      String?          @db.Text
+  isRead       Boolean          @default(false)
+  relatedId    Int?
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("notifications")
+}
+
+// 위시리스트 테이블
+model Wishlist {
+  id              Int      @id @default(autoincrement())
+  userId          Int
+  productImageUrl String   @db.VarChar(255)
+  productName     String   @db.VarChar(100)
+  price           Int
+  fundingActive   Boolean  @default(false)
+  isPublic        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  user           User                     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  birthdayEvents BirthdayEvent[]
+  analysisRequests WishlistAnalysisRequest[]
+
+  @@map("wishlists")
+}
+
+// 생일이벤트 테이블
+model BirthdayEvent {
+  id           Int      @id @default(autoincrement())
+  wishlistId   Int
+  birthdayPersonId Int
+  creatorId    Int
+  title        String   @db.VarChar(100)
+  targetAmount Int
+  currentAmount Int     @default(0)
+  deadline     DateTime
+  status       String   @default("active") @db.VarChar(20)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  wishlist        Wishlist                   @relation(fields: [wishlistId], references: [id])
+  birthdayPerson  User                       @relation("BirthdayPerson", fields: [birthdayPersonId], references: [id])
+  creator         User                       @relation("EventCreator", fields: [creatorId], references: [id])
+  participants    BirthdayEventParticipant[]
+  letters         Letter[]
+
+  @@map("birthday_events")
+}
+
+// 생일이벤트 참여자 테이블
+model BirthdayEventParticipant {
+  id       Int      @id @default(autoincrement())
+  eventId  Int
+  userId   Int
+  amount   Int
+  message  String?  @db.Text
+  createdAt DateTime @default(now())
+
+  event BirthdayEvent @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  user  User         @relation(fields: [userId], references: [id])
+
+  @@unique([eventId, userId])
+  @@map("birthday_event_participants")
+}
+
+// 위시리스트 분석 요청 테이블
+model WishlistAnalysisRequest {
+  id         Int        @id @default(autoincrement())
+  wishlistId Int
+  insertType InsertType
+  inputData  String     @db.Text
+  createdAt  DateTime   @default(now())
+  completedAt DateTime?
+
+  wishlist Wishlist @relation(fields: [wishlistId], references: [id], onDelete: Cascade)
+
+  @@map("wishlist_analysis_requests")
+}
+
+// 무통장 입금 테이블
+model BankTransfer {
+  id            Int      @id @default(autoincrement())
+  bankName      String   @db.VarChar(50)
+  accountNumber String   @db.VarChar(50)
+  depositorName String   @db.VarChar(50)
+  createdAt     DateTime @default(now())
+
+  pointHistories PointHistory[]
+  paymentInfos   PaymentInfo[]
+
+  @@map("bank_transfers")
+}
+
+// 포인트 이력 테이블
+model PointHistory {
+  id             Int           @id @default(autoincrement())
+  userId         Int
+  pointType      PointType
+  pointChange    Int
+  description    String        @db.VarChar(255)
+  totalPoints    Int
+  bankTransferId Int?
+  createdAt      DateTime      @default(now())
+
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  bankTransfer BankTransfer? @relation(fields: [bankTransferId], references: [id])
+  advertisements Advertisement[]
+  userItems    UserItem[]
+
+  @@map("point_histories")
+}
+
+// 광고 테이블
+model Advertisement {
+  id              Int      @id @default(autoincrement())
+  pointHistoryId  Int
+  userId          Int
+  adUrl           String   @db.VarChar(255)
+  duration        Int
+  playCount       Int      @default(1)
+  costPerPlay     Int      @default(1)
+  startTime       DateTime
+  endTime         DateTime
+  createdAt       DateTime @default(now())
+
+  pointHistory PointHistory @relation(fields: [pointHistoryId], references: [id])
+  user         User         @relation(fields: [userId], references: [id])
+
+  @@map("advertisements")
+}
+
+// 아이템 테이블 (뭉코인 상점 아이템)
+model Item {
+  id           Int          @id @default(autoincrement())
+  category     ItemCategory
+  name         String       @db.VarChar(100)
+  price        Int
+  imageUrl     String       @db.VarChar(255)
+  description  String?      @db.Text
+  isActive     Boolean      @default(true)
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+
+  userItems    UserItem[]
+
+  @@map("items")
+}
+
+// 사용자 보유 아이템 테이블
+model UserItem {
+  id            Int      @id @default(autoincrement())
+  userId        Int
+  itemId        Int
+  pointHistoryId Int
+  purchasedAt   DateTime @default(now())
+
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  item         Item         @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  pointHistory PointHistory @relation(fields: [pointHistoryId], references: [id])
+
+  @@unique([userId, itemId])
+  @@map("user_items")
+}
+
+// 결제 정보 테이블
+model PaymentInfo {
+  id              Int           @id @default(autoincrement())
+  userId          Int
+  bankTransferId  Int?
+  amount          Int
+  paymentMethod   PaymentMethod
+  externalKey     String?       @db.VarChar(255)
+  status          PaymentStatus @default(PENDING)
+  paidAt          DateTime?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  bankTransfer BankTransfer? @relation(fields: [bankTransferId], references: [id])
+
+  @@map("payment_infos")
+}
+
+// 편지 테이블
+model Letter {
+  id              Int       @id @default(autoincrement())
+  birthdayEventId Int?
+  senderId        Int
+  receiverId      Int
+  title           String    @db.VarChar(100)
+  content         String    @db.Text
+  sentAt          DateTime  @default(now())
+  readAt          DateTime?
+  createdAt       DateTime  @default(now())
+
+  birthdayEvent BirthdayEvent? @relation(fields: [birthdayEventId], references: [id])
+  sender        User           @relation("LetterSender", fields: [senderId], references: [id])
+  receiver      User           @relation("LetterReceiver", fields: [receiverId], references: [id])
+
+  @@map("letters")
+}
