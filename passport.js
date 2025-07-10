@@ -159,4 +159,8 @@ app.listen(PORT, function() {
   console.log(`🚀 Passport 서버 실행 중: http://localhost:${PORT}`);
 });
 
+<<<<<<< HEAD
 module.exports = app;
+=======
+module.exports = app;
+>>>>>>> cfbbd18376b7fe4018a5a0391f5a39a27f5283a1

@@ -225,4 +225,7 @@ module.exports = {
   validateSearch,
   validateFriendRequest,
   handleValidationErrors
+
 };
+
+
