@@ -13,6 +13,7 @@ const authenticateJWT = (req, res, next) => {
       return next(new UnauthorizedError('인증이 필요합니다'));
     }
 
+    
     req.user = user;
     next();
   })(req, res, next);
