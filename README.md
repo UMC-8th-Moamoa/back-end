@@ -40,6 +40,8 @@ feat/group-management    # 선물 그룹 관리
 
 ```bash
 moamoa-back-end/
+├── prisma/                         # Prisma 설정
+│   └── schema.prisma               # 데이터베이스 스키마
 ├── src/
 │   ├── controllers/                # 요청 처리 핸들러
 │   ├── services/                   # 핵심 비즈니스 로직
@@ -49,8 +51,6 @@ moamoa-back-end/
 │   ├── routes/                     # API 라우팅
 │   ├── utils/                      # 유틸리티 함수
 │   └── config/                     # 환경설정, Swagger, Passport 등
-├── prisma/
-│   └── schema.prisma               # 데이터베이스 스키마
 ├── app.js                          # Express 앱 설정
 ├── server.js                       # 메인 서버 진입점
 ├── passport.js                     # Passport 전용 서버
