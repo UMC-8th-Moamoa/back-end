@@ -39,7 +39,6 @@ npm install
 ```bash
 # .env.development 파일 생성
 API_BASE_URL=http://localhost:3000
-DATABASE_URL=mysql://root:password@localhost:3306/moamoa_devAPI_BASE_URL=http://localhost:3000
 DATABASE_URL=mysql://root:password@localhost:3306/moamoa_dev
 ```
 
