@@ -1,9 +1,10 @@
-var express = require('express');
-var router = express.Router();
+import express from 'express';
+
+const router = express.Router();
 
 // 홈 페이지
 router.get('/', function(req, res) {
-  var user = req.user || null;
+  const user = req.user || null;
   
   res.json({
     message: 'UMC 8기 Moamoa - 생일선물 공동구매 플랫폼',
@@ -22,4 +23,4 @@ router.get('/health', function(req, res) {
   });
 });
 
-module.exports = router;
+export default router;

@@ -1,5 +1,5 @@
-const jwt = require('jsonwebtoken');
-const { TokenExpiredError, UnauthorizedError } = require('../middlewares/errorHandler');
+import jwt from 'jsonwebtoken';
+import { TokenExpiredError, UnauthorizedError } from '../middlewares/errorHandler.js';
 
 class JWTUtil {
   // Access Token 생성
@@ -61,5 +61,4 @@ class JWTUtil {
   }
 }
 
-
-module.exports = JWTUtil;
+export default JWTUtil;

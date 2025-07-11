@@ -1,6 +1,7 @@
-const passport = require('passport');
-const JWTUtil = require('../utils/jwt.util');
-const { UnauthorizedError, ForbiddenError, TokenExpiredError } = require('./errorHandler');
+import passport from 'passport';
+import JWTUtil from '../utils/jwt.util.js';
+import { UnauthorizedError, ForbiddenError, TokenExpiredError } from './errorHandler.js';
+import prisma from '../config/prismaClient.js';
 
 // JWT 토큰 검증 미들웨어
 const authenticateJWT = (req, res, next) => {
@@ -99,9 +100,6 @@ const checkFriendship = async (req, res, next) => {
     }
 
     // 친구 관계 확인
-    const { PrismaClient } = require('@prisma/client');
-    const prisma = new PrismaClient();
-
     const friendship = await prisma.friend.findFirst({
       where: {
         OR: [
@@ -142,9 +140,6 @@ const refreshToken = async (req, res, next) => {
     const decoded = JWTUtil.verifyRefreshToken(refreshToken);
     
     // 사용자 존재 확인
-    const { PrismaClient } = require('@prisma/client');
-    const prisma = new PrismaClient();
-    
     const user = await prisma.user.findUnique({
       where: { id: decoded.userId },
       select: {
@@ -173,7 +168,7 @@ const refreshToken = async (req, res, next) => {
   }
 };
 
-module.exports = {
+export {
   authenticateJWT,
   optionalAuthenticateJWT,
   authenticateLocal,

@@ -1,28 +1,27 @@
-const express = require('express');
-const passport = require('passport');
-const { PrismaClient } = require('@prisma/client');
+import express from 'express';
+import passport from 'passport';
+import prisma from '../config/prismaClient.js';
 
-const { 
+import { 
   authenticateLocal, 
   authenticateJWT, 
   refreshToken 
-} = require('../middlewares/auth.middleware');
+} from '../middlewares/auth.middleware.js';
 
-const { 
+import { 
   validateUserRegistration, 
   validateUserLogin 
-} = require('../middlewares/validation.middleware');
+} from '../middlewares/validation.middleware.js';
 
-const { 
+import { 
   DuplicateEmailError,
   catchAsync 
-} = require('../middlewares/errorHandler');
+} from '../middlewares/errorHandler.js';
 
-const JWTUtil = require('../utils/jwt.util');
-const PasswordUtil = require('../utils/password.util');
+import JWTUtil from '../utils/jwt.util.js';
+import PasswordUtil from '../utils/password.util.js';
 
 const router = express.Router();
-const prisma = new PrismaClient();
 
 /**
  * @swagger
@@ -414,4 +413,4 @@ router.get('/kakao/callback',
   })
 );
 
-module.exports = router;
+export default router;

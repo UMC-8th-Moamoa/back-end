@@ -1,5 +1,5 @@
-const { body, param, query, validationResult } = require('express-validator');
-const { ValidationError } = require('./errorHandler');
+import { body, param, query, validationResult } from 'express-validator';
+import { ValidationError } from './errorHandler.js';
 
 // 유효성 검사 결과 처리하는 미들웨어
 const handleValidationErrors = (req, res, next) => {
@@ -213,7 +213,7 @@ const validateFriendRequest = [
   handleValidationErrors
 ];
 
-module.exports = {
+export {
   validateUserRegistration,
   validateUserLogin,
   validateProfileUpdate,
@@ -225,7 +225,4 @@ module.exports = {
   validateSearch,
   validateFriendRequest,
   handleValidationErrors
-
 };
-
-
