@@ -1,24 +1,23 @@
+import express from 'express';
+import swaggerUi from 'swagger-ui-express';
+import swaggerJsdoc from 'swagger-jsdoc';
+import cors from 'cors';
+import helmet from 'helmet';
+import session from 'express-session';
+import cookieParser from 'cookie-parser';
+import morgan from 'morgan';
 
-require('dotenv').config();
+// 설정 및 미들웨어 import
+import passport from './src/config/passport.config.js';
+import { globalErrorHandler, notFoundHandler } from './src/middlewares/errorHandler.js';
 
-const express = require('express');
-const swaggerUi = require('swagger-ui-express');
-const swaggerJsdoc = require('swagger-jsdoc');
-const cors = require('cors');
-const helmet = require('helmet');
-const session = require('express-session');
-const cookieParser = require('cookie-parser');
-const morgan = require('morgan');
-
+// Express 앱 생성
 const app = express();
 
-// Passport 설정 불러오기
-const passport = require('./src/config/passport.config');
-
-const { globalErrorHandler, notFoundHandler } = require('./src/middlewares/errorHandler');
+// 미들웨어 설정
 
 // 로깅 미들웨어
-app.use(morgan('combined'));
+app.use(morgan(process.env.NODE_ENV === 'development' ? 'dev' : 'combined'));
 
 // 보안 미들웨어
 app.use(helmet());
@@ -80,7 +79,7 @@ const swaggerOptions = {
     },
     servers: [
       {
-        url: `http://localhost:${process.env.PORT || 3000}/api`,
+        url: `${process.env.API_BASE_URL || 'http://localhost:3000'}/api`,
         description: '개발 서버'
       }
     ],
@@ -103,15 +102,16 @@ const swaggerOptions = {
 };
 
 const swaggerSpec = swaggerJsdoc(swaggerOptions);
-
-// Swagger UI 설정
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 // 기본 라우트
 app.get('/', (req, res) => {
+  const baseUrl = process.env.API_BASE_URL || 'http://localhost:3000';
+  
   res.json({ 
     message: 'UMC 8기 Moamoa - 생일선물 공동구매 플랫폼 API 서버', 
-    docs: `http://localhost:${process.env.PORT || 3000}/api-docs`,
+    docs: `${baseUrl}/api-docs`,
+    health: `${baseUrl}/health`,
     environment: process.env.NODE_ENV,
     version: '1.0.0'
   });
@@ -122,44 +122,23 @@ app.get('/health', (req, res) => {
   res.json({ 
     status: 'OK', 
     timestamp: new Date().toISOString(),
-    uptime: process.uptime(),
-    environment: process.env.NODE_ENV
+    uptime: Math.floor(process.uptime()),
+    environment: process.env.NODE_ENV,
+    database: process.env.DATABASE_URL ? '연결됨' : '설정 필요'
   });
 });
 
 // API 라우트들
-const authRoutes = require('./src/routes/auth.routes');
-// const userRoutes = require('./src/routes/user.routes');
-// const eventRoutes = require('./src/routes/event.routes');
+import authRoutes from './src/routes/auth.routes.js';
+// import userRoutes from './src/routes/user.routes.js';
+// import eventRoutes from './src/routes/event.routes.js';
 
 app.use('/api/auth', authRoutes);
 // app.use('/api/users', userRoutes);
 // app.use('/api/events', eventRoutes);
 
-// 404 에러 처리
+// 에러 처리
 app.use(notFoundHandler);
-
-// 글로벌 에러 핸들러
 app.use(globalErrorHandler);
 
-// 서버 실행
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-  console.log(`🚀 UMC Moamoa 서버 실행 중: http://localhost:${PORT}`);
-  console.log(`📚 API 문서: http://localhost:${PORT}/api-docs`);
-  console.log(`🌍 환경: ${process.env.NODE_ENV}`);
-  console.log(`💾 데이터베이스: ${process.env.DATABASE_URL ? '연결됨' : '설정 필요'}`);
-});
-
-// Graceful shutdown
-process.on('SIGTERM', () => {
-  console.log('SIGTERM 신호를 받았습니다. 서버를 종료합니다...');
-  process.exit(0);
-});
-
-process.on('SIGINT', () => {
-  console.log('SIGINT 신호를 받았습니다. 서버를 종료합니다...');
-  process.exit(0);
-});
-
-module.exports = app;
+export default app;

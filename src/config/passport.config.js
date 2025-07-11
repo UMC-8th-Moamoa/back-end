@@ -1,16 +1,12 @@
+import passport from 'passport';
+import { Strategy as LocalStrategy } from 'passport-local';
+import { Strategy as JwtStrategy, ExtractJwt } from 'passport-jwt';
+import { Strategy as GoogleStrategy } from 'passport-google-oauth20';
+import { Strategy as KakaoStrategy } from 'passport-kakao';
 
-const passport = require('passport');
-const LocalStrategy = require('passport-local').Strategy;
-const JwtStrategy = require('passport-jwt').Strategy;
-const ExtractJwt = require('passport-jwt').ExtractJwt;
-const GoogleStrategy = require('passport-google-oauth20').Strategy;
-const KakaoStrategy = require('passport-kakao').Strategy;
-
-const { PrismaClient } = require('@prisma/client');
-const PasswordUtil = require('../utils/password.util');
-const { UnauthorizedError, UserNotFoundError } = require('../middlewares/errorHandler');
-
-const prisma = new PrismaClient();
+import prisma from './prismaClient.js';
+import PasswordUtil from '../utils/password.util.js';
+import { UnauthorizedError, UserNotFoundError } from '../middlewares/errorHandler.js';
 
 // 사용자 직렬화 (세션 저장용)
 passport.serializeUser((user, done) => {
@@ -268,4 +264,4 @@ if (process.env.KAKAO_CLIENT_ID) {
   ));
 }
 
-module.exports = passport;
+export default passport;

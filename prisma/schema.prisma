@@ -141,7 +141,6 @@ model Notification {
   title        String           @db.VarChar(100)
   message      String?          @db.Text
   isRead       Boolean          @default(false)
-  relatedId    Int?
   createdAt    DateTime         @default(now())
   updatedAt    DateTime         @updatedAt
 

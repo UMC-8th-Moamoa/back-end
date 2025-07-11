@@ -1,20 +1,23 @@
-require('dotenv').config();
+import dotenv from 'dotenv';
+dotenv.config();
 
-var express = require('express');
-var app = express();
-var fs = require('fs');
-var bodyParser = require('body-parser');
-var compression = require('compression');
-var helmet = require('helmet')
-app.use(helmet());
-var session = require('express-session')
-var FileStore = require('session-file-store')(session)
+import express from 'express';
+import fs from 'fs';
+import bodyParser from 'body-parser';
+import compression from 'compression';
+import helmet from 'helmet';
+import session from 'express-session';
+import FileStore from 'session-file-store';
 
 // Prisma와 bcrypt 추가
-var { PrismaClient } = require('@prisma/client');
-var bcrypt = require('bcryptjs');
-var prisma = new PrismaClient();
+import { PrismaClient } from '@prisma/client';
+import bcrypt from 'bcryptjs';
 
+const app = express();
+const prisma = new PrismaClient();
+const fileStore = FileStore(session);
+
+app.use(helmet());
 app.use(express.static('public'));
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json()); // JSON 파싱 추가
@@ -23,11 +26,11 @@ app.use(session({
   secret: process.env.SESSION_SECRET || 'asadlfkj!@#!@#dfgasdg',
   resave: false,
   saveUninitialized: true,
-  store: new FileStore()
-}))
+  store: new fileStore()
+}));
 
-var passport = require('passport');
-var LocalStrategy = require('passport-local');
+import passport from 'passport';
+import { Strategy as LocalStrategy } from 'passport-local';
 
 // Passport 직렬화/역직렬화
 passport.serializeUser(function(user, done) {
@@ -136,9 +139,10 @@ app.get('*', function(request, response, next){
   });
 });
 
-var indexRouter = require('./routes/index');
-var topicRouter = require('./routes/topic');
-var authRouter = require('./routes/auth');
+// 라우터 import (ES6 방식)
+import indexRouter from './routes/index.js';
+import topicRouter from './routes/topic.js';
+import authRouter from './routes/auth.js';
 
 app.use('/', indexRouter);
 app.use('/topic', topicRouter);
@@ -149,8 +153,8 @@ app.use(function(req, res, next) {
 });
 
 app.use(function (err, req, res, next) {
-  console.error(err.stack)
-  res.status(500).send('Something broke!')
+  console.error(err.stack);
+  res.status(500).send('Something broke!');
 });
 
 // 서버 실행
@@ -159,8 +163,4 @@ app.listen(PORT, function() {
   console.log(`🚀 Passport 서버 실행 중: http://localhost:${PORT}`);
 });
 
-<<<<<<< HEAD
-module.exports = app;
-=======
-module.exports = app;
->>>>>>> cfbbd18376b7fe4018a5a0391f5a39a27f5283a1
+export default app;

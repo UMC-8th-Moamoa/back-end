@@ -1,4 +1,3 @@
-
 // 기본 커스텀 에러 클래스
 class AppError extends Error {
   constructor(message, statusCode = 500, errorCode = "UNKNOWN_ERROR", data = null) {
@@ -193,7 +192,7 @@ const ERROR_CODES = {
   PAYMENT_ERROR: "S003"
 };
 
-module.exports = {
+export {
   // 기본 에러 클래스
   AppError,
   

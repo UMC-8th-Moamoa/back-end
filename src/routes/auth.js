@@ -1,9 +1,9 @@
-var express = require('express');
-var router = express.Router();
-var { PrismaClient } = require('@prisma/client');
-var bcrypt = require('bcryptjs');
+import express from 'express';
+import { PrismaClient } from '@prisma/client';
+import bcrypt from 'bcryptjs';
 
-var prisma = new PrismaClient();
+const router = express.Router();
+const prisma = new PrismaClient();
 
 // 로그인 페이지
 router.get('/login', function(req, res) {
@@ -25,7 +25,7 @@ router.get('/register', function(req, res) {
 // 회원가입 처리
 router.post('/register', async function(req, res) {
   try {
-    var { email, pwd, name, phone, birthday } = req.body;
+    const { email, pwd, name, phone, birthday } = req.body;
 
     // 필수 입력값 확인
     if (!email || !pwd || !name) {
@@ -35,7 +35,7 @@ router.post('/register', async function(req, res) {
     }
 
     // 이메일 중복 확인
-    var existingUser = await prisma.user.findUnique({
+    const existingUser = await prisma.user.findUnique({
       where: { email: email }
     });
 
@@ -46,10 +46,10 @@ router.post('/register', async function(req, res) {
     }
 
     // 비밀번호 해싱
-    var hashedPassword = await bcrypt.hash(pwd, 12);
+    const hashedPassword = await bcrypt.hash(pwd, 12);
 
     // 사용자 생성
-    var user = await prisma.user.create({
+    const user = await prisma.user.create({
       data: {
         email: email,
         password: hashedPassword,
@@ -129,4 +129,4 @@ router.get('/status', function(req, res) {
   });
 });
 
-module.exports = router;
+export default router;
