@@ -7,6 +7,7 @@
 > 
 
 ## 🛠️ 기술 스택
+
 ### Backend
 
 - Runtime: Node.js 18+
@@ -15,6 +16,37 @@
 - Authentication: JWT + Passport.js
 - Documentation: Swagger
 - Security: Helmet, CORS
+
+## **🚀 시작하기**
+
+### **환경 설정**
+
+1. 레포지토리 클론
+
+```bash
+git clone https://github.com/UMC-8th-Moamoa/back-end.git
+cd back-end
+```
+
+1. 의존성 설치
+
+```bash
+npm install
+```
+
+1. 환경 변수 설정
+
+```bash
+# .env.development 파일 생성
+API_BASE_URL=http://localhost:3000
+DATABASE_URL=mysql://root:password@localhost:3306/moamoa_dev
+```
+
+1. 개발 서버 실행
+
+```bash
+npm run dev
+```
 
 ## 🌿 Git 브랜치 전략
 
