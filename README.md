@@ -86,7 +86,6 @@ moamoa-back-end/
 ├── app.js                          # Express 앱 설정
 ├── server.js                       # 메인 서버 진입점
 ├── passport.js                     # Passport 전용 서버
-├── prisma/                         # Prisma 설정
 ├── .gitignore
 ├── package.json                    # 의존성 및 스크립트
 └── package-lock.json
