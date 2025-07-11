@@ -6,6 +6,16 @@
 > 마음을 모아 기쁨을 나누는 서비스
 > 
 
+## 🛠️ 기술 스택
+### Backend
+
+- Runtime: Node.js 18+
+- Framework: Express.js 5.x
+- Database: MySQL + Prisma ORM
+- Authentication: JWT + Passport.js
+- Documentation: Swagger
+- Security: Helmet, CORS
+
 ## 🌿 Git 브랜치 전략
 
 | 브랜치 | 용도 | 병합대상 | 설명 |
@@ -36,18 +46,17 @@ moamoa-back-end/
 │   ├── repositories/               # 데이터 접근 계층
 │   ├── dtos/                       # 데이터 전송 객체
 │   ├── middlewares/                # 미들웨어 / 인증, 오류 처리 등
-│   │   ├── errorHandler.js
-│   │   └── validator.middleware.js
 │   ├── routes/                     # API 라우팅
 │   ├── utils/                      # 유틸리티 함수
 │   └── config/                     # 환경설정, Swagger, Passport 등
-│   │   ├── app.config.js
-│   │   └── db.config.js
+├── prisma/
+│   └── schema.prisma               # 데이터베이스 스키마
 ├── app.js                          # Express 앱 설정
+├── server.js                       # 메인 서버 진입점
+├── passport.js                     # Passport 전용 서버
 ├── prisma/                         # Prisma 설정
-├── .env                            # 환경변수
 ├── .gitignore
-├── package.json
+├── package.json                    # 의존성 및 스크립트
 └── package-lock.json
 ```
 
