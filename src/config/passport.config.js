@@ -4,9 +4,10 @@ import { Strategy as JwtStrategy, ExtractJwt } from 'passport-jwt';
 import { Strategy as GoogleStrategy } from 'passport-google-oauth20';
 import { Strategy as KakaoStrategy } from 'passport-kakao';
 
-import prisma from './prismaClient.js';
-import PasswordUtil from '../utils/password.util.js';
+import { PrismaClient } from '@prisma/client';
 import { UnauthorizedError, UserNotFoundError } from '../middlewares/errorHandler.js';
+
+const prisma = new PrismaClient();
 
 // 사용자 직렬화 (세션 저장용)
 passport.serializeUser((user, done) => {
@@ -63,7 +64,7 @@ passport.use(new LocalStrategy(
       }
 
       // 비밀번호 검증
-      const isValidPassword = await PasswordUtil.comparePassword(password, user.password);
+      const isValidPassword = await comparePassword(password, user.password);
       if (!isValidPassword) {
         return done(new UnauthorizedError('이메일 또는 비밀번호가 잘못되었습니다'), false);
       }
@@ -88,7 +89,7 @@ passport.use(new LocalStrategy(
 passport.use(new JwtStrategy(
   {
     jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
-    secretOrKey: process.env.JWT_SECRET,
+    secretOrKey: process.env.JWT_SECRET || 'fallback-jwt-secret',
   },
   async (payload, done) => {
     try {
