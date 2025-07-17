@@ -7,7 +7,7 @@ import session from 'express-session';
 import cookieParser from 'cookie-parser';
 import morgan from 'morgan';
 import dotenv from 'dotenv';
- 
+
 // 환경 변수 로드
 dotenv.config();
 
@@ -133,13 +133,13 @@ app.get('/health', (req, res) => {
 });
 
 // API 라우트들
-import authRoutes from './src/routes/auth.routes.js';
-// import userRoutes from './src/routes/user.routes.js';
+import userRoutes from './src/routes/user.routes.js';
 // import eventRoutes from './src/routes/event.routes.js';
+// import paymentRoutes from './src/routes/payment.routes.js';
 
-app.use('/api/auth', authRoutes);
-// app.use('/api/users', userRoutes);
+app.use('/api', userRoutes);
 // app.use('/api/events', eventRoutes);
+// app.use('/api/payments', paymentRoutes);
 
 // 에러 처리
 app.use(notFoundHandler);
