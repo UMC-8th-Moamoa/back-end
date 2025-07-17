@@ -1,64 +1,274 @@
-const jwt = require('jsonwebtoken');
-const { TokenExpiredError, UnauthorizedError } = require('../middlewares/errorHandler');
+import jwt from 'jsonwebtoken';
+import { UnauthorizedError, TokenExpiredError } from '../middlewares/errorHandler.js';
 
-class JWTUtil {
-  // Access Token 생성
-  static generateAccessToken(payload) {
-    return jwt.sign(payload, process.env.JWT_SECRET, {
-      expiresIn: process.env.JWT_EXPIRES_IN || '7d',
+const JWT_SECRET = process.env.JWT_SECRET || 'fallback-jwt-secret';
+const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '1h';
+const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET || 'fallback-refresh-secret';
+const JWT_REFRESH_EXPIRES_IN = process.env.JWT_REFRESH_EXPIRES_IN || '7d';
+
+/**
+ * 액세스 토큰 생성
+ * @param {number} userId - 사용자 ID
+ * @param {string} email - 사용자 이메일
+ * @returns {string} - JWT 액세스 토큰
+ */
+export const generateAccessToken = (userId, email) => {
+  const payload = {
+    userId,
+    email,
+    type: 'access'
+  };
+
+  return jwt.sign(payload, JWT_SECRET, {
+    expiresIn: JWT_EXPIRES_IN,
+    issuer: 'moamoa-platform',
+    audience: 'moamoa-users'
+  });
+};
+
+/**
+ * 리프레시 토큰 생성
+ * @param {number} userId - 사용자 ID
+ * @param {string} email - 사용자 이메일
+ * @returns {string} - JWT 리프레시 토큰
+ */
+export const generateRefreshToken = (userId, email) => {
+  const payload = {
+    userId,
+    email,
+    type: 'refresh'
+  };
+
+  return jwt.sign(payload, JWT_REFRESH_SECRET, {
+    expiresIn: JWT_REFRESH_EXPIRES_IN,
+    issuer: 'moamoa-platform',
+    audience: 'moamoa-users'
+  });
+};
+
+/**
+ * 토큰 쌍 생성 (액세스 토큰 + 리프레시 토큰)
+ * @param {number} userId - 사용자 ID
+ * @param {string} email - 사용자 이메일
+ * @returns {Object} - 토큰 쌍 객체
+ */
+export const generateTokenPair = (userId, email) => {
+  const accessToken = generateAccessToken(userId, email);
+  const refreshToken = generateRefreshToken(userId, email);
+
+  return {
+    accessToken,
+    refreshToken
+  };
+};
+
+/**
+ * 액세스 토큰 검증
+ * @param {string} token - 검증할 토큰
+ * @returns {Object} - 디코딩된 페이로드
+ */
+export const verifyAccessToken = (token) => {
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET, {
+      issuer: 'moamoa-platform',
+      audience: 'moamoa-users'
     });
-  }
 
-  // Refresh Token 생성
-  static generateRefreshToken(payload) {
-    return jwt.sign(payload, process.env.JWT_REFRESH_SECRET, {
-      expiresIn: process.env.JWT_REFRESH_EXPIRES_IN || '30d',
+    if (decoded.type !== 'access') {
+      throw new UnauthorizedError('유효하지 않은 액세스 토큰입니다');
+    }
+
+    return decoded;
+  } catch (error) {
+    if (error.name === 'TokenExpiredError') {
+      throw new TokenExpiredError('만료된 액세스 토큰입니다');
+    }
+    if (error.name === 'JsonWebTokenError') {
+      throw new UnauthorizedError('유효하지 않은 액세스 토큰입니다');
+    }
+    throw error;
+  }
+};
+
+/**
+ * 리프레시 토큰 검증
+ * @param {string} token - 검증할 토큰
+ * @returns {Object} - 디코딩된 페이로드
+ */
+export const verifyRefreshToken = (token) => {
+  try {
+    const decoded = jwt.verify(token, JWT_REFRESH_SECRET, {
+      issuer: 'moamoa-platform',
+      audience: 'moamoa-users'
     });
-  }
 
-  // Access Token 검증
-  static verifyAccessToken(token) {
-    try {
-      return jwt.verify(token, process.env.JWT_SECRET);
-    } catch (error) {
-      if (error.name === 'TokenExpiredError') {
-        throw new TokenExpiredError('Access token이 만료되었습니다');
-      }
-      throw new UnauthorizedError('유효하지 않은 토큰입니다');
+    if (decoded.type !== 'refresh') {
+      throw new UnauthorizedError('유효하지 않은 리프레시 토큰입니다');
     }
-  }
 
-  // Refresh Token 검증
-  static verifyRefreshToken(token) {
-    try {
-      return jwt.verify(token, process.env.JWT_REFRESH_SECRET);
-    } catch (error) {
-      if (error.name === 'TokenExpiredError') {
-        throw new TokenExpiredError('Refresh token이 만료되었습니다');
-      }
-      throw new UnauthorizedError('유효하지 않은 refresh token입니다');
+    return decoded;
+  } catch (error) {
+    if (error.name === 'TokenExpiredError') {
+      throw new TokenExpiredError('만료된 리프레시 토큰입니다');
     }
-  }
-
-  // 토큰 페어 생성 (Access + Refresh)
-  static generateTokenPair(userId, email) {
-    const payload = { userId, email };
-    
-    return {
-      accessToken: this.generateAccessToken(payload),
-      refreshToken: this.generateRefreshToken(payload),
-    };
-  }
-
-  // 토큰에서 사용자 ID 추출
-  static extractUserIdFromToken(token) {
-    try {
-      const decoded = this.verifyAccessToken(token);
-      return decoded.userId;
-    } catch (error) {
-      return null;
+    if (error.name === 'JsonWebTokenError') {
+      throw new UnauthorizedError('유효하지 않은 리프레시 토큰입니다');
     }
+    throw error;
   }
-}
+};
 
-module.exports = JWTUtil;
+/**
+ * 토큰에서 사용자 ID 추출
+ * @param {string} token - 토큰
+ * @returns {number} - 사용자 ID
+ */
+export const getUserIdFromToken = (token) => {
+  try {
+    const decoded = jwt.decode(token);
+    return decoded?.userId || null;
+  } catch (error) {
+    return null;
+  }
+};
+
+/**
+ * 토큰 만료 시간 확인
+ * @param {string} token - 토큰
+ * @returns {Date|null} - 만료 시간 또는 null
+ */
+export const getTokenExpirationDate = (token) => {
+  try {
+    const decoded = jwt.decode(token);
+    if (decoded?.exp) {
+      return new Date(decoded.exp * 1000);
+    }
+    return null;
+  } catch (error) {
+    return null;
+  }
+};
+
+/**
+ * 토큰이 만료되었는지 확인
+ * @param {string} token - 토큰
+ * @returns {boolean} - 만료 여부
+ */
+export const isTokenExpired = (token) => {
+  const expirationDate = getTokenExpirationDate(token);
+  if (!expirationDate) {
+    return true;
+  }
+  return new Date() >= expirationDate;
+};
+
+/**
+ * 이메일 인증 토큰 생성
+ * @param {string} email - 사용자 이메일
+ * @param {string} code - 인증 코드
+ * @returns {string} - 이메일 인증 토큰
+ */
+export const generateEmailVerificationToken = (email, code) => {
+  const payload = {
+    email,
+    code,
+    type: 'email_verification'
+  };
+
+  return jwt.sign(payload, JWT_SECRET, {
+    expiresIn: '10m', // 10분
+    issuer: 'moamoa-platform',
+    audience: 'moamoa-users'
+  });
+};
+
+/**
+ * 이메일 인증 토큰 검증
+ * @param {string} token - 검증할 토큰
+ * @returns {Object} - 디코딩된 페이로드
+ */
+export const verifyEmailVerificationToken = (token) => {
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET, {
+      issuer: 'moamoa-platform',
+      audience: 'moamoa-users'
+    });
+
+    if (decoded.type !== 'email_verification') {
+      throw new UnauthorizedError('유효하지 않은 이메일 인증 토큰입니다');
+    }
+
+    return decoded;
+  } catch (error) {
+    if (error.name === 'TokenExpiredError') {
+      throw new TokenExpiredError('만료된 이메일 인증 토큰입니다');
+    }
+    if (error.name === 'JsonWebTokenError') {
+      throw new UnauthorizedError('유효하지 않은 이메일 인증 토큰입니다');
+    }
+    throw error;
+  }
+};
+
+/**
+ * 비밀번호 재설정 토큰 생성
+ * @param {string} email - 사용자 이메일
+ * @param {number} userId - 사용자 ID
+ * @returns {string} - 비밀번호 재설정 토큰
+ */
+export const generatePasswordResetToken = (email, userId) => {
+  const payload = {
+    email,
+    userId,
+    type: 'password_reset'
+  };
+
+  return jwt.sign(payload, JWT_SECRET, {
+    expiresIn: '30m', // 30분
+    issuer: 'moamoa-platform',
+    audience: 'moamoa-users'
+  });
+};
+
+/**
+ * 비밀번호 재설정 토큰 검증
+ * @param {string} token - 검증할 토큰
+ * @returns {Object} - 디코딩된 페이로드
+ */
+export const verifyPasswordResetToken = (token) => {
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET, {
+      issuer: 'moamoa-platform',
+      audience: 'moamoa-users'
+    });
+
+    if (decoded.type !== 'password_reset') {
+      throw new UnauthorizedError('유효하지 않은 비밀번호 재설정 토큰입니다');
+    }
+
+    return decoded;
+  } catch (error) {
+    if (error.name === 'TokenExpiredError') {
+      throw new TokenExpiredError('만료된 비밀번호 재설정 토큰입니다');
+    }
+    if (error.name === 'JsonWebTokenError') {
+      throw new UnauthorizedError('유효하지 않은 비밀번호 재설정 토큰입니다');
+    }
+    throw error;
+  }
+};
+
+export default {
+  generateAccessToken,
+  generateRefreshToken,
+  generateTokenPair,
+  verifyAccessToken,
+  verifyRefreshToken,
+  getUserIdFromToken,
+  getTokenExpirationDate,
+  isTokenExpired,
+  generateEmailVerificationToken,
+  verifyEmailVerificationToken,
+  generatePasswordResetToken,
+  verifyPasswordResetToken
+};
