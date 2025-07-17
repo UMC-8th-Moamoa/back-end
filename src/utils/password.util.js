@@ -1,4 +1,4 @@
-import bcrypt from 'bcryptjs';
+const bcrypt = require('bcryptjs');
 
 class PasswordUtil {
   // 비밀번호 해싱
@@ -30,4 +30,4 @@ class PasswordUtil {
   }
 }
 
-export default PasswordUtil;
+module.exports = PasswordUtil;
