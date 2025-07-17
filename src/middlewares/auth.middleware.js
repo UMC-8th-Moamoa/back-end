@@ -3,7 +3,7 @@ import { verifyRefreshToken, generateTokenPair } from '../utils/jwt.util.js';
 import { PrismaClient } from '@prisma/client';
 import { 
   UnauthorizedError, 
-  ExpiredTokenError,
+  TokenExpiredError,
   UserNotFoundError,
   ForbiddenError
 } from './errorHandler.js';
