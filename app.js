@@ -130,10 +130,14 @@ app.get('/health', (req, res) => {
 
 // API 라우트들
 import authRoutes from './src/routes/auth.routes.js';
+import wishlistRoutes from './src/routes/wishlist.routes.js';
+import letterRoutes from './src/routes/letter.routes.js';
 // import userRoutes from './src/routes/user.routes.js';
 // import eventRoutes from './src/routes/event.routes.js';
 
 app.use('/api/auth', authRoutes);
+app.use('/api/wishlists', wishlistRoutes);
+app.use('/api/letters', letterRoutes);
 // app.use('/api/users', userRoutes);
 // app.use('/api/events', eventRoutes);
 
