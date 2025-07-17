@@ -132,14 +132,12 @@ app.get('/health', (req, res) => {
   });
 });
 
-// API 라우트들
-import userRoutes from './src/routes/user.routes.js';
-// import eventRoutes from './src/routes/event.routes.js';
-// import paymentRoutes from './src/routes/payment.routes.js';
 
+// import authRoutes from './src/routes/auth.routes.js';
+// app.use('/api/auth', authRoutes);
+
+import userRoutes from './src/routes/user.routes.js';
 app.use('/api', userRoutes);
-// app.use('/api/events', eventRoutes);
-// app.use('/api/payments', paymentRoutes);
 
 // 에러 처리
 app.use(notFoundHandler);
