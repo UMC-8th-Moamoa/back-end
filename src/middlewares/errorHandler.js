@@ -1,4 +1,3 @@
-
 class AppError extends Error {
   constructor(message, statusCode = 500, errorCode = "UNKNOWN_ERROR", data = null) {
     super(message);

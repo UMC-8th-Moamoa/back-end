@@ -6,6 +6,48 @@
 > 마음을 모아 기쁨을 나누는 서비스
 > 
 
+## 🛠️ 기술 스택
+
+### Backend
+
+- Runtime: Node.js 18+
+- Framework: Express.js 5.x
+- Database: MySQL + Prisma ORM
+- Authentication: JWT + Passport.js
+- Documentation: Swagger
+- Security: Helmet, CORS
+
+## **🚀 시작하기**
+
+### **환경 설정**
+
+1. 레포지토리 클론
+
+```bash
+git clone https://github.com/UMC-8th-Moamoa/back-end.git
+cd back-end
+```
+
+1. 의존성 설치
+
+```bash
+npm install
+```
+
+1. 환경 변수 설정
+
+```bash
+# .env.development 파일 생성
+API_BASE_URL=http://localhost:3000
+DATABASE_URL=mysql://root:password@localhost:3306/moamoa_dev
+```
+
+1. 개발 서버 실행
+
+```bash
+npm run dev
+```
+
 ## 🌿 Git 브랜치 전략
 
 | 브랜치 | 용도 | 병합대상 | 설명 |
@@ -30,24 +72,22 @@ feat/group-management    # 선물 그룹 관리
 
 ```bash
 moamoa-back-end/
+├── prisma/                         # Prisma 설정
+│   └── schema.prisma               # 데이터베이스 스키마
 ├── src/
 │   ├── controllers/                # 요청 처리 핸들러
 │   ├── services/                   # 핵심 비즈니스 로직
 │   ├── repositories/               # 데이터 접근 계층
 │   ├── dtos/                       # 데이터 전송 객체
 │   ├── middlewares/                # 미들웨어 / 인증, 오류 처리 등
-│   │   ├── errorHandler.js
-│   │   └── validator.middleware.js
 │   ├── routes/                     # API 라우팅
 │   ├── utils/                      # 유틸리티 함수
 │   └── config/                     # 환경설정, Swagger, Passport 등
-│   │   ├── app.config.js
-│   │   └── db.config.js
 ├── app.js                          # Express 앱 설정
-├── prisma/                         # Prisma 설정
-├── .env                            # 환경변수
+├── server.js                       # 메인 서버 진입점
+├── passport.js                     # Passport 전용 서버
 ├── .gitignore
-├── package.json
+├── package.json                    # 의존성 및 스크립트
 └── package-lock.json
 ```
 

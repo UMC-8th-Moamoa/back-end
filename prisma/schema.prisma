@@ -281,7 +281,10 @@ model Item {
   price        Int
   imageUrl     String       @db.VarChar(255)
   description  String?      @db.Text
+
   isActive     Boolean      @default(true)
+
+>>>>>>> d5bb07bdf3cd50f92e5f458e673a1938fdfb7d44
   createdAt    DateTime     @default(now())
   updatedAt    DateTime     @updatedAt
 
