@@ -1,143 +1,85 @@
 import passport from 'passport';
-import JWTUtil from '../utils/jwt.util.js';
-import { UnauthorizedError, ForbiddenError, TokenExpiredError } from './errorHandler.js';
-import prisma from '../config/prismaClient.js';
+import { verifyRefreshToken, generateTokenPair } from '../utils/jwt.util.js';
+import { PrismaClient } from '@prisma/client';
+import { 
+  UnauthorizedError, 
+  ExpiredTokenError,
+  UserNotFoundError,
+  ForbiddenError
+} from './errorHandler.js';
 
-// JWT 토큰 검증 미들웨어
-const authenticateJWT = (req, res, next) => {
-  passport.authenticate('jwt', { session: false }, (err, user, info) => {
-    if (err) {
-      return next(err);
+const prisma = new PrismaClient();
+
+/**
+ * 로컬 인증 미들웨어 (이메일/비밀번호 로그인)
+ */
+export const authenticateLocal = (req, res, next) => {
+  passport.authenticate('local', { session: false }, (error, user, info) => {
+    if (error) {
+      return next(error);
     }
-
+    
     if (!user) {
-      return next(new UnauthorizedError('인증이 필요합니다'));
+      return next(new UnauthorizedError('로그인에 실패했습니다'));
     }
-
     
     req.user = user;
     next();
   })(req, res, next);
 };
 
-// 선택적 JWT 인증 (토큰이 있으면 검증, 없어도 통과)
-const optionalAuthenticateJWT = (req, res, next) => {
+/**
+ * JWT 인증 미들웨어
+ */
+export const authenticateJWT = (req, res, next) => {
+  passport.authenticate('jwt', { session: false }, (error, user, info) => {
+    if (error) {
+      return next(error);
+    }
+    
+    if (!user) {
+      return next(new UnauthorizedError('유효한 토큰이 필요합니다'));
+    }
+    
+    req.user = user;
+    next();
+  })(req, res, next);
+};
+
+/**
+ * 선택적 JWT 인증 미들웨어 (토큰이 있으면 인증, 없어도 통과)
+ */
+export const optionalAuthenticateJWT = (req, res, next) => {
   const authHeader = req.headers.authorization;
   
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    return next(); // 토큰이 없어도 통과
+    req.user = null;
+    return next();
   }
-
-  passport.authenticate('jwt', { session: false }, (err, user, info) => {
-    if (err) {
-      return next(err);
-    }
-
-    if (user) {
-      req.user = user;
+  
+  passport.authenticate('jwt', { session: false }, (error, user, info) => {
+    if (error) {
+      return next(error);
     }
     
+    req.user = user || null;
     next();
   })(req, res, next);
 };
 
-// Local 로그인 미들웨어
-const authenticateLocal = (req, res, next) => {
-  passport.authenticate('local', { session: false }, (err, user, info) => {
-    if (err) {
-      return next(err);
-    }
-
-    if (!user) {
-      return next(new UnauthorizedError('이메일 또는 비밀번호가 잘못되었습니다'));
-    }
-
-    req.user = user;
-    next();
-  })(req, res, next);
-};
-
-// 자신의 리소스인지 확인하는 미들웨어
-const checkResourceOwnership = (userIdField = 'userId') => {
-  return (req, res, next) => {
-    if (!req.user) {
-      return next(new UnauthorizedError('인증이 필요합니다'));
-    }
-
-    // URL 파라미터, 쿼리 파라미터, 요청 바디에서 사용자 ID 확인
-    const resourceUserId = req.params[userIdField] || 
-                          req.query[userIdField] || 
-                          req.body[userIdField];
-
-    if (!resourceUserId) {
-      return next(new ForbiddenError('리소스 접근 권한이 없습니다'));
-    }
-
-    // 문자열로 비교 (DB에서 오는 ID와 JWT의 ID 타입이 다를 수 있음)
-    if (req.user.id.toString() !== resourceUserId.toString()) {
-      return next(new ForbiddenError('자신의 리소스만 접근할 수 있습니다'));
-    }
-
-    next();
-  };
-};
-
-// 친구 관계 확인 미들웨어
-const checkFriendship = async (req, res, next) => {
-  try {
-    if (!req.user) {
-      return next(new UnauthorizedError('인증이 필요합니다'));
-    }
-
-    const targetUserId = req.params.userId || req.body.userId;
-    if (!targetUserId) {
-      return next(new ForbiddenError('대상 사용자 ID가 필요합니다'));
-    }
-
-    // 자신의 리소스는 항상 접근 가능
-    if (req.user.id.toString() === targetUserId.toString()) {
-      return next();
-    }
-
-    // 친구 관계 확인
-    const friendship = await prisma.friend.findFirst({
-      where: {
-        OR: [
-          {
-            requesterId: req.user.id,
-            receiverId: parseInt(targetUserId),
-            status: 'ACCEPTED'
-          },
-          {
-            requesterId: parseInt(targetUserId),
-            receiverId: req.user.id,
-            status: 'ACCEPTED'
-          }
-        ]
-      }
-    });
-
-    if (!friendship) {
-      return next(new ForbiddenError('친구만 접근할 수 있습니다'));
-    }
-
-    next();
-  } catch (error) {
-    next(error);
-  }
-};
-
-// 토큰 새로고침 미들웨어
-const refreshToken = async (req, res, next) => {
+/**
+ * 리프레시 토큰 검증 및 새 토큰 발급 미들웨어
+ */
+export const refreshToken = async (req, res, next) => {
   try {
     const { refreshToken } = req.body;
     
     if (!refreshToken) {
-      return next(new UnauthorizedError('Refresh token이 필요합니다'));
+      throw new UnauthorizedError('리프레시 토큰이 필요합니다');
     }
-
-    // Refresh token 검증
-    const decoded = JWTUtil.verifyRefreshToken(refreshToken);
+    
+    // 리프레시 토큰 검증
+    const decoded = verifyRefreshToken(refreshToken);
     
     // 사용자 존재 확인
     const user = await prisma.user.findUnique({
@@ -148,31 +90,188 @@ const refreshToken = async (req, res, next) => {
         name: true
       }
     });
-
+    
     if (!user) {
-      return next(new UnauthorizedError('유효하지 않은 사용자입니다'));
+      throw new UserNotFoundError();
     }
-
-    // 새로운 토큰 쌍 생성
-    const tokens = JWTUtil.generateTokenPair(user.id, user.email);
+    
+    // 새 토큰 쌍 생성
+    const tokens = generateTokenPair(user.id, user.email);
     
     req.tokens = tokens;
     req.user = user;
     next();
-
+    
   } catch (error) {
-    if (error instanceof TokenExpiredError || error instanceof UnauthorizedError) {
-      return next(error);
-    }
-    next(new UnauthorizedError('토큰 갱신에 실패했습니다'));
+    next(error);
   }
 };
 
-export {
+/**
+ * 관리자 권한 확인 미들웨어
+ */
+export const requireAdmin = async (req, res, next) => {
+  try {
+    if (!req.user) {
+      throw new UnauthorizedError('인증이 필요합니다');
+    }
+    
+    const user = await prisma.user.findUnique({
+      where: { id: req.user.id },
+      select: {
+        id: true,
+        email: true,
+        // 향후 role 필드 추가 시 사용
+        // role: true
+      }
+    });
+    
+    if (!user) {
+      throw new UserNotFoundError();
+    }
+    
+    // 현재는 관리자 역할이 별도로 없으므로 주석 처리
+    // if (user.role !== 'ADMIN') {
+    //   throw new ForbiddenError('관리자 권한이 필요합니다');
+    // }
+    
+    next();
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * 이메일 인증 필수 미들웨어
+ */
+export const requireEmailVerification = async (req, res, next) => {
+  try {
+    if (!req.user) {
+      throw new UnauthorizedError('인증이 필요합니다');
+    }
+    
+    const user = await prisma.user.findUnique({
+      where: { id: req.user.id },
+      select: {
+        id: true,
+        emailVerified: true
+      }
+    });
+    
+    if (!user) {
+      throw new UserNotFoundError();
+    }
+    
+    if (!user.emailVerified) {
+      throw new UnauthorizedError('이메일 인증이 필요합니다');
+    }
+    
+    next();
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * 본인 확인 미들웨어 (리소스 소유자만 접근 가능)
+ */
+export const requireOwnership = (userIdParam = 'userId') => {
+  return (req, res, next) => {
+    try {
+      if (!req.user) {
+        throw new UnauthorizedError('인증이 필요합니다');
+      }
+      
+      const resourceUserId = parseInt(req.params[userIdParam]);
+      
+      if (req.user.id !== resourceUserId) {
+        throw new UnauthorizedError('본인만 접근 가능합니다');
+      }
+      
+      next();
+    } catch (error) {
+      next(error);
+    }
+  };
+};
+
+/**
+ * 사용자 정보 주입 미들웨어 (DB에서 최신 정보 가져오기)
+ */
+export const injectUserInfo = async (req, res, next) => {
+  try {
+    if (!req.user) {
+      return next();
+    }
+    
+    const user = await prisma.user.findUnique({
+      where: { id: req.user.id },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        phone: true,
+        birthday: true,
+        photo: true,
+        cash: true,
+        emailVerified: true,
+        createdAt: true,
+        lastLoginAt: true
+      }
+    });
+    
+    if (user) {
+      req.user = user;
+    }
+    
+    next();
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * 세션 기반 인증 미들웨어
+ */
+export const authenticateSession = (req, res, next) => {
+  if (req.isAuthenticated()) {
+    return next();
+  }
+  
+  next(new UnauthorizedError('세션 인증이 필요합니다'));
+};
+
+/**
+ * 소셜 로그인 콜백 처리 미들웨어
+ */
+export const handleSocialCallback = (provider) => {
+  return (req, res, next) => {
+    passport.authenticate(provider, { session: false }, (error, user, info) => {
+      if (error) {
+        const clientUrl = process.env.CLIENT_URL || 'http://localhost:3000';
+        return res.redirect(`${clientUrl}/auth/error?message=${encodeURIComponent(error.message)}`);
+      }
+      
+      if (!user) {
+        const clientUrl = process.env.CLIENT_URL || 'http://localhost:3000';
+        return res.redirect(`${clientUrl}/auth/error?message=${encodeURIComponent('소셜 로그인에 실패했습니다')}`);
+      }
+      
+      req.user = user;
+      next();
+    })(req, res, next);
+  };
+};
+
+export default {
+  authenticateLocal,
   authenticateJWT,
   optionalAuthenticateJWT,
-  authenticateLocal,
-  checkResourceOwnership,
-  checkFriendship,
-  refreshToken
+  refreshToken,
+  requireAdmin,
+  requireEmailVerification,
+  requireOwnership,
+  injectUserInfo,
+  authenticateSession,
+  handleSocialCallback
 };
