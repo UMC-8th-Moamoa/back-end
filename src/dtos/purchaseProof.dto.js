@@ -1,8 +1,4 @@
 /**
- * 구매 인증 관련 DTO (Data Transfer Object)
- */
-
-/**
  * 구매 인증 등록 요청 DTO
  * POST /api/birthday-events/{eventId}/proof
  */
@@ -13,9 +9,9 @@ export class PurchaseProofRequestDTO {
     this.message = body.message || '';
   }
 
-  /**
-   * 요청 데이터 유효성 검사
-   */
+
+// 요청 데이터 유효성 검사
+
   validate() {
     // 이벤트 ID 검증
     if (!this.eventId || isNaN(this.eventId) || this.eventId < 1) {
@@ -49,9 +45,9 @@ export class PurchaseProofRequestDTO {
     }
   }
 
-  /**
-   * 검증된 데이터 반환
-   */
+
+// 검증된 데이터 반환
+
   getValidatedData() {
     this.validate();
     return {
@@ -62,20 +58,20 @@ export class PurchaseProofRequestDTO {
   }
 }
 
-/**
- * 구매 인증 정보 DTO
- */
+
+// 구매 인증 정보 DTO
+
 export class PurchaseProofInfoDTO {
   constructor(purchaseProof) {
     this.id = purchaseProof.id;
     this.eventId = purchaseProof.eventId;
-    this.proofImages = [...purchaseProof.proofImages]; // 배열 복사
+    this.proofImages = [...purchaseProof.proofImages];
   }
 }
 
-/**
- * 메시지 수신자 정보 DTO
- */
+
+// 메시지 수신자 정보 DTO
+
 export class MessageRecipientDTO {
   constructor(recipient) {
     this.id = recipient.receiverId || recipient.id;
@@ -84,9 +80,9 @@ export class MessageRecipientDTO {
   }
 }
 
-/**
- * 감사 메시지 정보 DTO
- */
+
+// 감사 메시지 정보 DTO
+
 export class ThankYouMessageInfoDTO {
   constructor(messageData) {
     this.totalSent = messageData.totalSent || 0;
@@ -97,18 +93,18 @@ export class ThankYouMessageInfoDTO {
   }
 }
 
-/**
- * 구매 인증 등록 응답 DTO
- */
+
+// 구매 인증 등록 응답 DTO
+
 export class PurchaseProofResponseDTO {
   constructor(purchaseProof, thankYouMessage) {
     this.purchaseProof = new PurchaseProofInfoDTO(purchaseProof);
     this.thankYouMessage = new ThankYouMessageInfoDTO(thankYouMessage);
   }
 
-  /**
-   * 정리된 응답 데이터 반환
-   */
+
+// 정리된 응답 데이터 반환
+
   toResponse() {
     return {
       purchaseProof: this.purchaseProof,
@@ -117,9 +113,9 @@ export class PurchaseProofResponseDTO {
   }
 }
 
-/**
- * 구매 인증 목록 조회용 DTO (향후 확장용)
- */
+
+// 구매 인증 목록 조회용 DTO
+
 export class PurchaseProofListItemDTO {
   constructor(proof) {
     this.id = proof.id;
@@ -129,18 +125,18 @@ export class PurchaseProofListItemDTO {
   }
 }
 
-/**
- * 구매 인증 목록 응답 DTO (향후 확장용)
- */
+
+// 구매 인증 목록 응답 DTO
+
 export class PurchaseProofListResponseDTO {
   constructor(proofs, pagination = null) {
     this.proofs = proofs.map(proof => new PurchaseProofListItemDTO(proof));
     this.pagination = pagination;
   }
 
-  /**
-   * 정리된 응답 데이터 반환
-   */
+
+// 정리된 응답 데이터 반환
+
   toResponse() {
     const response = {
       proofs: this.proofs
