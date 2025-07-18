@@ -6,6 +6,10 @@ import helmet from 'helmet';
 import session from 'express-session';
 import cookieParser from 'cookie-parser';
 import morgan from 'morgan';
+import dotenv from 'dotenv';
+
+// 환경 변수 로드
+dotenv.config();
 
 // 설정 및 미들웨어 import
 import passport from './src/config/passport.config.js';
@@ -128,21 +132,73 @@ app.get('/health', (req, res) => {
   });
 });
 
-// API 라우트들
-import authRoutes from './src/routes/auth.routes.js';
+
+// import authRoutes from './src/routes/auth.routes.js';
+// app.use('/api/auth', authRoutes);
+
+import userRoutes from './src/routes/user.routes.js';
 import wishlistRoutes from './src/routes/wishlist.routes.js';
 import letterRoutes from './src/routes/letter.routes.js';
-// import userRoutes from './src/routes/user.routes.js';
-// import eventRoutes from './src/routes/event.routes.js';
 
-app.use('/api/auth', authRoutes);
+app.use('/api', userRoutes);
+
 app.use('/api/wishlists', wishlistRoutes);
 app.use('/api/letters', letterRoutes);
-// app.use('/api/users', userRoutes);
-// app.use('/api/events', eventRoutes);
 
 // 에러 처리
 app.use(notFoundHandler);
 app.use(globalErrorHandler);
+
+// 서버 실행 부분
+const PORT = process.env.PORT || 3000;
+const NODE_ENV = process.env.NODE_ENV || 'development';
+
+// 서버 시작
+const server = app.listen(PORT, () => {
+  console.log(`🚀 서버가 포트 ${PORT}에서 실행 중입니다`);
+  console.log(`📝 환경: ${NODE_ENV}`);
+  console.log(`📚 API 문서: http://localhost:${PORT}/api-docs`);
+  console.log(`🏥 헬스체크: http://localhost:${PORT}/health`);
+});
+
+// 에러 핸들링
+server.on('error', (error) => {
+  if (error.code === 'EADDRINUSE') {
+    console.error(`❌ 포트 ${PORT}이 이미 사용 중입니다`);
+    process.exit(1);
+  } else {
+    console.error('❌ 서버 시작 중 오류 발생:', error);
+    process.exit(1);
+  }
+});
+
+// 시스템 종료 시 정리
+process.on('SIGTERM', () => {
+  console.log('🛑 SIGTERM 신호 수신. 서버를 정리합니다...');
+  server.close(() => {
+    console.log('✅ 서버가 정상적으로 종료되었습니다');
+    process.exit(0);
+  });
+});
+
+process.on('SIGINT', () => {
+  console.log('\n🛑 SIGINT 신호 수신. 서버를 정리합니다...');
+  server.close(() => {
+    console.log('✅ 서버가 정상적으로 종료되었습니다');
+    process.exit(0);
+  });
+});
+
+// 처리되지 않은 예외 처리
+process.on('uncaughtException', (error) => {
+  console.error('❌ 처리되지 않은 예외:', error);
+  process.exit(1);
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('❌ 처리되지 않은 Promise 거부:', reason);
+  console.error('Promise:', promise);
+  process.exit(1);
+});
 
 export default app;
