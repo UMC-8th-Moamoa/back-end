@@ -1,8 +1,4 @@
 /**
- * 달력 관련 DTO (Data Transfer Object)
- */
-
-/**
  * 달력 조회 요청 DTO
  * GET /api/calendar/birthdays?year=2025&month=8
  */
@@ -13,9 +9,9 @@ export class CalendarRequestDTO {
     this.month = query.month ? parseInt(query.month) : currentDate.getMonth() + 1;
   }
 
-  /**
-   * 요청 데이터 유효성 검사
-   */
+
+// 요청 데이터 유효성 검사
+
   validate() {
     const currentYear = new Date().getFullYear();
     
@@ -30,9 +26,9 @@ export class CalendarRequestDTO {
     }
   }
 
-  /**
-   * 검증된 데이터 반환
-   */
+
+// 검증된 데이터 반환
+
   getValidatedData() {
     this.validate();
     return {
@@ -51,9 +47,9 @@ export class CalendarDateRequestDTO {
     this.date = params.date;
   }
 
-  /**
-   * 날짜 형식 및 유효성 검사
-   */
+
+// 날짜 형식 및 유효성 검사
+
   validate() {
     // 날짜 형식 검증 (YYYY-MM-DD)
     const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
@@ -79,9 +75,9 @@ export class CalendarDateRequestDTO {
     }
   }
 
-  /**
-   * 검증된 데이터 반환
-   */
+
+// 검증된 데이터 반환
+
   getValidatedData() {
     this.validate();
     const targetDate = new Date(this.date);
@@ -93,9 +89,9 @@ export class CalendarDateRequestDTO {
   }
 }
 
-/**
- * 친구 정보 DTO
- */
+
+// 친구 정보 DTO
+
 export class FriendDTO {
   constructor(friend) {
     this.id = friend.id;
@@ -105,9 +101,9 @@ export class FriendDTO {
   }
 }
 
-/**
- * 날짜별 생일 정보 DTO
- */
+
+// 날짜별 생일 정보 DTO
+
 export class BirthdayDateDTO {
   constructor(birthdayData) {
     this.date = birthdayData.date;
@@ -116,9 +112,9 @@ export class BirthdayDateDTO {
   }
 }
 
-/**
- * 달력 조회 응답 DTO
- */
+
+// 달력 조회 응답 DTO
+
 export class CalendarResponseDTO {
   constructor(calendarData) {
     this.year = calendarData.year;
@@ -126,9 +122,9 @@ export class CalendarResponseDTO {
     this.birthdays = calendarData.birthdays.map(birthday => new BirthdayDateDTO(birthday));
   }
 
-  /**
-   * 정리된 응답 데이터 반환
-   */
+
+// 정리된 응답 데이터 반환
+
   toResponse() {
     return {
       calendar: {
@@ -140,9 +136,9 @@ export class CalendarResponseDTO {
   }
 }
 
-/**
- * 날짜 상세 조회용 친구 정보 DTO (간소화된 버전)
- */
+
+// 날짜 상세 조회용 친구 정보 DTO
+
 export class DateDetailFriendDTO {
   constructor(friend) {
     this.id = friend.id;
@@ -150,27 +146,27 @@ export class DateDetailFriendDTO {
   }
 }
 
-/**
- * 날짜 상세 조회용 생일 아이템 DTO
- */
+
+// 날짜 상세 조회용 생일 아이템 DTO
+
 export class DateDetailBirthdayItemDTO {
   constructor(user) {
     this.friend = new DateDetailFriendDTO(user);
   }
 }
 
-/**
- * 달력 날짜 상세 조회 응답 DTO
- */
+
+// 달력 날짜 상세 조회 응답 DTO
+
 export class CalendarDateResponseDTO {
   constructor(date, birthdayUsers) {
     this.date = date;
     this.birthdays = birthdayUsers.map(user => new DateDetailBirthdayItemDTO(user));
   }
 
-  /**
-   * 정리된 응답 데이터 반환
-   */
+
+// 정리된 응답 데이터 반환
+
   toResponse() {
     return {
       date: this.date,
