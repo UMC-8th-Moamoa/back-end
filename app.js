@@ -137,7 +137,13 @@ app.get('/health', (req, res) => {
 // app.use('/api/auth', authRoutes);
 
 import userRoutes from './src/routes/user.routes.js';
+import wishlistRoutes from './src/routes/wishlist.routes.js';
+import letterRoutes from './src/routes/letter.routes.js';
+
 app.use('/api', userRoutes);
+
+app.use('/api/wishlists', wishlistRoutes);
+app.use('/api/letters', letterRoutes);
 
 // 에러 처리
 app.use(notFoundHandler);
