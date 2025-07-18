@@ -210,4 +210,3 @@ process.on('unhandledRejection', (reason, promise) => {
   process.exit(1);
 });
 
-export default app;
