@@ -1,5 +1,5 @@
-const { body, param, query, validationResult } = require('express-validator');
-const { ValidationError } = require('./errorHandler');
+import { body, param, query, validationResult } from 'express-validator';
+import { ValidationError } from './errorHandler.js';
 
 // 유효성 검사 결과 처리하는 미들웨어
 const handleValidationErrors = (req, res, next) => {
@@ -95,24 +95,112 @@ const validateProfileUpdate = [
   handleValidationErrors
 ];
 
-// 위시리스트 관련 유효성 검사
-const validateWishlist = [
+
+
+// 위시리스트 생성 유효성 검사
+const validateWishlistCreation = [
+  body('insertType')
+    .isIn(['URL', 'IMAGE'])
+    .withMessage('insertType은 URL 또는 IMAGE여야 합니다'),
+  
+  body('isPublic')
+    .isBoolean()
+    .withMessage('공개 여부는 true 또는 false여야 합니다'),
+
+  // insertType이 URL인 경우
+  body('url')
+    .if(body('insertType').equals('URL'))
+    .isURL()
+    .withMessage('올바른 URL을 입력해주세요'),
+
+  // insertType이 IMAGE인 경우
   body('productName')
+    .if(body('insertType').equals('IMAGE'))
     .isLength({ min: 1, max: 100 })
-    .withMessage('상품명은 1자 이상 100자 이하여야 합니다'),
+    .withMessage('상품명은 1자 이상 100자 이하여야 합니다')
+    .trim(),
   
   body('price')
+    .if(body('insertType').equals('IMAGE'))
+    .isInt({ min: 1000, max: 10000000 })
+    .withMessage('가격은 1,000원 이상 10,000,000원 이하여야 합니다'),
+  
+  body('imageUrl')
+    .if(body('insertType').equals('IMAGE'))
+    .isURL()
+    .withMessage('올바른 이미지 URL을 입력해주세요')
+    .isLength({ max: 255 })
+    .withMessage('이미지 URL은 255자를 초과할 수 없습니다'),
+  
+  handleValidationErrors
+];
+
+// 위시리스트 수정 유효성 검사
+const validateWishlistUpdate = [
+  param('id')
+    .isInt({ min: 1 })
+    .withMessage('올바른 위시리스트 ID를 입력해주세요'),
+  
+  body('productName')
+    .optional()
+    .isLength({ min: 1, max: 100 })
+    .withMessage('상품명은 1자 이상 100자 이하여야 합니다')
+    .trim(),
+  
+  body('price')
+    .optional()
     .isInt({ min: 1000, max: 10000000 })
     .withMessage('가격은 1,000원 이상 10,000,000원 이하여야 합니다'),
   
   body('productImageUrl')
+    .optional()
     .isURL()
-    .withMessage('올바른 이미지 URL을 입력해주세요'),
+    .withMessage('올바른 이미지 URL을 입력해주세요')
+    .isLength({ max: 255 })
+    .withMessage('이미지 URL은 255자를 초과할 수 없습니다'),
   
   body('isPublic')
     .optional()
     .isBoolean()
     .withMessage('공개 여부는 true 또는 false여야 합니다'),
+  
+  // 최소 하나의 필드는 수정되어야 함
+  body()
+    .custom((value, { req }) => {
+      const updateFields = ['productName', 'price', 'productImageUrl', 'isPublic'];
+      const hasUpdate = updateFields.some(field => req.body[field] !== undefined);
+      
+      if (!hasUpdate) {
+        throw new Error('수정할 필드를 최소 하나 이상 입력해주세요');
+      }
+      
+      return true;
+    }),
+  
+  handleValidationErrors
+];
+
+// 위시리스트 조회 쿼리 유효성 검사
+const validateWishlistQuery = [
+  query('sort')
+    .optional()
+    .isIn(['created_at', 'price_desc', 'price_asc'])
+    .withMessage('sort는 created_at, price_desc, price_asc 중 하나여야 합니다'),
+  
+  query('visibility')
+    .optional()
+    .isIn(['public', 'private'])
+    .withMessage('visibility는 public 또는 private이어야 합니다'),
+  
+  query('page')
+    .optional()
+    .isInt({ min: 1 })
+    .withMessage('페이지는 1 이상의 정수여야 합니다'),
+  
+  query('size')
+    .optional()
+    .isInt({ min: 1, max: 100 })
+    .withMessage('페이지 크기는 1~100 사이여야 합니다'),
   
   handleValidationErrors
 ];
@@ -213,17 +301,102 @@ const validateFriendRequest = [
   handleValidationErrors
 ];
 
-module.exports = {
+// 편지 등록 유효성 검사
+const validateLetterCreation = [
+  body('birthdayEventId')
+    .isInt({ min: 1 })
+    .withMessage('유효한 생일 이벤트 ID를 입력해주세요'),
+  
+  body('senderId')
+    .isInt({ min: 1 })
+    .withMessage('유효한 발신자 ID를 입력해주세요'),
+  
+  body('receiverId')
+    .isInt({ min: 1 })
+    .withMessage('유효한 수신자 ID를 입력해주세요'),
+  
+  body('content')
+    .isLength({ min: 1, max: 5000 })
+    .withMessage('편지 내용은 1자 이상 5000자 이하여야 합니다')
+    .trim(),
+  
+  body('letterPaperId')
+    .isInt({ min: 1 })
+    .withMessage('유효한 편지지 ID를 입력해주세요'),
+  
+  body('envelopeId')
+    .isInt({ min: 1 })
+    .withMessage('유효한 편지봉투 ID를 입력해주세요'),
+  
+  body('envelopeImageUrl')
+    .optional()
+    .isURL()
+    .withMessage('올바른 이미지 URL을 입력해주세요')
+    .isLength({ max: 255 })
+    .withMessage('이미지 URL은 255자를 초과할 수 없습니다'),
+  
+  handleValidationErrors
+];
+
+// 편지 수정 유효성 검사
+const validateLetterUpdate = [
+  param('id')
+    .isInt({ min: 1 })
+    .withMessage('유효한 편지 ID를 입력해주세요'),
+
+  body('content')
+    .optional()
+    .isLength({ min: 1, max: 5000 })
+    .withMessage('편지 내용은 1자 이상 5000자 이하여야 합니다')
+    .trim(),
+  
+  body('letterPaperId')
+    .optional()
+    .isInt({ min: 1 })
+    .withMessage('유효한 편지지 ID를 입력해주세요'),
+  
+  body('envelopeId')
+    .optional()
+    .isInt({ min: 1 })
+    .withMessage('유효한 편지봉투 ID를 입력해주세요'),
+  
+  body('envelopeImageUrl')
+    .optional()
+    .isURL()
+    .withMessage('올바른 이미지 URL을 입력해주세요')
+    .isLength({ max: 255 })
+    .withMessage('이미지 URL은 255자를 초과할 수 없습니다'),
+
+  // 최소 하나의 필드는 수정되어야 함
+  body()
+    .custom((value, { req }) => {
+      const updateFields = ['content', 'letterPaperId', 'envelopeId', 'envelopeImageUrl'];
+      const hasUpdate = updateFields.some(field => req.body[field] !== undefined);
+      
+      if (!hasUpdate) {
+        throw new Error('수정할 필드를 최소 하나 이상 입력해주세요');
+      }
+      
+      return true;
+    }),
+  
+  handleValidationErrors
+];
+
+export {
   validateUserRegistration,
   validateUserLogin,
   validateProfileUpdate,
-  validateWishlist,
+  validateWishlistCreation,
+  validateWishlistUpdate,
+  validateWishlistQuery,
   validateBirthdayEvent,
   validateEventParticipation,
+  validateLetterCreation,
+  validateLetterUpdate,
   validateId,
   validatePagination,
   validateSearch,
   validateFriendRequest,
   handleValidationErrors
-
 };
