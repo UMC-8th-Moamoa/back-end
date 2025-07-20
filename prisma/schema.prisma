@@ -187,6 +187,7 @@ model BirthdayEvent {
   creator         User                       @relation("EventCreator", fields: [creatorId], references: [id])
   participants    BirthdayEventParticipant[]
   letters         Letter[]
+  purchaseProof   PurchaseProof?
 
   @@map("birthday_events")
 }
@@ -350,4 +351,19 @@ model Letter {
   envelope      UserItem?      @relation("LetterEnvelope", fields: [envelopeId], references: [id])
 
   @@map("letters")
+}
+
+// 구매 인증 테이블
+model PurchaseProof {
+  id              Int      @id @default(autoincrement())
+  birthdayEventId Int      @unique
+  proofImages     Json     // 이미지 URL 배열을 JSON으로 저장
+  message         String   @db.Text // 감사 메시지
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  // 관계 설정
+  birthdayEvent   BirthdayEvent @relation(fields: [birthdayEventId], references: [id], onDelete: Cascade)
+
+  @@map("purchase_proofs")
 }

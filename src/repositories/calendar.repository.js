@@ -1,17 +1,8 @@
 import prisma from '../config/prismaClient.js';
 
-/**
- * 달력 관련 데이터베이스 접근 계층
- */
 class CalendarRepository {
-  /**
-   * 특정 월에 생일이 있는 팔로우한 사용자들 조회
-   * @param {number} userId - 요청한 사용자 ID (팔로워)
-   * @param {Date} startDate - 월의 시작일
-   * @param {Date} endDate - 월의 마지막일
-   * @returns {Array} 팔로우한 사용자들의 생일 정보
-   */
-  static async getFriendsBirthdaysInMonth(userId, startDate, endDate) {
+  // 특정 월에 생일이 있는 팔로우한 사용자들 조회
+  async getFriendsBirthdaysInMonth(userId, startDate, endDate) {
     // 해당 월의 월과 일 범위 계산
     const month = startDate.getMonth() + 1; // 1-12
     const startDay = startDate.getDate();
@@ -80,14 +71,8 @@ class CalendarRepository {
     }));
   }
 
-  /**
-   * 특정 날짜(월/일)에 생일인 팔로우한 사용자들 조회
-   * @param {number} userId - 요청한 사용자 ID (팔로워)
-   * @param {number} month - 조회할 월 (1-12)
-   * @param {number} day - 조회할 일 (1-31)
-   * @returns {Array} 해당 날짜에 생일인 사용자들의 정보
-   */
-  static async getFriendsBirthdaysBySpecificDate(userId, month, day) {
+  // 특정 날짜(월/일)에 생일인 팔로우한 사용자들 조회
+  async getFriendsBirthdaysBySpecificDate(userId, month, day) {
     const followedUsers = await prisma.user.findMany({
       where: {
         AND: [
@@ -133,12 +118,8 @@ class CalendarRepository {
     }));
   }
 
-  /**
-   * 특정 사용자가 팔로우하는 사용자 목록 조회 (생일 정보 포함)
-   * @param {number} userId - 팔로워 사용자 ID
-   * @returns {Array} 팔로우하는 사용자 목록
-   */
-  static async getUserFollowings(userId) {
+  // 특정 사용자가 팔로우하는 사용자 목록 조회 (생일 정보 포함)
+  async getUserFollowings(userId) {
     const followings = await prisma.follow.findMany({
       where: {
         followerId: userId // 내가 팔로우하는 사람들
@@ -165,4 +146,4 @@ class CalendarRepository {
   }
 }
 
-export default CalendarRepository;
+export const calendarRepository = new CalendarRepository();

@@ -1,4 +1,4 @@
-import CalendarService from '../services/calendar.service.js';
+import { calendarService } from '../services/calendar.service.js';
 import { catchAsync } from '../middlewares/errorHandler.js';
 import { 
   CalendarRequestDTO, 
@@ -7,15 +7,9 @@ import {
   CalendarDateResponseDTO 
 } from '../dtos/calendar.dto.js';
 
-/**
- * 달력 관련 컨트롤러
- */
 class CalendarController {
-  /**
-   * 특정 월의 친구들 생일 정보를 달력 형태로 조회
-   * GET /api/calendar/birthdays
-   */
-  static getBirthdays = catchAsync(async (req, res) => {
+  // 특정 월의 친구들 생일 정보를 달력 형태로 조회
+  async getBirthdays(req, res) {
     const userId = req.user.id; // JWT에서 추출한 사용자 ID
     
     // 요청 데이터를 DTO로 변환 및 검증
@@ -23,7 +17,7 @@ class CalendarController {
     const { year, month } = requestDTO.getValidatedData();
 
     // 서비스 레이어 호출
-    const calendarData = await CalendarService.getBirthdayCalendar(
+    const calendarData = await calendarService.getBirthdayCalendar(
       userId, 
       year, 
       month
@@ -33,13 +27,10 @@ class CalendarController {
     const responseDTO = new CalendarResponseDTO(calendarData);
 
     res.success(responseDTO.toResponse());
-  });
+  }
 
-  /**
-   * 특정 날짜의 생일 및 이벤트 상세 정보 조회
-   * GET /api/calendar/birthdays/{date}
-   */
-  static getBirthdaysByDate = catchAsync(async (req, res) => {
+  // 특정 날짜의 생일 및 이벤트 상세 정보 조회
+  async getBirthdaysByDate(req, res) {
     const userId = req.user.id; // JWT에서 추출한 사용자 ID
     
     // 요청 데이터를 DTO로 변환 및 검증
@@ -47,7 +38,7 @@ class CalendarController {
     const { date, month, day } = requestDTO.getValidatedData();
 
     // 서비스 레이어 호출
-    const birthdayUsers = await CalendarService.getBirthdaysByDate(
+    const birthdayUsers = await calendarService.getBirthdaysByDate(
       userId, 
       month, 
       day
@@ -57,7 +48,13 @@ class CalendarController {
     const responseDTO = new CalendarDateResponseDTO(date, birthdayUsers);
 
     res.success(responseDTO.toResponse());
-  });
+  }
 }
 
-export default CalendarController;
+// 인스턴스 생성 및 catchAsync 래핑
+const calendarController = new CalendarController();
+
+export default {
+  getBirthdays: catchAsync(calendarController.getBirthdays),
+  getBirthdaysByDate: catchAsync(calendarController.getBirthdaysByDate)
+};
