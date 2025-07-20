@@ -134,7 +134,7 @@ app.get('/health', (req, res) => {
 
 // API 라우트들 - 존재하는 파일들만 import
 //import authRoutes from './src/routes/auth.routes.js';
-import userRoutes from './src/routes/user.routes.js';
+//import userRoutes from './src/routes/user.routes.js';
 
 import wishlistRoutes from './src/routes/wishlist.routes.js';
 import letterRoutes from './src/routes/letter.routes.js';
@@ -142,15 +142,19 @@ import letterRoutes from './src/routes/letter.routes.js';
 import calendarRoutes from './src/routes/calendar.route.js';
 import purchaseProofRoutes from './src/routes/purchaseProof.route.js';
 
+import shoppingRoutes from './src/routes/shopping.routes.js';
+
 // 라우트 등록
 //app.use('/api/auth', authRoutes);
-app.use('/api', userRoutes);
+//app.use('/api', userRoutes);
 
 app.use('/api/wishlists', wishlistRoutes);
 app.use('/api/letters', letterRoutes);
 
 app.use('/api/calendar', calendarRoutes);
 app.use('/api/birthday-events', purchaseProofRoutes);
+
+app.use('/api/shopping', shoppingRoutes);
 
 // 에러 처리
 app.use(notFoundHandler);
