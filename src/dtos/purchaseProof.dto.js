@@ -1,16 +1,10 @@
-/**
- * 구매 인증 등록 요청 DTO
- * POST /api/birthday-events/{eventId}/proof
- */
+// 구매 인증 등록 요청 DTO
 export class PurchaseProofRequestDTO {
   constructor(params, body) {
     this.eventId = params.eventId ? parseInt(params.eventId) : null;
     this.proofImages = body.proofImages || [];
     this.message = body.message || '';
   }
-
-
-// 요청 데이터 유효성 검사
 
   validate() {
     // 이벤트 ID 검증
@@ -45,9 +39,6 @@ export class PurchaseProofRequestDTO {
     }
   }
 
-
-// 검증된 데이터 반환
-
   getValidatedData() {
     this.validate();
     return {
@@ -58,9 +49,7 @@ export class PurchaseProofRequestDTO {
   }
 }
 
-
 // 구매 인증 정보 DTO
-
 export class PurchaseProofInfoDTO {
   constructor(purchaseProof) {
     this.id = purchaseProof.id;
@@ -69,9 +58,7 @@ export class PurchaseProofInfoDTO {
   }
 }
 
-
 // 메시지 수신자 정보 DTO
-
 export class MessageRecipientDTO {
   constructor(recipient) {
     this.id = recipient.receiverId || recipient.id;
@@ -80,9 +67,7 @@ export class MessageRecipientDTO {
   }
 }
 
-
 // 감사 메시지 정보 DTO
-
 export class ThankYouMessageInfoDTO {
   constructor(messageData) {
     this.totalSent = messageData.totalSent || 0;
@@ -93,17 +78,12 @@ export class ThankYouMessageInfoDTO {
   }
 }
 
-
 // 구매 인증 등록 응답 DTO
-
 export class PurchaseProofResponseDTO {
   constructor(purchaseProof, thankYouMessage) {
     this.purchaseProof = new PurchaseProofInfoDTO(purchaseProof);
     this.thankYouMessage = new ThankYouMessageInfoDTO(thankYouMessage);
   }
-
-
-// 정리된 응답 데이터 반환
 
   toResponse() {
     return {
@@ -113,9 +93,40 @@ export class PurchaseProofResponseDTO {
   }
 }
 
+// 구매 인증 조회 응답 DTO
+export class PurchaseProofGetResponseDTO {
+  constructor(purchaseProofData) {
+    this.event = {
+      id: purchaseProofData.event.id,
+      birthdayPerson: {
+        id: purchaseProofData.event.birthdayPerson.id,
+        name: purchaseProofData.event.birthdayPerson.name,
+        photo: purchaseProofData.event.birthdayPerson.photo
+      }
+    };
+    
+    this.purchaseProof = {
+      proofImages: purchaseProofData.purchaseProof.proofImages
+    };
+    
+    this.thankYouMessage = {
+      totalSent: purchaseProofData.thankYouMessage.totalSent,
+      message: purchaseProofData.thankYouMessage.message,
+      sentAt: purchaseProofData.thankYouMessage.sentAt,
+      recipients: purchaseProofData.thankYouMessage.recipients
+    };
+  }
+
+  toResponse() {
+    return {
+      event: this.event,
+      purchaseProof: this.purchaseProof,
+      thankYouMessage: this.thankYouMessage
+    };
+  }
+}
 
 // 구매 인증 목록 조회용 DTO
-
 export class PurchaseProofListItemDTO {
   constructor(proof) {
     this.id = proof.id;
@@ -125,17 +136,12 @@ export class PurchaseProofListItemDTO {
   }
 }
 
-
 // 구매 인증 목록 응답 DTO
-
 export class PurchaseProofListResponseDTO {
   constructor(proofs, pagination = null) {
     this.proofs = proofs.map(proof => new PurchaseProofListItemDTO(proof));
     this.pagination = pagination;
   }
-
-
-// 정리된 응답 데이터 반환
 
   toResponse() {
     const response = {
