@@ -144,6 +144,8 @@ import birthdayRoutes from './src/routes/birthday.route.js';
 import calendarRoutes from './src/routes/calendar.route.js';
 import purchaseProofRoutes from './src/routes/purchaseProof.route.js';
 
+import shoppingRoutes from './src/routes/shopping.routes.js';
+
 // 라우트 등록
 //app.use('/api/auth', authRoutes);
 //app.use('/api', userRoutes);
@@ -155,6 +157,8 @@ app.use('/api/moas', moaRoutes);
 app.use('/api/users', birthdayRoutes);
 app.use('/api/calendar', calendarRoutes);
 app.use('/api/birthday-events', purchaseProofRoutes);
+
+app.use('/api/shopping', shoppingRoutes);
 
 // 에러 처리
 app.use(notFoundHandler);
