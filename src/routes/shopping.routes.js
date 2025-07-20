@@ -170,10 +170,9 @@ const router = express.Router();
  *                  price: 100
  *                  image: "https://example.com/item2.jpg"
  *      400:
- *      description: 잘못된 요청 (예: 유효하지 않은 쿼리 파라미터 등)
- * 
+ *        description: 잘못된 요청 (예 유효하지 않은 쿼리 파라미터 등)
  *      500:
- *      description: 서버 내부 오류
+ *        description: 서버 내부 오류
  */
 router.get('/item_list', 
   authenticateJWT,
@@ -216,20 +215,19 @@ router.get('/item_list',
  *              success: true
  *              itemDetailEntry:
  *                - item_no: 1
- *                    name: "굴림"
- *                    detail: "굴림체입니다"
- *                    price: 100
- *                    image: "https://example.com/item1.jpg"
+ *                  name: "굴림"
+ *                  detail: "굴림체입니다"
+ *                  price: 100
+ *                  image: "https://example.com/item1.jpg"
  *                - item_no: 2
- *                    name: "고딕"
- *                    detail: "고딕체입니다"
- *                    price: 100
- *                    image: "https://example.com/item2.jpg"
+ *                  name: "고딕"
+ *                  detail: "고딕체입니다"
+ *                  price: 100
+ *                  image: "https://example.com/item2.jpg"
  *      400:
- *      description: 잘못된 요청 (예: 유효하지 않은 쿼리 파라미터 등)
- * 
+ *        description: 잘못된 요청 (예 유효하지 않은 쿼리 파라미터 등)
  *      500:
- *      description: 서버 내부 오류
+ *        description: 서버 내부 오류
  */
 
 router.get('/item_detail', 
@@ -318,10 +316,9 @@ router.post('/item_buy',
  *            schema:
  *              $ref: '#/components/schemas/HoldItemEntry'
  *      400:
- *      description: 잘못된 요청 (예: 유효하지 않은 쿼리 파라미터 등)
- * 
+ *        description: 잘못된 요청 (예 유효하지 않은 쿼리 파라미터 등)
  *      500:
- *      description: 서버 내부 오류
+ *        description: 서버 내부 오류
  */
 
 router.get('/user_item', 
