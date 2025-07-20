@@ -29,9 +29,6 @@ class PasswordUtil {
     };
   }
 }
-<<<<<<< HEAD
 
-export default PasswordUtil;
-=======
+
 module.exports = PasswordUtil;
->>>>>>> 51590831f742a60f150ab22b646a25af7e082109
