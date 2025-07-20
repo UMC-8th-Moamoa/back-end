@@ -860,4 +860,8 @@ router.get('/kakao/callback', handleSocialCallback('kakao'), catchAsync(async (r
   res.redirect(`${clientUrl}/auth/callback?accessToken=${tokens.accessToken}&refreshToken=${tokens.refreshToken}`);
 }));
 
+<<<<<<< HEAD
 export default router;
+=======
+export default router;
+>>>>>>> 51590831f742a60f150ab22b646a25af7e082109

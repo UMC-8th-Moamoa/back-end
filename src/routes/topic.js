@@ -1,6 +1,5 @@
-import express from 'express';
-
-const router = express.Router();
+var express = require('express');
+var router = express.Router();
 
 // 인증 미들웨어
 function requireAuth(req, res, next) {
@@ -27,7 +26,7 @@ router.get('/', requireAuth, function(req, res) {
 
 // 토픽 상세 조회 (인증 필요)
 router.get('/:id', requireAuth, function(req, res) {
-  const topicId = req.params.id;
+  var topicId = req.params.id;
   
   res.json({
     message: '토픽 상세',
@@ -44,7 +43,7 @@ router.get('/:id', requireAuth, function(req, res) {
 
 // 토픽 생성 (인증 필요)
 router.post('/', requireAuth, function(req, res) {
-  const { title, content } = req.body;
+  var { title, content } = req.body;
   
   if (!title || !content) {
     return res.status(400).json({
@@ -65,4 +64,4 @@ router.post('/', requireAuth, function(req, res) {
   });
 });
 
-export default router;
+module.exports = router;

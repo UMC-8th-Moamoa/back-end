@@ -262,7 +262,6 @@ export const handleSocialCallback = (provider) => {
     })(req, res, next);
   };
 };
-
 export default {
   authenticateLocal,
   authenticateJWT,
