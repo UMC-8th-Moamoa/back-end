@@ -281,10 +281,6 @@ model Item {
   price        Int
   imageUrl     String       @db.VarChar(255)
   description  String?      @db.Text
-
-  isActive     Boolean      @default(true)
-
->>>>>>> d5bb07bdf3cd50f92e5f458e673a1938fdfb7d44
   createdAt    DateTime     @default(now())
   updatedAt    DateTime     @updatedAt
 
@@ -304,6 +300,10 @@ model UserItem {
   user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
   item         Item         @relation(fields: [itemId], references: [id], onDelete: Cascade)
   pointHistory PointHistory @relation(fields: [pointHistoryId], references: [id])
+  
+  // Letter와의 관계 추가
+  lettersAsLetterPaper Letter[] @relation("LetterPaper")
+  lettersAsEnvelope    Letter[] @relation("LetterEnvelope")
 
   @@unique([userId, itemId])
   @@map("user_items")
@@ -336,6 +336,9 @@ model Letter {
   receiverId      Int
   title           String    @db.VarChar(100)
   content         String    @db.Text
+  letterPaperId   Int?      // 사용된 편지지 ID
+  envelopeId      Int?      // 사용된 편지봉투 ID
+  envelopeImageUrl String?  @db.VarChar(500) // 편지봉투 이미지 URL
   sentAt          DateTime  @default(now())
   readAt          DateTime?
   createdAt       DateTime  @default(now())
@@ -343,6 +346,8 @@ model Letter {
   birthdayEvent BirthdayEvent? @relation(fields: [birthdayEventId], references: [id])
   sender        User           @relation("LetterSender", fields: [senderId], references: [id])
   receiver      User           @relation("LetterReceiver", fields: [receiverId], references: [id])
+  letterPaper   UserItem?      @relation("LetterPaper", fields: [letterPaperId], references: [id])
+  envelope      UserItem?      @relation("LetterEnvelope", fields: [envelopeId], references: [id])
 
   @@map("letters")
 }

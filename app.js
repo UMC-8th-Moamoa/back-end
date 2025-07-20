@@ -132,12 +132,25 @@ app.get('/health', (req, res) => {
   });
 });
 
-
-// import authRoutes from './src/routes/auth.routes.js';
-// app.use('/api/auth', authRoutes);
-
+// API 라우트들 - 존재하는 파일들만 import
+//import authRoutes from './src/routes/auth.routes.js';
 import userRoutes from './src/routes/user.routes.js';
+
+import wishlistRoutes from './src/routes/wishlist.routes.js';
+import letterRoutes from './src/routes/letter.routes.js';
+
+import calendarRoutes from './src/routes/calendar.route.js';
+import purchaseProofRoutes from './src/routes/purchaseProof.route.js';
+
+// 라우트 등록
+//app.use('/api/auth', authRoutes);
 app.use('/api', userRoutes);
+
+app.use('/api/wishlists', wishlistRoutes);
+app.use('/api/letters', letterRoutes);
+
+app.use('/api/calendar', calendarRoutes);
+app.use('/api/birthday-events', purchaseProofRoutes);
 
 // 에러 처리
 app.use(notFoundHandler);
@@ -153,6 +166,8 @@ const server = app.listen(PORT, () => {
   console.log(`📝 환경: ${NODE_ENV}`);
   console.log(`📚 API 문서: http://localhost:${PORT}/api-docs`);
   console.log(`🏥 헬스체크: http://localhost:${PORT}/health`);
+  console.log(`📅 달력 API: http://localhost:${PORT}/api/calendar/birthdays`);
+  console.log(`🎁 구매인증 API: http://localhost:${PORT}/api/birthday-events/{eventId}/proof`);
 });
 
 // 에러 핸들링
@@ -194,5 +209,3 @@ process.on('unhandledRejection', (reason, promise) => {
   console.error('Promise:', promise);
   process.exit(1);
 });
-
-export default app;
