@@ -1,5 +1,3 @@
-// src/dtos/shopping.dto.js
-
 export class ItemListEntryDTO {
   constructor(itemData) {
     this.item_no = itemData.item_no;
