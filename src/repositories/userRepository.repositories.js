@@ -21,6 +21,7 @@ class UserRepository {
       email: true,
       name: true,
       phone: true,
+      user_id: true,
       password: true,     // 비밀번호 인증에 필요
       socialLogins: true, // 소셜 로그인 정보 유지
       createdAt: true,
