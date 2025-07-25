@@ -17,8 +17,7 @@ import {
   validatePasswordResetRequest,
   validatePasswordReset,
   validateNicknameCheck,
-  validateRefreshToken,
-  validateEmailCheck
+  validateRefreshToken
 } from '../middlewares/validation.middleware.js';
 
 import { 
