@@ -240,7 +240,7 @@ router.get('/item_detail',
  * /api/shopping/item_buy:
  *   post:
  *     summary: 아이템구매
- *     tags: [Auth]
+ *     tags: [Shopping]
  *     requestBody:
  *       required: true
  *       content:
@@ -259,7 +259,6 @@ router.get('/item_detail',
  *                 description: 카테고리(font,paper,envelope)
  *               user_id:
  *                 type: string
- *                 minLength: 
  *                 description: 사용자 ID
  *               item_no:
  *                 type: integer
