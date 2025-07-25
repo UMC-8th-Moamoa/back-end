@@ -8,17 +8,8 @@ import cookieParser from 'cookie-parser';
 import morgan from 'morgan';
 import dotenv from 'dotenv';
 
-// 환경 변수 로드 - 환경에 따라 다른 .env 파일 로드
-const environment = process.env.NODE_ENV || 'development';
-if (environment === 'development') {
-  dotenv.config({ path: '.env.development' });
-} else {
-  dotenv.config();
-}
-
-console.log(`🚀 환경: ${environment}`);
-console.log(`📂 사용 중인 환경 파일: ${environment === 'development' ? '.env.development' : '.env'}`);
-console.log(`🔗 데이터베이스: ${process.env.DATABASE_URL ? '연결됨' : '설정 필요'}`);
+// 환경 변수 로드
+dotenv.config();
 
 // 설정 및 미들웨어 import
 import passport from './src/config/passport.config.js';
@@ -154,7 +145,6 @@ import calendarRoutes from './src/routes/calendar.route.js';
 import purchaseProofRoutes from './src/routes/purchaseProof.route.js';
 
 import shoppingRoutes from './src/routes/shopping.routes.js';
-import mypageRoutes from './src/routes/mypage.routes.js';
 
 // 라우트 등록
 app.use('/api/auth', authRoutes);
@@ -169,7 +159,6 @@ app.use('/api/calendar', calendarRoutes);
 app.use('/api/birthday-events', purchaseProofRoutes);
 
 app.use('/api/shopping', shoppingRoutes);
-app.use('/api/mypage', mypageRoutes);
 
 // 에러 처리
 app.use(notFoundHandler);
