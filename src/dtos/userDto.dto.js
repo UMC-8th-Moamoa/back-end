@@ -5,7 +5,8 @@
 
 // 회원가입 요청 DTO
 export class CreateUserDto {
-  constructor({ email, password, name, phone, birthday }) {
+  constructor({ user_id, email, password, name, phone, birthday }) {
+    this.user_id = user_id;
     this.email = email;
     this.password = password;
     this.name = name;
