@@ -14,13 +14,21 @@ class UserRepository {
    * @returns {Promise<Object|null>} 사용자 정보 또는 null
    */
   async findByEmail(email) {
-    return await prisma.user.findUnique({
-      where: { email },
-      include: {
-        socialLogins: true
-      }
-    });
-  }
+  return await prisma.user.findUnique({
+    where: { email },
+    select: {
+      id: true,           // id 필드 추가
+      email: true,
+      name: true,
+      phone: true,
+      password: true,     // 비밀번호 인증에 필요
+      socialLogins: true, // 소셜 로그인 정보 유지
+      createdAt: true,
+      emailVerified: true,
+      lastLoginAt: true
+    }
+  });
+}
 
   /**
    * 사용자 ID로 찾기
