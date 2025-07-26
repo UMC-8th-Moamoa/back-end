@@ -1,5 +1,6 @@
 import { catchAsync } from '../middlewares/errorHandler.js';
 import mypageService from '../services/mypage.service.js';
+import prisma from '../config/prismaClient.js';
 import { 
     MyInfoRequestDTO,
     ChooseKeywordRequestDTO,
@@ -13,14 +14,25 @@ class mypageController {
 
         const currentUser = req.user; 
 
-        if (!currentUser || currentUser.user_id !== requestedUserId) {
+        // 현재 사용자의 완전한 정보를 데이터베이스에서 조회
+        const fullUserInfo = await prisma.user.findUnique({
+            where: { id: currentUser.id },
+            select: {
+                id: true,
+                user_id: true,
+                email: true,
+                name: true
+            }
+        });
+
+        if (!fullUserInfo || fullUserInfo.user_id !== requestedUserId) {
             return res.status(403).json({
                 success: false,
                 message: '접근 권한이 없습니다. 본인의 정보만 조회할 수 있습니다.'
             });
         }
 
-        const myInfo = await mypageService.getMyInfo(currentUser.user_id);
+        const myInfo = await mypageService.getMyInfo(fullUserInfo.user_id);
 
         res.status(200).json({
             success: true,
