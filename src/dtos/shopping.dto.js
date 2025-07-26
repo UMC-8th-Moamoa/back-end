@@ -1,9 +1,9 @@
 export class ItemListEntryDTO {
   constructor(itemData) {
-    this.item_no = itemData.item_no;
+    this.item_no = itemData.id;
     this.name = itemData.name;
     this.price = itemData.price;
-    this.image = itemData.image;
+    this.image = itemData.imageUrl;
   }
 }
 
