@@ -6,6 +6,7 @@ import { Strategy as KakaoStrategy } from 'passport-kakao';
 
 import { PrismaClient } from '@prisma/client';
 import { UnauthorizedError, UserNotFoundError } from '../middlewares/errorHandler.js';
+import { comparePassword } from '../utils/password.util.js';
 
 const prisma = new PrismaClient();
 
