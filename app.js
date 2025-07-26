@@ -140,6 +140,7 @@ import wishlistRoutes from './src/routes/wishlist.routes.js';
 import letterRoutes from './src/routes/letter.routes.js';
 
 import moaRoutes from './src/routes/moa.route.js';
+import letterHomeRoutes from './src/routes/letterHome.route.js';
 import birthdayRoutes from './src/routes/birthday.route.js';
 import calendarRoutes from './src/routes/calendar.route.js';
 import purchaseProofRoutes from './src/routes/purchaseProof.route.js';
@@ -154,6 +155,7 @@ app.use('/api/wishlists', wishlistRoutes);
 app.use('/api/letters', letterRoutes);
 
 app.use('/api/moas', moaRoutes);
+app.use('/api/home', letterHomeRoutes);
 app.use('/api/users', birthdayRoutes);
 app.use('/api/calendar', calendarRoutes);
 app.use('/api/birthday-events', purchaseProofRoutes);
