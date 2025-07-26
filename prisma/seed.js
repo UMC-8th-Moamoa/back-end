@@ -1,5 +1,4 @@
 //테스트 데이터 생성
-
 import prisma from '../src/config/prismaClient.js';
 import bcrypt from 'bcryptjs';
 

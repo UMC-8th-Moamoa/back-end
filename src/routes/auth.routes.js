@@ -17,8 +17,7 @@ import {
   validatePasswordResetRequest,
   validatePasswordReset,
   validateNicknameCheck,
-  validateRefreshToken,
-  validateEmailCheck
+  validateRefreshToken
 } from '../middlewares/validation.middleware.js';
 
 import { 
@@ -31,6 +30,7 @@ import {
 
 import { generateTokenPair, generateEmailVerificationToken, verifyEmailVerificationToken, generatePasswordResetToken, verifyPasswordResetToken } from '../utils/jwt.util.js';
 import { hashPassword, comparePassword, validatePasswordChange as validatePasswordChangeUtil } from '../utils/password.util.js';
+import userController from '../controllers/userController.controllers.js';
 
 const router = express.Router();
 const prisma = new PrismaClient();
@@ -137,47 +137,7 @@ const prisma = new PrismaClient();
  *       409:
  *         description: 이미 존재하는 이메일
  */
-router.post('/register', validateUserRegistration, catchAsync(async (req, res) => {
-  const { email, password, name, phone, birthday } = req.body;
-
-  // 이메일 중복 확인
-  const existingUser = await prisma.user.findUnique({
-    where: { email }
-  });
-
-  if (existingUser) {
-    throw new DuplicateEmailError();
-  }
-
-  // 비밀번호 해싱
-  const hashedPassword = await hashPassword(password);
-
-  // 사용자 생성
-  const user = await prisma.user.create({
-    data: {
-      email,
-      password: hashedPassword,
-      name,
-      phone: phone || null,
-      birthday: birthday ? new Date(birthday) : null
-    },
-    select: {
-      id: true,
-      email: true,
-      name: true,
-      photo: true,
-      createdAt: true
-    }
-  });
-
-  // JWT 토큰 생성
-  const tokens = generateTokenPair(user.id, user.email);
-
-  res.status(201).success({
-    user,
-    tokens
-  });
-}));
+router.post('/register', validateUserRegistration, userController.register);
 
 /**
  * @swagger
