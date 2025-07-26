@@ -3,7 +3,7 @@ import { PrismaClient } from '@prisma/client';
 const prisma = new PrismaClient();
 
 class MypageRepository {
-    async findUserByUserId(user_id) {
+    async findUserByUserId(user_id, includeFollowCounts = false) {
         const user = await prisma.user.findUnique({
             where: { user_id: user_id },
             select: {
@@ -11,7 +11,7 @@ class MypageRepository {
                 user_id: true,
                 name: true,
                 birthday: true,
-                image: true,
+                photo: true,
                 email: true,
                 phone: true,
                 createdAt: true,
@@ -23,12 +23,13 @@ class MypageRepository {
             return null;
         }
 
+        // includeFollowCounts가 true일 때만 팔로워/팔로잉 수 계산
         if (includeFollowCounts) {
-            const followersCount = await prisma.follower.count({
-                where: { following_user_id: user.id }
+            const followersCount = await prisma.follow.count({
+                where: { followingId: user.id }
             });
-            const followingsCount = await prisma.follower.count({
-                where: { follower_user_id: user.id }
+            const followingsCount = await prisma.follow.count({
+                where: { followerId: user.id }
             });
 
             user.followers_num = followersCount;
@@ -52,11 +53,11 @@ class MypageRepository {
             return false;
         }
 
-        const followRecord = await prisma.follower.findUnique({
+        const followRecord = await prisma.follow.findUnique({
             where: {
-                follower_user_id_following_user_id: {
-                    follower_user_id: followerUser.id,
-                    following_user_id: followingUser.id,
+                followerId_followingId: {
+                    followerId: followerUser.id,
+                    followingId: followingUser.id,
                 },
             },
         });
@@ -76,6 +77,7 @@ class MypageRepository {
         });
         return user;
     }
+
     async findBlock(blockerId, blockedId) {
         return await prisma.blockedUser.findUnique({
             where: {
@@ -96,6 +98,7 @@ class MypageRepository {
             },
         });
     }
+
     async createCustomerServicePost(userId, title, content, isPrivate) {
         return await prisma.customerServicePost.create({
             data: {
@@ -108,31 +111,31 @@ class MypageRepository {
     }
 
     async findFollow(followerId, followingId) {
-        return await prisma.follower.findUnique({
+        return await prisma.follow.findUnique({
             where: {
-                follower_user_id_following_user_id: {
-                    follower_user_id: followerId,
-                    following_user_id: followingId,
+                followerId_followingId: {
+                    followerId: followerId,
+                    followingId: followingId,
                 },
             },
         });
     }
 
     async requestFollow(followerId, followingId) {
-        return await prisma.follower.create({
+        return await prisma.follow.create({
             data: {
-                follower_user_id: followerId,
-                following_user_id: followingId,
+                followerId: followerId,
+                followingId: followingId,
             },
         });
     }
 
     async unfollow(followerId, followingId) {
-        return await prisma.follower.delete({
+        return await prisma.follow.delete({
             where: {
-                follower_user_id_following_user_id: {
-                    follower_user_id: followerId,
-                    following_user_id: followingId,
+                followerId_followingId: {
+                    followerId: followerId,
+                    followingId: followingId,
                 },
             },
         });
