@@ -43,6 +43,7 @@ export class UserResponseDto {
 export class UserBasicInfoDto {
   constructor(user) {
     this.id = user.id;
+    this.user_id = user.user_id;
     this.email = user.email;
     this.name = user.name;
     this.photo = user.photo;

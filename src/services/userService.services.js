@@ -1,9 +1,8 @@
-import userRepository from '../repositories/user.repository.js';
+import userRepository from '../repositories/userRepository.repositories.js';
 import { 
   hashPassword, 
   comparePassword, 
-  validatePasswordChange as validatePasswordChangeUtil,
-  generateTemporaryPassword
+  validatePasswordChange as validatePasswordChangeUtil
 } from '../utils/password.util.js';
 import { 
   generateTokenPair, 
@@ -16,8 +15,7 @@ import {
   DuplicateEmailError,
   NotFoundError,
   UnauthorizedError,
-  ValidationError,
-  EmailNotVerifiedError
+  ValidationError
 } from '../middlewares/errorHandler.js';
 import {
   CreateUserDto,
@@ -36,7 +34,7 @@ import {
   MaskedEmailResponseDto,
   SuccessResponseDto,
   NicknameCheckResponseDto
-} from '../dto/user.dto.js';
+} from '../dtos/userDto.dto.js';
 
 /**
  * 사용자 비즈니스 로직 처리 서비스
@@ -49,12 +47,23 @@ class UserService {
    * @returns {Promise<AuthResponseDto>} 인증 응답 (사용자 + 토큰)
    */
   async register(createUserDto) {
-    const { email, password, name, phone, birthday } = createUserDto;
+    const { email, password, name, user_id, phone, birthday } = createUserDto;  // user_id로 변경
 
     // 이메일 중복 확인
     const existingUser = await userRepository.findByEmail(email);
     if (existingUser) {
       throw new DuplicateEmailError();
+    }
+
+    // user_id 중복 확인 (일반 회원가입과 소셜 로그인 사용자 모두)
+    const existingUserId = await userRepository.findByUserId(user_id);
+    if (existingUserId) {
+      throw new DuplicateEmailError('이미 존재하는 사용자 ID입니다');
+    }
+
+    // 소셜 로그인 패턴과의 충돌 방지 (추가 보안)
+    if (user_id.startsWith('google_') || user_id.startsWith('kakao_')) {
+      throw new ValidationError('사용자 ID는 google_ 또는 kakao_로 시작할 수 없습니다');
     }
 
     // 비밀번호 해싱
@@ -65,6 +74,7 @@ class UserService {
       email,
       password: hashedPassword,
       name,
+      user_id: user_id,  // DB 필드명과 일치
       phone: phone || null,
       birthday: birthday ? new Date(birthday) : null
     };
@@ -388,17 +398,25 @@ class UserService {
       user = await userRepository.findByEmail(email);
       if (user) {
         // 기존 사용자에 소셜 로그인 연결
-        await userRepository.createSocialLogin(user.id, provider, socialId);
+        await userRepository.createSocialLogin(user.user_id, provider, socialId);
         return user;
       }
     }
 
-    // 새 사용자 생성
+    // 새 사용자 생성을 위한 데이터 준비
     const userData = this.createUserDataFromProfile(profile, provider);
+    
+    // user_id 중복 확인 (소셜 로그인 사용자도 고유해야 함)
+    const existingUserId = await userRepository.findByUserId(userData.user_id);
+    if (existingUserId) {
+      // 중복 시 타임스탬프 추가하여 고유성 보장
+      userData.user_id = `${userData.user_id}_${Date.now()}`;
+    }
+
     user = await userRepository.create(userData);
 
-    // 소셜 로그인 정보 생성
-    await userRepository.createSocialLogin(user.id, provider, socialId);
+    // 소셜 로그인 정보 생성 (User 테이블의 user_id 사용)
+    await userRepository.createSocialLogin(user.user_id, provider, socialId);
 
     return user;
   }
@@ -427,7 +445,11 @@ class UserService {
   createUserDataFromProfile(profile, provider) {
     const email = this.extractEmailFromProfile(profile, provider);
     
+    // 소셜 로그인 사용자를 위한 고유한 user_id 생성
+    const socialUserId = `${provider}_${profile.id}`;
+    
     let userData = {
+      user_id: socialUserId, // 소셜 로그인 사용자 고유 ID
       email: email || `${provider}_${profile.id}@${provider}.temp`,
       password: '', // 소셜 로그인은 비밀번호 없음
       emailVerified: !!email,
