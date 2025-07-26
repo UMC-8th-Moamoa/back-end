@@ -1,7 +1,3 @@
-/**
- * 달력 조회 요청 DTO
- * GET /api/calendar/birthdays?year=2025&month=8
- */
 export class CalendarRequestDTO {
   constructor(query) {
     const currentDate = new Date();

@@ -1,1 +1,0 @@
- //Event, Payment, User 테이블 조작

@@ -1,18 +1,9 @@
-import CalendarRepository from '../repositories/calendar.repository.js';
+import { calendarRepository } from '../repositories/calendar.repository.js';
 import { ValidationError } from '../middlewares/errorHandler.js';
 
-/**
- * 달력 관련 비즈니스 로직
- */
 class CalendarService {
-  /**
-   * 특정 월의 팔로우한 사용자들의 생일 달력 조회
-   * @param {number} userId - 요청한 사용자 ID (팔로워)
-   * @param {number} year - 조회할 연도
-   * @param {number} month - 조회할 월 (1-12)
-   * @returns {Object} 달력 데이터
-   */
-  static async getBirthdayCalendar(userId, year, month) {
+  // 특정 월의 팔로우한 사용자들의 생일 달력 조회
+  async getBirthdayCalendar(userId, year, month) {
     // 입력값 검증
     this.validateDateInput(year, month);
 
@@ -21,7 +12,7 @@ class CalendarService {
     const endDate = new Date(year, month, 0); // 다음 달 0일 = 현재 달 마지막일
 
     // 팔로우한 사용자들의 생일 정보 조회
-    const followedUsersBirthdays = await CalendarRepository.getFriendsBirthdaysInMonth(
+    const followedUsersBirthdays = await calendarRepository.getFriendsBirthdaysInMonth(
       userId, 
       startDate, 
       endDate
@@ -37,45 +28,25 @@ class CalendarService {
     };
   }
 
-  /**
-   * 특정 날짜의 생일 및 이벤트 상세 정보 조회
-   * @param {number} userId - 요청한 사용자 ID (팔로워)
-   * @param {string} date - 조회할 날짜 (YYYY-MM-DD 형식)
-   * @returns {Object} 해당 날짜의 생일 상세 정보
-   */
-  static async getBirthdaysByDate(userId, date) {
-    // 날짜 형식 검증
-    this.validateDateFormat(date);
-
-    // 날짜 파싱
-    const targetDate = new Date(date);
-    const month = targetDate.getMonth() + 1;
-    const day = targetDate.getDate();
-
+  // 특정 날짜의 생일 및 이벤트 상세 정보 조회
+  async getBirthdaysByDate(userId, month, day) {
     // 해당 날짜에 생일인 팔로우한 사용자들 조회
-    const birthdayUsers = await CalendarRepository.getFriendsBirthdaysBySpecificDate(
+    const birthdayUsers = await calendarRepository.getFriendsBirthdaysBySpecificDate(
       userId, 
       month, 
       day
     );
 
-    return {
-      date,
-      birthdays: birthdayUsers.map(user => ({
-        friend: {
-          id: user.id,
-          name: user.name
-        }
-      }))
-    };
+    return birthdayUsers.map(user => ({
+      friend: {
+        id: user.id,
+        name: user.name
+      }
+    }));
   }
 
-  /**
-   * 날짜 입력값 검증
-   * @param {number} year - 연도
-   * @param {number} month - 월
-   */
-  static validateDateInput(year, month) {
+  // 날짜 입력값 검증
+  validateDateInput(year, month) {
     const currentYear = new Date().getFullYear();
     
     // 연도 검증 (현재년도 기준 ±10년)
@@ -89,11 +60,8 @@ class CalendarService {
     }
   }
 
-  /**
-   * 날짜 형식 검증 (YYYY-MM-DD)
-   * @param {string} date - 검증할 날짜 문자열
-   */
-  static validateDateFormat(date) {
+  // 날짜 형식 검증 (YYYY-MM-DD)
+  validateDateFormat(date) {
     // 날짜 형식 정규식 (YYYY-MM-DD)
     const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
     
@@ -118,14 +86,8 @@ class CalendarService {
     }
   }
 
-  /**
-   * 생일 데이터를 날짜별로 그룹화
-   * @param {Array} followedUsersBirthdays - 팔로우한 사용자들의 생일 데이터
-   * @param {number} year - 조회 연도
-   * @param {number} month - 조회 월
-   * @returns {Array} 날짜별로 그룹화된 생일 데이터
-   */
-  static groupBirthdaysByDate(followedUsersBirthdays, year, month) {
+  // 생일 데이터를 날짜별로 그룹화
+  groupBirthdaysByDate(followedUsersBirthdays, year, month) {
     const birthdayMap = new Map();
 
     followedUsersBirthdays.forEach(user => {
@@ -164,4 +126,4 @@ class CalendarService {
   }
 }
 
-export default CalendarService;
+export const calendarService = new CalendarService();
