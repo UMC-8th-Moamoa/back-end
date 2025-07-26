@@ -1,4 +1,4 @@
-import userService from '../services/user.service.js';
+import userService from '../services/userService.services.js';
 import { hashPassword, comparePassword } from '../utils/password.util.js';
 import { generateTokenPair, verifyRefreshToken } from '../utils/jwt.util.js';
 import { catchAsync } from '../middlewares/errorHandler.js';
@@ -13,7 +13,7 @@ import {
   PasswordResetDto,
   UpdateUserDto,
   RefreshTokenDto
-} from '../dto/user.dto.js';
+} from '../dtos/userDto.dto.js';
 
 /**
  * 사용자 컨트롤러

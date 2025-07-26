@@ -18,11 +18,11 @@ const handleValidationErrors = (req, res, next) => {
   next();
 };
 
-// 사용자 관련 유효성 검사
+// 회원가입 검증
 const validateUserRegistration = [
   body('email')
     .isEmail()
-    .withMessage('올바른 이메일 형식을 입력해주세요')
+    .withMessage('유효한 이메일 주소를 입력해주세요')
     .normalizeEmail(),
   
   body('password')
@@ -32,32 +32,53 @@ const validateUserRegistration = [
     .withMessage('비밀번호는 대소문자와 숫자를 포함해야 합니다'),
   
   body('name')
-    .isLength({ min: 2, max: 20 })
-    .withMessage('이름은 2자 이상 20자 이하여야 합니다')
+    .notEmpty()
+    .withMessage('이름을 입력해주세요')
+    .isLength({ max: 50 })
+    .withMessage('이름은 50자 이하여야 합니다')
     .matches(/^[가-힣a-zA-Z\s]+$/)
     .withMessage('이름은 한글, 영문, 공백만 입력 가능합니다'),
   
-  body('phone')
-    .optional()
-    .isMobilePhone('ko-KR')
-    .withMessage('올바른 휴대폰 번호를 입력해주세요'),
-  
-  body('birthday')
-    .optional()
-    .isISO8601()
-    .withMessage('올바른 날짜 형식(YYYY-MM-DD)을 입력해주세요')
-    .custom((value) => {
-      const birthDate = new Date(value);
-      const today = new Date();
-      const age = today.getFullYear() - birthDate.getFullYear();
-      
-      if (age < 14 || age > 100) {
-        throw new Error('나이는 14세 이상 100세 이하여야 합니다');
+  body('user_id')  // user_id로 변경
+    .notEmpty()
+    .withMessage('사용자 ID를 입력해주세요')
+    .isLength({ min: 4, max: 50 })
+    .withMessage('사용자 ID는 4-50자 사이여야 합니다')
+    .matches(/^[a-zA-Z0-9_]+$/)
+    .withMessage('사용자 ID는 영문, 숫자, 언더스코어만 사용 가능합니다')
+    .custom(value => {
+      if (value.startsWith('google_') || value.startsWith('kakao_')) {
+        throw new Error('사용자 ID는 google_ 또는 kakao_로 시작할 수 없습니다');
       }
       return true;
     }),
   
-  handleValidationErrors
+  body('phone')
+    .optional()
+    .matches(/^010-\d{4}-\d{4}$/)
+    .withMessage('올바른 휴대폰 번호 형식을 입력해주세요 (010-0000-0000)'),
+  
+  body('birthday')
+    .optional()
+    .isISO8601()
+    .withMessage('올바른 날짜 형식을 입력해주세요'),
+  
+  // 에러 처리
+  (req, res, next) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({
+        resultType: "FAIL",
+        error: {
+          errorCode: "VALIDATION_ERROR",
+          reason: errors.array()[0].msg,
+          data: null
+        },
+        success: null
+      });
+    }
+    next();
+  }
 ];
 
 const validateUserLogin = [

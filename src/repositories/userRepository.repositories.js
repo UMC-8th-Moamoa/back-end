@@ -41,6 +41,7 @@ class UserRepository {
       where: { id },
       select: {
         id: true,
+        user_id: true,
         email: true,
         name: true,
         phone: true,
@@ -74,6 +75,30 @@ class UserRepository {
   }
 
   /**
+   * 사용자 user_id로 찾기
+   * @param {string} user_id - 사용자 user_id (로그인 ID)
+   * @returns {Promise<Object|null>} 사용자 정보 또는 null
+   */
+  async findByUserId(user_id) {
+    return await prisma.user.findUnique({
+      where: { user_id },
+      select: {
+        id: true,
+        user_id: true,
+        email: true,
+        name: true,
+        phone: true,
+        birthday: true,
+        photo: true,
+        cash: true,
+        emailVerified: true,
+        createdAt: true,
+        lastLoginAt: true
+      }
+    });
+  }
+
+  /**
    * 새 사용자 생성
    * @param {Object} userData - 사용자 데이터
    * @returns {Promise<Object>} 생성된 사용자 정보
@@ -83,6 +108,7 @@ class UserRepository {
       data: userData,
       select: {
         id: true,
+        user_id: true,
         email: true,
         name: true,
         phone: true,
@@ -105,6 +131,7 @@ class UserRepository {
       data: updateData,
       select: {
         id: true,
+        user_id: true,
         email: true,
         name: true,
         phone: true,
@@ -142,6 +169,7 @@ class UserRepository {
       },
       select: {
         id: true,
+        user_id: true,
         email: true,
         name: true
       }
@@ -158,6 +186,7 @@ class UserRepository {
       where: { name: nickname },
       select: {
         id: true,
+        user_id: true,
         name: true
       }
     });
@@ -174,6 +203,7 @@ class UserRepository {
       data: { lastLoginAt: new Date() },
       select: {
         id: true,
+        user_id: true,
         email: true,
         name: true,
         lastLoginAt: true
@@ -193,6 +223,7 @@ class UserRepository {
       data: { emailVerified: verified },
       select: {
         id: true,
+        user_id: true,
         email: true,
         emailVerified: true
       }
@@ -211,6 +242,7 @@ class UserRepository {
       data: { password: hashedPassword },
       select: {
         id: true,
+        user_id: true,
         email: true,
         name: true
       }
@@ -219,15 +251,15 @@ class UserRepository {
 
   /**
    * 소셜 로그인 정보 생성
-   * @param {number} userId - 사용자 ID
+   * @param {string} user_id - 사용자 user_id
    * @param {string} provider - 소셜 로그인 제공자
    * @param {string} token - 소셜 로그인 토큰
    * @returns {Promise<Object>} 생성된 소셜 로그인 정보
    */
-  async createSocialLogin(userId, provider, token) {
+  async createSocialLogin(user_id, provider, token) {
     return await prisma.socialLogin.create({
       data: {
-        userId,
+        user_id,
         provider,
         token
       }
@@ -264,6 +296,7 @@ class UserRepository {
       take,
       select: {
         id: true,
+        user_id: true,
         email: true,
         name: true,
         photo: true,
