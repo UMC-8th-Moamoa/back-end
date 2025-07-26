@@ -48,9 +48,9 @@ enum InsertType {
 }
 
 enum ItemCategory {
-  FONT        // 폰트
-  PAPER // 편지지
-  ENVELOPE     // 편지봉투
+  font        // 폰트
+  paper // 편지지
+  envelope     // 편지봉투
 }
 
 // 사용자 테이블
