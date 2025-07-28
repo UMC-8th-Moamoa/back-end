@@ -232,7 +232,7 @@ router.get('/item_list',
 
 router.get('/item_detail', 
   authenticateJWT,
-  shoppingController.getItemList
+  shoppingController.getItemDetail
 );
 
 /**

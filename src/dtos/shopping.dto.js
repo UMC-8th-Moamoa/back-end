@@ -52,11 +52,11 @@ export class ShoppingRequestDTO {
 
 export class ItemDetailEntryDTO {
   constructor(itemData) {
-    this.item_no = itemData.item_no;
+    this.item_no = itemData.id;
     this.name = itemData.name;
-    this.detail = itemData.detail;
+    this.detail = itemData.description;
     this.price = itemData.price;
-    this.image = itemData.image;
+    this.image = itemData.imageUrl;
   }
 }
 
@@ -108,7 +108,7 @@ export class ItemBuyRequestDTO {
   constructor(body) {
     this.category = body.category;
     this.user_id = body.user_id;
-    this.item_no = body.item_no;
+    this.item_no = body.id;
     this.price = body.price;
     this.event = body.event;
   }
