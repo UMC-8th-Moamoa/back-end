@@ -14,13 +14,13 @@ export class MyInfoRequestDTO {
 }
 
 export class MyInfoListDTO {
-    constructor({ user_id, name, birthday, followers_num, following_num, image }) {
+    constructor({ user_id, name, birthday, followers_num, following_num, photo }) {
         this.user_id = user_id;
         this.name = name;
         this.birthday = birthday ? new Date(birthday).toISOString().split('T')[0] : null; 
         this.followers_num = followers_num || 0;
         this.following_num = following_num || 0;
-        this.image = image || null;
+        this.photo = photo || null;
     }
     
     #formatDate(dateInput) {
@@ -41,7 +41,7 @@ export class MyInfoListDTO {
 }
 
 export class MyInfoChangeDTO {
-    constructor({ user_id, name, birthday, email, phone, image }) {
+    constructor({ user_id, name, birthday, email, phone, photo }) {
         if (!user_id || !name || !email) {
             throw new Error('MyInfoChangeDTO에 필수 필드가 누락되었습니다.');
         }
@@ -51,7 +51,7 @@ export class MyInfoChangeDTO {
         this.birthday = birthday ? this.#formatDate(birthday) : null;
         this.email = email || null; // 이메일이 없을 경우를 대비
         this.phone = phone || null; // 전화번호가 없을 경우를 대비
-        this.image = image || null;
+        this.photo = photo || null;
     }
 
     #formatDate(dateInput) {
@@ -71,14 +71,14 @@ export class MyInfoChangeDTO {
 }
 
 export class OtherInfoDTO {
-    constructor({ user_id, name, birthday, followers_num, following_num, is_following, image }) {
+    constructor({ user_id, name, birthday, followers_num, following_num, is_following, photo }) {
         this.user_id = user_id;
         this.name = name;
         this.birthday = birthday ? this.#formatDate(birthday) : null; // #formatDate 사용
         this.followers_num = followers_num || 0;
         this.following_num = following_num || 0;
         this.is_following = is_following; // boolean 값
-        this.image = image || null;
+        this.photo = photo || null;
     }
 
     #formatDate(dateInput) {

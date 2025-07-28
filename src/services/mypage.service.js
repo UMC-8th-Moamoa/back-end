@@ -7,7 +7,7 @@ import {
 
 class MypageService {
     async getMyInfo(userIdFromToken) {
-        const userInfo = await mypageRepository.findUserByUserId(userIdFromToken, True);
+        const userInfo = await mypageRepository.findUserByUserId(userIdFromToken, true);
 
         if (!userInfo) {
             const error = new Error('사용자 정보를 찾을 수 없습니다.');
@@ -21,7 +21,7 @@ class MypageService {
             birthday: userInfo.birthday,
             followers_num: userInfo.followers_num,
             following_num: userInfo.following_num,
-            image: userInfo.image
+            photo: userInfo.photo
         });
 
         return formattedMyInfo;
@@ -41,7 +41,7 @@ class MypageService {
             birthday: userInfo.birthday,
             email: userInfo.email,
             phone: userInfo.phone,
-            image: userInfo.image
+            photo: userInfo.photo
         });
 
         return formattedMyInfoChange;
@@ -65,7 +65,7 @@ class MypageService {
             followers_num: targetUserInfo.followers_num,
             following_num: targetUserInfo.following_num,
             is_following: isFollowing,
-            image: targetUserInfo.image
+            photo: targetUserInfo.photo
         });
 
         return formattedOtherInfo;

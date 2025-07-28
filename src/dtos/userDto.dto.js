@@ -27,6 +27,7 @@ export class LoginUserDto {
 export class UserResponseDto {
   constructor(user) {
     this.id = user.id;
+    this.user_id = user.user_id;
     this.email = user.email;
     this.name = user.name;
     this.phone = user.phone;
