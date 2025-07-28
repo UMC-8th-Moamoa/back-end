@@ -44,10 +44,7 @@ class shoppingRepository {
      * @returns {Promise<object>} - 생성된 구매 기록 객체
      */
     static createPurchaseRecord = async ({ category, user_id, item_no, price, event }) => {
-        // Prisma를 사용하여 'Purchase' 또는 'HoldItem' 모델에 새 레코드를 생성합니다.
-        // 모델 이름은 여러분의 schema.prisma에 정의된 실제 이름으로 바꿔주세요.
-        // 여기서는 'HoldItem' 모델이 있다고 가정합니다.
-        const newPurchase = await prisma.holdItem.create({
+        const newPurchase = await prisma.userItem.create({
             data: {
                 category: category,
                 userId: user_id, // Prisma 필드명에 따라 userId 또는 user_id
@@ -68,8 +65,7 @@ class shoppingRepository {
      * @returns {Promise<Array>} - 구매한 아이템 배열
      */
     static findUserItemsByUserId = async (userId, num) => {
-        // Prisma를 사용하여 'HoldItem' 모델에서 특정 사용자의 아이템을 조회합니다.
-        const userItems = await prisma.holdItem.findMany({
+        const userItems = await prisma.userItem.findMany({
             where: {
                 userId: userId, // Prisma 필드명에 따라 userId 또는 user_id
             },
@@ -78,14 +74,6 @@ class shoppingRepository {
             orderBy: {
                 purchaseDate: 'desc', // 'purchaseDate' 필드가 있다고 가정
             },
-            // 필요한 필드만 선택적으로 조회 (DTO에 맞춰)
-            // select: {
-            //     holditem_no: true,
-            //     category: true,
-            //     itemNo: true, // 또는 item_no
-            //     userId: true, // 또는 user_id
-            //     image: true,
-            // },
         });
         return userItems;
     };
