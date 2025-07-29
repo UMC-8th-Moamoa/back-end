@@ -82,16 +82,34 @@ const validateUserRegistration = [
 ];
 
 const validateUserLogin = [
-  body('email')
-    .isEmail()
-    .withMessage('올바른 이메일 형식을 입력해주세요')
-    .normalizeEmail(),
+  body('user_id')
+    .notEmpty()
+    .withMessage('아이디를 입력해주세요')
+    .isLength({ min: 3, max: 50 })
+    .withMessage('아이디는 3자 이상 50자 이하여야 합니다'),
   
   body('password')
     .notEmpty()
     .withMessage('비밀번호를 입력해주세요'),
   
-  handleValidationErrors
+  (req, res, next) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({
+        resultType: "FAIL",
+        error: {
+          errorCode: "B002",
+          reason: errors.array()[0].msg,
+          data: errors.array().map(error => ({
+            field: error.path || error.param,
+            message: error.msg
+          }))
+        },
+        success: null
+      });
+    }
+    next();
+  }
 ];
 
 // 프로필 업데이트 유효성 검사
