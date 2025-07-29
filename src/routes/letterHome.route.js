@@ -15,7 +15,7 @@ const router = express.Router();
  * @swagger
  * /api/home/letters:
  *   get:
- *     summary: 홈 화면 편지 목록 조회 (스와이프용)
+ *     summary: 홈 화면 편지 목록 조회 (스와이프)
  *     tags: [LetterHome]
  *     security:
  *       - bearerAuth: []
