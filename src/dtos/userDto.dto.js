@@ -17,8 +17,8 @@ export class CreateUserDto {
 
 // 로그인 요청 DTO
 export class LoginUserDto {
-  constructor({ email, password }) {
-    this.email = email;
+  constructor({ user_id, password }) {
+    this.user_id = user_id;
     this.password = password;
   }
 }
