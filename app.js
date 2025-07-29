@@ -25,16 +25,16 @@ app.use(morgan(process.env.NODE_ENV === 'development' ? 'dev' : 'combined'));
 
 // 보안 미들웨어
 // helmet 설정을 수정하세요
-app.use(helmet({
-  contentSecurityPolicy: {
-    directives: {
-      defaultSrc: ["'self'"],
-      styleSrc: ["'self'", "'unsafe-inline'"],
-      scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
-      imgSrc: ["'self'", "data:", "https:"],
-    },
-  },
-}));
+// app.use(helmet({
+//   contentSecurityPolicy: {
+//     directives: {
+//       defaultSrc: ["'self'"],
+//       styleSrc: ["'self'", "'unsafe-inline'"],
+//       scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
+//       imgSrc: ["'self'", "data:", "https:"],
+//     },
+//   },
+// }));
 
 // CORS 설정
 app.use(cors({
