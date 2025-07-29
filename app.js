@@ -175,7 +175,7 @@ const PORT = process.env.PORT || 3000;
 const NODE_ENV = process.env.NODE_ENV || 'development';
 
 // 서버 시작
-const server = app.listen(PORT, () => {
+const server = app.listen(PORT, '0.0.0.0'' () => {
   console.log(`🚀 서버가 포트 ${PORT}에서 실행 중입니다`);
   console.log(`📝 환경: ${NODE_ENV}`);
   console.log(`📚 API 문서: http://localhost:${PORT}/api-docs`);
