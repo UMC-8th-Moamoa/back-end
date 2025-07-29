@@ -31,6 +31,22 @@ class UserRepository {
   });
 }
 
+
+  /**
+ * user_id로 사용자 조회
+ * @param {string} userId - 사용자 ID
+ * @returns {Promise<User|null>} 사용자 정보
+ */
+async findByUserId(userId) {
+  return await prisma.user.findUnique({
+    where: {
+      user_id: userId
+    },
+    include: {
+      socialLogins: true  // socialLogins는 올바른 관계명
+    }
+  });
+}
   /**
    * 사용자 ID로 찾기
    * @param {number} id - 사용자 ID
