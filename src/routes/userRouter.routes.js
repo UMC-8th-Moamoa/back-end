@@ -179,13 +179,12 @@ router.get('/users/nickname/:nickname/check', validateNicknameCheck, userControl
  *           schema:
  *             type: object
  *             required:
- *               - email
+ *               - username
  *               - password
  *             properties:
- *               email:
+ *               username:
  *                 type: string
- *                 format: email
- *                 description: 이메일
+ *                 description: 사용자명
  *               password:
  *                 type: string
  *                 description: 비밀번호
@@ -195,6 +194,7 @@ router.get('/users/nickname/:nickname/check', validateNicknameCheck, userControl
  *       401:
  *         description: 인증 실패
  */
+
 router.post('/auth/login', validateUserLogin, userController.login);
 
 /**
