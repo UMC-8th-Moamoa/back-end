@@ -152,10 +152,10 @@ router.post('/register', validateUserRegistration, userController.register);
  *           schema:
  *             type: object
  *             required:
- *               - id
+ *               - user_id
  *               - password
  *             properties:
- *               id:
+ *               user_id:
  *                 type: string
  *                 description: 아이디
  *               password:
