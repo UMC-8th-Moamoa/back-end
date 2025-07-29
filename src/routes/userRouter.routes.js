@@ -179,10 +179,10 @@ router.get('/users/nickname/:nickname/check', validateNicknameCheck, userControl
  *           schema:
  *             type: object
  *             required:
- *               - username
+ *               - user_id
  *               - password
  *             properties:
- *               username:
+ *               user_id:
  *                 type: string
  *                 description: 사용자명
  *               password:
