@@ -152,13 +152,12 @@ router.post('/register', validateUserRegistration, userController.register);
  *           schema:
  *             type: object
  *             required:
- *               - email
+ *               - id
  *               - password
  *             properties:
- *               email:
+ *               id:
  *                 type: string
- *                 format: email
- *                 description: 이메일
+ *                 description: 아이디
  *               password:
  *                 type: string
  *                 description: 비밀번호
@@ -178,6 +177,7 @@ router.post('/register', validateUserRegistration, userController.register);
  *       401:
  *         description: 인증 실패
  */
+ 
 router.post('/login', validateUserLogin, userController.login);
 
 /**
