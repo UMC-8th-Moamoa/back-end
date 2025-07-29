@@ -93,12 +93,12 @@ class UserService {
    * @returns {Promise<AuthResponseDto>} 인증 응답 (사용자 + 토큰)
    */
   async login(loginUserDto) {
-    const { email, password } = loginUserDto;
+    const { user_id, password } = loginUserDto;
 
     // 사용자 조회
-    const user = await userRepository.findByEmail(email);
+    const user = await userRepository.findByUserId(user_id);
     if (!user) {
-      throw new UnauthorizedError('이메일 또는 비밀번호가 잘못되었습니다');
+      throw new UnauthorizedError('아이디 또는 비밀번호가 잘못되었습니다');
     }
 
     // 소셜 로그인 전용 계정인지 확인
@@ -109,21 +109,20 @@ class UserService {
     // 비밀번호 검증
     const isValidPassword = await comparePassword(password, user.password);
     if (!isValidPassword) {
-      throw new UnauthorizedError('이메일 또는 비밀번호가 잘못되었습니다');
+      throw new UnauthorizedError('아이디 또는 비밀번호가 잘못되었습니다');
     }
 
     // 마지막 로그인 시간 업데이트
     await userRepository.updateLastLoginAt(user.id);
 
     // JWT 토큰 생성
-    const tokens = generateTokenPair(user.id, user.email);
+    const tokens = generateTokenPair(user.id, user.user_id);
 
     // 민감한 정보 제거
     const { password: _, socialLogins, ...userWithoutPassword } = user;
 
     return new AuthResponseDto(userWithoutPassword, tokens);
   }
-
   /**
    * 사용자 정보 조회
    * @param {number} userId - 사용자 ID
