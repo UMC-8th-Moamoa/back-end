@@ -69,7 +69,7 @@ const router = express.Router();
  * @swagger
  * /api/moas:
  *   get:
- *     summary: 사용자가 참여한 모아모아 목록 조회 (스와이프용)
+ *     summary: 사용자가 참여한 모아모아 목록 조회 (스와이프)
  *     description: 사용자가 참여했거나 참여할 수 있는 생일 이벤트 목록을 커서 기반 페이지네이션으로 조회합니다.
  *     tags: [Moas]
  *     security:

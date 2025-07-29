@@ -141,8 +141,11 @@ import letterRoutes from './src/routes/letter.routes.js';
 
 import moaRoutes from './src/routes/moa.route.js';
 import letterHomeRoutes from './src/routes/letterHome.route.js';
+import upcomingBirthdayRoutes from './src/routes/upcomingBirthday.route.js';
 import birthdayRoutes from './src/routes/birthday.route.js';
 import calendarRoutes from './src/routes/calendar.route.js';
+import birthdayEventRoutes from './src/routes/birthdayEvent.route.js';
+import eventParticipationRoutes from './src/routes/eventParticipation.route.js';
 import purchaseProofRoutes from './src/routes/purchaseProof.route.js';
 
 import shoppingRoutes from './src/routes/shopping.routes.js';
@@ -158,9 +161,12 @@ app.use('/api/letters', letterRoutes);
 
 app.use('/api/moas', moaRoutes);
 app.use('/api/home', letterHomeRoutes);
+app.use('/api/birthdays', upcomingBirthdayRoutes)
 app.use('/api/users', birthdayRoutes);
 app.use('/api/calendar', calendarRoutes);
-app.use('/api/birthday-events', purchaseProofRoutes);
+app.use('/api/birthdays', birthdayEventRoutes);
+app.use('/api/birthdays', eventParticipationRoutes);
+app.use('/api/birthdays', purchaseProofRoutes);
 
 app.use('/api/shopping', shoppingRoutes);
 app.use('/api/mypage', mypageRoutes);
