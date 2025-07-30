@@ -189,6 +189,7 @@
     participants    BirthdayEventParticipant[]
     letters         Letter[]
     purchaseProof   PurchaseProof?
+    shareTokens     EventShareToken[]
 
     @@map("birthday_events")
   }
@@ -369,3 +370,17 @@
 
     @@map("purchase_proofs")
   }
+
+// 이벤트 공유 테이블
+  model EventShareToken {
+  id        Int      @id @default(autoincrement())
+  eventId   Int
+  token     String   @unique @db.VarChar(255)
+  expiresAt DateTime
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  event BirthdayEvent @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  @@map("event_share_tokens")
+}
