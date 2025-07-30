@@ -92,7 +92,7 @@ const router = express.Router();
 
 /**
  * @swagger
- * /api/birthday-events/{eventId}/proof:
+ * /api/birthdays/{eventId}/proof:
  *   post:
  *     summary: 선물 구매 인증 등록
  *     tags: [PurchaseProof]
