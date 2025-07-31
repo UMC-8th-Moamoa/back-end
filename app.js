@@ -35,6 +35,47 @@ app.use(morgan(process.env.NODE_ENV === 'development' ? 'dev' : 'combined'));
 //     },
 //   },
 // }));
+// Express 앱에 헬스체크 엔드포인트 추가
+app.get('/health', (req, res) => {
+  // 데이터베이스 연결 상태 확인
+  const dbStatus = checkDatabaseConnection();
+  
+  const healthStatus = {
+    status: 'ok',
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime(),
+    environment: process.env.NODE_ENV,
+    version: process.env.npm_package_version,
+    memory: process.memoryUsage(),
+    database: dbStatus
+  };
+
+  if (dbStatus.status === 'error') {
+    return res.status(503).json({
+      ...healthStatus,
+      status: 'error'
+    });
+  }
+
+  res.status(200).json(healthStatus);
+});
+
+// 데이터베이스 연결 확인 함수 (예시)
+function checkDatabaseConnection() {
+  try {
+    // 실제 DB 연결 상태 확인 로직
+    // MongoDB: mongoose.connection.readyState
+    // MySQL: connection.ping()
+    return { status: 'ok', connected: true };
+  } catch (error) {
+    return { status: 'error', message: error.message };
+  }
+}
+
+// PM2와의 연동을 위한 ready 신호
+if (process.env.NODE_ENV === 'production') {
+  process.send('ready');
+}
 
 // CORS 설정
 app.use(cors({
