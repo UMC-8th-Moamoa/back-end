@@ -1,4 +1,5 @@
 import express from 'express';
+import { createServer } from 'http';
 import swaggerUi from 'swagger-ui-express';
 import swaggerJsdoc from 'swagger-jsdoc';
 import cors from 'cors';
@@ -15,8 +16,17 @@ dotenv.config();
 import passport from './src/config/passport.config.js';
 import { globalErrorHandler, notFoundHandler } from './src/middlewares/errorHandler.js';
 
+// WebSocket 초기화 import
+import { initializeSocket } from './src/utils/websocket/notificationSocket.js';
+
 // Express 앱 생성
 const app = express();
+
+// HTTP 서버 생성 (WebSocket을 위해)
+const httpServer = createServer(app);
+
+// WebSocket 서버 초기화
+initializeSocket(httpServer);
 
 // 미들웨어 설정
 
@@ -172,7 +182,11 @@ app.get('/', (req, res) => {
     docs: `${baseUrl}/api-docs`,
     health: `${baseUrl}/health`,
     environment: process.env.NODE_ENV,
-    version: '1.0.0'
+    version: '1.0.0',
+    websocket: {
+      enabled: true,
+      endpoint: `ws://localhost:${process.env.PORT || 3000}`
+    }
   });
 });
 
@@ -183,7 +197,8 @@ app.get('/health', (req, res) => {
     timestamp: new Date().toISOString(),
     uptime: Math.floor(process.uptime()),
     environment: process.env.NODE_ENV,
-    database: process.env.DATABASE_URL ? '연결됨' : '설정 필요'
+    database: process.env.DATABASE_URL ? '연결됨' : '설정 필요',
+    websocket: 'active'
   });
 });
 
@@ -194,14 +209,17 @@ import authRoutes from './src/routes/auth.routes.js';
 import wishlistRoutes from './src/routes/wishlist.routes.js';
 import letterRoutes from './src/routes/letter.routes.js';
 
-import moaRoutes from './src/routes/moa.route.js';
-import letterHomeRoutes from './src/routes/letterHome.route.js';
-import upcomingBirthdayRoutes from './src/routes/upcomingBirthday.route.js';
-import birthdayRoutes from './src/routes/birthday.route.js';
-import calendarRoutes from './src/routes/calendar.route.js';
-import birthdayEventRoutes from './src/routes/birthdayEvent.route.js';
-import eventParticipationRoutes from './src/routes/eventParticipation.route.js';
-import purchaseProofRoutes from './src/routes/purchaseProof.route.js';
+import notificationRoutes from './src/routes/notification.routes.js';
+
+import moaRoutes from './src/routes/moa.routes.js';
+import letterHomeRoutes from './src/routes/letterHome.routes.js';
+import upcomingBirthdayRoutes from './src/routes/upcomingBirthday.routes.js';
+import birthdayRoutes from './src/routes/birthday.routes.js';
+import calendarRoutes from './src/routes/calendar.routes.js';
+import birthdayEventRoutes from './src/routes/birthdayEvent.routes.js';
+import eventParticipationRoutes from './src/routes/eventParticipation.routes.js';
+import eventShareRoutes from './src/routes/eventShare.routes.js';
+import purchaseProofRoutes from './src/routes/purchaseProof.routes.js';
 
 import shoppingRoutes from './src/routes/shopping.routes.js';
 import mypageRoutes from './src/routes/mypage.routes.js';
@@ -214,6 +232,8 @@ app.use('/api/auth', authRoutes);
 app.use('/api/wishlists', wishlistRoutes);
 app.use('/api/letters', letterRoutes);
 
+app.use('/api/notifications', notificationRoutes);
+
 app.use('/api/moas', moaRoutes);
 app.use('/api/home', letterHomeRoutes);
 app.use('/api/birthdays', upcomingBirthdayRoutes)
@@ -221,6 +241,7 @@ app.use('/api/users', birthdayRoutes);
 app.use('/api/calendar', calendarRoutes);
 app.use('/api/birthdays', birthdayEventRoutes);
 app.use('/api/birthdays', eventParticipationRoutes);
+app.use('/api/birthdays', eventShareRoutes);
 app.use('/api/birthdays', purchaseProofRoutes);
 
 app.use('/api/shopping', shoppingRoutes);
@@ -235,18 +256,20 @@ app.use(globalErrorHandler);
 const PORT = process.env.PORT || 3000;
 const NODE_ENV = process.env.NODE_ENV || 'development';
 
-// 서버 시작
-const server = app.listen(PORT, '0.0.0.0', () => {
+// 🚀 HTTP 서버 시작 (WebSocket 포함)
+httpServer.listen(PORT, '0.0.0.0', () => {
   console.log(`🚀 서버가 포트 ${PORT}에서 실행 중입니다`);
   console.log(`📝 환경: ${NODE_ENV}`);
   console.log(`📚 API 문서: http://localhost:${PORT}/api-docs`);
   console.log(`🏥 헬스체크: http://localhost:${PORT}/health`);
+  console.log(`🔔 알림 API: http://localhost:${PORT}/api/notifications`);
+  console.log(`🌐 WebSocket: ws://localhost:${PORT}`);
   console.log(`📅 달력 API: http://localhost:${PORT}/api/calendar/birthdays`);
   console.log(`🎁 구매인증 API: http://localhost:${PORT}/api/birthday-events/{eventId}/proof`);
 });
 
 // 에러 핸들링
-server.on('error', (error) => {
+httpServer.on('error', (error) => {
   if (error.code === 'EADDRINUSE') {
     console.error(`❌ 포트 ${PORT}이 이미 사용 중입니다`);
     process.exit(1);
@@ -259,7 +282,7 @@ server.on('error', (error) => {
 // 시스템 종료 시 정리
 process.on('SIGTERM', () => {
   console.log('🛑 SIGTERM 신호 수신. 서버를 정리합니다...');
-  server.close(() => {
+  httpServer.close(() => {
     console.log('✅ 서버가 정상적으로 종료되었습니다');
     process.exit(0);
   });
@@ -267,7 +290,7 @@ process.on('SIGTERM', () => {
 
 process.on('SIGINT', () => {
   console.log('\n🛑 SIGINT 신호 수신. 서버를 정리합니다...');
-  server.close(() => {
+  httpServer.close(() => {
     console.log('✅ 서버가 정상적으로 종료되었습니다');
     process.exit(0);
   });
