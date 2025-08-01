@@ -236,6 +236,195 @@ router.post('/refresh', validateRefreshToken, userController.refreshToken);
  */
 router.get('/me', authenticateJWT, userController.getMe);
 
+// auth.routes.js의 기존 라우트들 아래에 추가
+
+/**
+ * @swagger
+ * /api/auth/find-id:
+ *   post:
+ *     summary: 아이디 찾기
+ *     tags: [Auth]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - name
+ *               - phone
+ *             properties:
+ *               name:
+ *                 type: string
+ *                 description: 이름
+ *               phone:
+ *                 type: string
+ *                 description: 전화번호
+ *     responses:
+ *       200:
+ *         description: 아이디 찾기 성공
+ */
+router.post('/find-id', userController.findUserId);
+
+
+/**
+ * @swagger
+ * /api/auth/nickname/{nickname}/check:
+ *   get:
+ *     summary: 닉네임 중복 확인
+ *     tags: [Auth]
+ *     parameters:
+ *       - in: path
+ *         name: nickname
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: 확인할 닉네임
+ *     responses:
+ *       200:
+ *         description: 닉네임 중복 여부 확인 성공
+ */
+router.get('/nickname/:nickname/check', userController.checkNickname);
+
+/**
+ * @swagger
+ * /api/auth/find-password:
+ *   post:
+ *     summary: 비밀번호 찾기 (재설정 요청)
+ *     tags: [Auth]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - email
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 format: email
+ *                 description: 이메일
+ *     responses:
+ *       200:
+ *         description: 비밀번호 재설정 이메일 발송 성공
+ */
+router.post('/find-password', userController.requestPasswordReset);
+
+/**
+ * @swagger
+ * /api/auth/reset-password:
+ *   post:
+ *     summary: 비밀번호 재설정
+ *     tags: [Auth]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - token
+ *               - newPassword
+ *               - confirmPassword
+ *             properties:
+ *               token:
+ *                 type: string
+ *                 description: 재설정 토큰
+ *               newPassword:
+ *                 type: string
+ *                 description: 새 비밀번호
+ *               confirmPassword:
+ *                 type: string
+ *                 description: 새 비밀번호 확인
+ *     responses:
+ *       200:
+ *         description: 비밀번호 재설정 성공
+ */
+router.post('/reset-password', userController.resetPassword);
+
+/**
+ * @swagger
+ * /api/auth/email/check:
+ *   post:
+ *     summary: 이메일 중복 확인
+ *     tags: [Auth]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - email
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 format: email
+ *                 description: 확인할 이메일
+ *     responses:
+ *       200:
+ *         description: 이메일 중복 확인 결과
+ */
+router.post('/email/check', userController.checkEmail);
+
+/**
+ * @swagger
+ * /api/auth/verify-email:
+ *   post:
+ *     summary: 이메일 인증 코드 발송
+ *     tags: [Auth]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - email
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 format: email
+ *                 description: 인증 코드를 받을 이메일
+ *     responses:
+ *       200:
+ *         description: 인증 코드 발송 성공
+ */
+router.post('/verify-email', userController.sendEmailVerification);
+
+/**
+ * @swagger
+ * /api/auth/email/send-code:
+ *   post:
+ *     summary: 이메일 인증 코드 확인
+ *     tags: [Auth]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - email
+ *               - code
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 format: email
+ *                 description: 이메일
+ *               code:
+ *                 type: string
+ *                 description: 인증 코드
+ *     responses:
+ *       200:
+ *         description: 인증 코드 확인 성공
+ */
+router.post('/email/send-code', userController.verifyEmailCode);
+
+
+
+
 /**
  * @swagger
  * /api/auth/logout:
