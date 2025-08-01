@@ -37,16 +37,18 @@ class UserRepository {
  * @param {string} userId - 사용자 ID
  * @returns {Promise<User|null>} 사용자 정보
  */
-async findByUserId(userId) {
+async findByUserId(user_id) {
   return await prisma.user.findUnique({
-    where: {
-      user_id: userId
-    },
-    include: {
-      socialLogins: true  // socialLogins는 올바른 관계명
+    where: { user_id },
+    include: {  // ✅ 소셜 로그인 관계 포함
+      socialLogins: true
     }
   });
 }
+
+
+
+
   /**
    * 사용자 ID로 찾기
    * @param {number} id - 사용자 ID
@@ -95,24 +97,7 @@ async findByUserId(userId) {
    * @param {string} user_id - 사용자 user_id (로그인 ID)
    * @returns {Promise<Object|null>} 사용자 정보 또는 null
    */
-  async findByUserId(user_id) {
-    return await prisma.user.findUnique({
-      where: { user_id },
-      select: {
-        id: true,
-        user_id: true,
-        email: true,
-        name: true,
-        phone: true,
-        birthday: true,
-        photo: true,
-        cash: true,
-        emailVerified: true,
-        createdAt: true,
-        lastLoginAt: true
-      }
-    });
-  }
+  
 
   /**
    * 새 사용자 생성

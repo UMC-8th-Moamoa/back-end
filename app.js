@@ -103,17 +103,6 @@ app.use(cors({
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(cookieParser());
-if (!req.body.id || !req.body.password) {
-  return res.status(400).json({
-    resultType: "FAIL",
-    error: {
-      errorCode: "MISSING_CREDENTIALS",
-      reason: "ID 또는 비밀번호가 누락되었습니다",
-      data: null
-    },
-    success: null
-  });
-}
 
 // 세션 설정
 app.use(session({
