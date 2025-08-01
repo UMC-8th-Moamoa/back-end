@@ -346,6 +346,7 @@
     sentAt          DateTime  @default(now())
     readAt          DateTime?
     createdAt       DateTime  @default(now())
+    updatedAt       DateTime  @updatedAt
 
     birthdayEvent BirthdayEvent? @relation(fields: [birthdayEventId], references: [id])
     sender        User           @relation("LetterSender", fields: [senderId], references: [id])
