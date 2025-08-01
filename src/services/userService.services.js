@@ -344,7 +344,7 @@ class UserService {
     // 업데이트 데이터 준비
     const updateData = {};
     if (name) updateData.name = name;
-    if (콜) updateData.phone = phone;
+    if (phone) updateData.phone = phone;
     if (birthday) updateData.birthday = new Date(birthday);
     if (photo) updateData.photo = photo;
 
