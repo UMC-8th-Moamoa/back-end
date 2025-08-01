@@ -91,17 +91,16 @@ class NotificationController {
    * POST /api/notifications
    */
   async createNotification(req, res) {
-    const { userId, type, message } = req.body;
+    const { userId, message } = req.body;
 
     // 입력 데이터 검증
-    if (!userId || !type || !message) {
-      throw new BadRequestError('모든 필드를 입력해주세요 (userId, type, message)');
+    if (!userId || !message) {
+      throw new BadRequestError('모든 필드를 입력해주세요 (userId, message)');
     }
 
     // 서비스 레이어 호출
     const notification = await notificationService.createNotification(
-      userId, 
-      type, 
+      userId,
       message
     );
 

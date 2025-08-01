@@ -114,15 +114,13 @@ class NotificationService {
   /**
    * 새로운 알림을 생성합니다 (토스트 알림용)
    * @param {number} userId - 사용자 ID
-   * @param {string} type - 알림 타입
    * @param {string} message - 알림 메시지
    * @returns {Object} 생성된 알림 정보
    */
-  async createNotification(userId, type, message) {
+  async createNotification(userId, message) {
     try {
       const notification = await notificationRepository.createNotification(
-        userId, 
-        type, 
+        userId,
         message
       );
 
@@ -165,7 +163,7 @@ class NotificationService {
    */
   async createMoaSavingNotification(userId, moaPersonName, amount) {
     const message = `${amount.toLocaleString()}원을 ${moaPersonName}님의 모아에 저장했어요`;
-    return await this.createNotification(userId, 'MOA_SAVING_COMPLETED', message);
+    return await this.createNotification(userId, message);
   }
 
   /**
@@ -177,7 +175,7 @@ class NotificationService {
    */
   async createMoaCompletedNotification(userId, moaPersonName, totalAmount) {
     const message = `${moaPersonName}님의 모아가 완료되었어요! 총 ${totalAmount.toLocaleString()}원이 모였습니다`;
-    return await this.createNotification(userId, 'MOA_COMPLETED', message);
+    return await this.createNotification(userId, message);
   }
 
   /**
@@ -189,7 +187,7 @@ class NotificationService {
    */
   async createMoaInviteNotification(userId, inviterName, moaPersonName) {
     const message = `${inviterName}님이 ${moaPersonName}님의 모아에 초대했어요`;
-    return await this.createNotification(userId, 'MOA_INVITE', message);
+    return await this.createNotification(userId, message);
   }
 }
 
