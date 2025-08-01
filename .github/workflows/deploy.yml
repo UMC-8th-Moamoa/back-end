@@ -38,8 +38,9 @@ jobs:
         host: ${{ secrets.HOST }}
         username: ${{ secrets.USERNAME }}
         key: ${{ secrets.SSH_KEY }}
+        command_timeout: 30m
         script: |
-          cd /path/to/your/app
+          cd /home/ec2-user/back-end
           git pull origin dev
           npm ci --only=production
           

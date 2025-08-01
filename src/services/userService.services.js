@@ -102,10 +102,9 @@ class UserService {
     }
 
     // 소셜 로그인 전용 계정인지 확인
-    if (!user.password && user.socialLogins.length > 0) {
-      throw new UnauthorizedError('소셜 로그인으로 가입된 계정입니다');
-    }
-
+    if (!user.password && Array.isArray(user.socialLogins) && user.socialLogins.length > 0) {
+    throw new UnauthorizedError('소셜 로그인으로 가입된 계정입니다');
+  }
     // 비밀번호 검증
     const isValidPassword = await comparePassword(password, user.password);
     if (!isValidPassword) {
@@ -345,7 +344,7 @@ class UserService {
     // 업데이트 데이터 준비
     const updateData = {};
     if (name) updateData.name = name;
-    if (콜) updateData.phone = phone;
+    if (phone) updateData.phone = phone;
     if (birthday) updateData.birthday = new Date(birthday);
     if (photo) updateData.photo = photo;
 

@@ -4,7 +4,9 @@ import { Strategy as JwtStrategy, ExtractJwt } from 'passport-jwt';
 import { Strategy as GoogleStrategy } from 'passport-google-oauth20';
 import { Strategy as KakaoStrategy } from 'passport-kakao';
 
-import { PrismaClient } from '@prisma/client';
+import pkg from '@prisma/client';
+const { PrismaClient } = pkg;
+
 import { UnauthorizedError, UserNotFoundError } from '../middlewares/errorHandler.js';
 import { comparePassword } from '../utils/password.util.js';
 
