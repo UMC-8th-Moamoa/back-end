@@ -183,26 +183,17 @@ router.get('/item_list',
  * @swagger
  * /api/shopping/item_detail:
  *  get:
- *    summary: 하나의 아이템 상세보기
+ *    summary: 아이템 상세정보 조회 (ID만 사용)
  *    tags: [Shopping]
  *    security:
  *     - bearerAuth: []
  *    parameters:
  *     - in: query
- *       name: category
- *       schema:
- *         type: string
- *         enum:
- *            - font
- *            - paper
- *            - envelope
- *       description: "조회할 아이템 카테고리 (font, paper, envelope 중 하나)"
- *     - in: query
  *       name: id
  *       schema:
  *         type: integer
  *         minimum: 1
- *         maximum: 20
+ *       required: true
  *       description: "상세정보를 확인할 아이템의 고유 ID"
  *    responses:
  *      200: 
@@ -214,18 +205,15 @@ router.get('/item_list',
  *            example:
  *              success: true
  *              itemDetailEntry:
- *                - item_no: 1
- *                  name: "굴림"
- *                  detail: "굴림체입니다"
- *                  price: 100
- *                  image: "https://example.com/item1.jpg"
- *                - item_no: 2
- *                  name: "고딕"
- *                  detail: "고딕체입니다"
- *                  price: 100
- *                  image: "https://example.com/item2.jpg"
+ *                item_no: 1
+ *                name: "굴림체"
+ *                detail: "기본 굴림체 폰트입니다"
+ *                price: 100
+ *                image: "https://example.com/gulim.jpg"
  *      400:
- *        description: 잘못된 요청 (예 유효하지 않은 쿼리 파라미터 등)
+ *        description: 잘못된 요청 (유효하지 않은 ID)
+ *      404:
+ *        description: 아이템을 찾을 수 없음
  *      500:
  *        description: 서버 내부 오류
  */
@@ -295,7 +283,7 @@ router.post('/item_buy',
  * @swagger
  * /api/shopping/user_item:
  *  get:
- *    summary: 구매한 아이템 상세보기
+ *    summary: 구매한 목록보기
  *    tags: [Shopping]
  *    security:
  *     - bearerAuth: []

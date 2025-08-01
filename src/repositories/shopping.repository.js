@@ -1,13 +1,6 @@
 import prisma from '../config/prismaClient.js';
 
-
 class shoppingRepository {
-    /**
-     * @desc 카테고리별 아이템 목록 조회
-     * @param {string} category - 카테고리 (font / paper / envelope)
-     * @param {number} [num] - 화면에 띄울 아이템 개수
-     * @returns {Promise<Array>}
-     */
     static findItemsByCategory = async(category, num) => {
         const items = await prisma.item.findMany({
             where: {
@@ -18,65 +11,177 @@ class shoppingRepository {
         return items;
     };
 
-    /**
-     * @desc 특정 카테고리와 ID에 해당하는 아이템 상세 정보 조회
-     * @param {string} category - 조회할 아이템 카테고리 (font / paper / envelope)
-     * @param {number} id - 조회할 아이템의 고유 ID
-     * @returns {Promise<object|null>} - 조회된 아이템 객체 또는 null
-     */
     static findItemDetailByIdAndCategory = async (category, id) => {
         const item = await prisma.item.findUnique({
             where: {
                 id: id,
-                category: category,
             },
         });
+        
+        if (item && item.category !== category) {
+            return null;
+        }
+        
         return item;
     };
-    /**
-     * @desc 새로운 구매 기록을 데이터베이스에 생성
-     * @param {object} purchaseData - 구매 기록에 필요한 데이터
-     * @param {string} purchaseData.category - 아이템 카테고리
-     * @param {string} purchaseData.user_id - 사용자 ID
-     * @param {number} purchaseData.item_no - 아이템 번호
-     * @param {number} purchaseData.price - 가격
-     * @param {boolean} purchaseData.event - 이벤트 여부
-     * @returns {Promise<object>} - 생성된 구매 기록 객체
-     */
-    static createPurchaseRecord = async ({ category, user_id, item_no, price, event }) => {
-        const newPurchase = await prisma.userItem.create({
-            data: {
-                category: category,
-                userId: user_id, // Prisma 필드명에 따라 userId 또는 user_id
-                itemNo: item_no, // Prisma 필드명에 따라 itemNo 또는 item_no
-                price: price,
-                event: event,
-                // image: 'default_image_url', // 필요하다면 이미지 URL도 저장
-                // purchaseDate: new Date(), // 구매 날짜 추가
-            },
+
+    static findUserByUserId = async (user_id) => {
+        return await prisma.user.findUnique({
+            where: { user_id: user_id }
         });
-        return newPurchase;
     };
 
-    /**
-     * @desc 특정 사용자가 구매한 아이템 목록을 데이터베이스에서 조회
-     * @param {string} userId - 조회할 사용자 ID
-     * @param {number} [num] - 화면에 띄울 아이템 개수 (페이징)
-     * @returns {Promise<Array>} - 구매한 아이템 배열
-     */
-    static findUserItemsByUserId = async (userId, num) => {
+    static findItemById = async (item_id) => {
+        return await prisma.item.findUnique({
+            where: { id: item_id }
+        });
+    };
+
+    static createPointHistory = async (userId, pointChange, description, totalPoints) => {
+        return await prisma.pointHistory.create({
+            data: {
+                userId: userId,
+                pointType: 'ITEM_PURCHASE',
+                pointChange: pointChange,
+                description: description,
+                totalPoints: totalPoints
+            }
+        });
+    };
+
+    static createPurchaseRecord = async ({ category, user_id, item_no, price, event }) => {
+        return await prisma.$transaction(async (tx) => {
+            const user = await tx.user.findUnique({
+                where: { user_id: user_id }
+            });
+            
+            if (!user) {
+                throw new Error('사용자를 찾을 수 없습니다.');
+            }
+
+            const item = await tx.item.findUnique({
+                where: { id: item_no }
+            });
+            
+            if (!item) {
+                throw new Error('아이템을 찾을 수 없습니다.');
+            }
+
+            if (item.category !== category) {
+                throw new Error('아이템 카테고리가 일치하지 않습니다.');
+            }
+
+            if (user.cash < price) {
+                throw new Error('캐시가 부족합니다.');
+            }
+
+            const newCash = user.cash - price;
+
+            await tx.user.update({
+                where: { id: user.id },
+                data: { cash: newCash }
+            });
+
+            const pointHistory = await tx.pointHistory.create({
+                data: {
+                    userId: user.id,
+                    pointType: 'ITEM_PURCHASE',
+                    pointChange: -price,
+                    description: `${item.name} 구매`,
+                    totalPoints: newCash
+                }
+            });
+
+            const userItem = await tx.userItem.create({
+                data: {
+                    userId: user.id,
+                    itemId: item.id,
+                    pointHistoryId: pointHistory.id
+                }
+            });
+
+            return {
+                id: userItem.id,
+                category: item.category,
+                item_no: item.id,
+                user_id: user.user_id,
+                price: price,
+                remainingCash: newCash
+            };
+        });
+    };
+
+    // 기존: user_id 문자열로 조회
+    static findUserItemsByUserId = async (user_id, num) => {
+        const user = await prisma.user.findUnique({
+            where: { user_id: user_id }
+        });
+
+        if (!user) {
+            return [];
+        }
+
         const userItems = await prisma.userItem.findMany({
             where: {
-                userId: userId, // Prisma 필드명에 따라 userId 또는 user_id
+                userId: user.id,
+            },
+            include: {
+                item: true
             },
             take: num ? parseInt(num, 10) : undefined,
-            // 정렬 기준 (예: 최신 구매 순)
             orderBy: {
-                purchaseDate: 'desc', // 'purchaseDate' 필드가 있다고 가정
+                purchasedAt: 'desc',
             },
         });
-        return userItems;
+
+        return userItems.map(userItem => ({
+            holditem_no: userItem.id,
+            category: userItem.item.category,
+            item_no: userItem.item.id,
+            user_id: user.user_id,
+            image: userItem.item.imageUrl
+        }));
     };
-    
+
+    static findUserByIdNumber = async (userId) => {
+        return await prisma.user.findUnique({
+            where: { id: userId },
+            select: { id: true, user_id: true }
+        });
+    };
+
+    // 추가: 숫자 ID로 직접 조회
+    static findUserItemsByUserIdNumber = async (userId, num) => {
+        const user = await prisma.user.findUnique({
+            where: { id: userId },
+            select: { id: true, user_id: true }
+        });
+
+        if (!user) {
+            return [];
+        }
+
+        const userItems = await prisma.userItem.findMany({
+            where: {
+                userId: userId,
+            },
+            include: {
+                item: true
+            },
+            take: num ? parseInt(num, 10) : undefined,
+            orderBy: {
+                purchasedAt: 'desc',
+            },
+        });
+
+        return userItems.map(userItem => ({
+            holditem_no: userItem.id,
+            category: userItem.item.category,
+            item_no: userItem.item.id,
+            user_id: user.user_id,
+            image: userItem.item.imageUrl
+        }));
+    };
 }
+
 export default shoppingRepository;

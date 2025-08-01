@@ -108,22 +108,19 @@ export class ItemBuyRequestDTO {
   constructor(body) {
     this.category = body.category;
     this.user_id = body.user_id;
-    this.item_no = body.id;
+    this.item_no = body.item_no;
     this.price = body.price;
     this.event = body.event;
   }
 
-  /**
-   * @desc 요청 데이터의 유효성을 검사합니다.
-   * @throws {Error} - 유효성 검사 실패 시
-   */
   validate() {
+    // 프리즈마 스키마에 맞는 카테고리 검증
     const validCategories = ['font', 'paper', 'envelope'];
     if (!this.category || !validCategories.includes(this.category)) {
       throw new Error('Category is required and must be one of: font, paper, envelope.');
     }
-    if (!this.user_id) {
-      throw new Error('User ID is required.');
+    if (!this.user_id || typeof this.user_id !== 'string') {
+      throw new Error('User ID is required and must be a string.');
     }
     if (this.item_no === undefined || isNaN(this.item_no) || this.item_no <= 0) {
       throw new Error('Item number is required and must be a positive integer.');
@@ -136,17 +133,13 @@ export class ItemBuyRequestDTO {
     }
   }
 
-  /**
-   * @desc 검증된 요청 데이터를 반환합니다.
-   * @returns {object} - 검증된 구매 요청 데이터를 포함하는 객체
-   */
   getValidatedData() {
     this.validate();
     return {
       category: this.category,
       user_id: this.user_id,
-      item_no: this.item_no,
-      price: this.price,
+      item_no: parseInt(this.item_no, 10),
+      price: parseInt(this.price, 10),
       event: this.event,
     };
   }
