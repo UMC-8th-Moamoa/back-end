@@ -27,45 +27,60 @@ class BirthdayService {
   }
 
 // 생일까지 남은 일수 계산
-  calculateBirthdayCountdown(birthday, userName) {
-    const today = new Date();
-    const birthDate = new Date(birthday);
-    
-    // 시간을 00:00:00으로 설정하여 정확한 날짜 비교
-    today.setHours(0, 0, 0, 0);
-    
-    // 올해 생일 계산
-    let birthdayThisYear = new Date(today.getFullYear(), birthDate.getMonth(), birthDate.getDate());
-    birthdayThisYear.setHours(0, 0, 0, 0);
-    
-    let isBirthdayPassed = false;
-    
-    // 올해 생일이 지났으면 내년 생일로 설정
-    if (birthdayThisYear < today) {
-      birthdayThisYear.setFullYear(today.getFullYear() + 1);
-      isBirthdayPassed = true;
-    }
-
-    // 남은 일수 계산
-    const timeDiff = birthdayThisYear.getTime() - today.getTime();
-    const daysRemaining = Math.ceil(timeDiff / (1000 * 3600 * 24));
-    
-    // 생일 당일 확인
-    const isBirthdayToday = daysRemaining === 0;
-    
-    // 포맷팅
-    const formattedDaysRemaining = this.formatDaysRemaining(daysRemaining, isBirthdayToday);
-    const message = this.createBirthdayMessage(userName, isBirthdayToday);
-
-    return {
-      daysRemaining,
-      formattedDaysRemaining,
-      birthdayThisYear: birthdayThisYear.toISOString(),
-      isBirthdayToday,
-      isBirthdayPassed,
-      message
-    };
+calculateBirthdayCountdown(birthday, userName) {
+  // 현재 날짜를 UTC 기준으로 가져오기
+  const today = new Date();
+  const birthDate = new Date(birthday);
+  
+  // UTC 기준으로 오늘 날짜 설정
+  const todayUTC = new Date(Date.UTC(
+    today.getFullYear(),
+    today.getMonth(),
+    today.getDate()
+  ));
+  
+  // 생일의 월/일을 UTC 기준으로 추출
+  const birthMonth = birthDate.getUTCMonth();
+  const birthDay = birthDate.getUTCDate();
+  
+  // 올해 생일을 UTC 기준으로 계산
+  let birthdayThisYearUTC = new Date(Date.UTC(
+    today.getFullYear(),
+    birthMonth,
+    birthDay
+  ));
+  
+  let isBirthdayPassed = false;
+  
+  // 올해 생일이 지났으면 내년 생일로 설정
+  if (birthdayThisYearUTC < todayUTC) {
+    birthdayThisYearUTC = new Date(Date.UTC(
+      today.getFullYear() + 1,
+      birthMonth,
+      birthDay
+    ));
+    isBirthdayPassed = true;
   }
+
+  // 남은 일수 계산
+  const timeDiff = birthdayThisYearUTC.getTime() - todayUTC.getTime();
+  const daysRemaining = Math.ceil(timeDiff / (1000 * 3600 * 24));
+  
+  // 생일 당일 확인
+  const isBirthdayToday = daysRemaining === 0;
+  
+  // 포맷팅
+  const formattedDaysRemaining = this.formatDaysRemaining(daysRemaining, isBirthdayToday);
+  const message = this.createBirthdayMessage(userName, isBirthdayToday);
+
+  return {
+    daysRemaining,
+    formattedDaysRemaining,
+    isBirthdayToday,
+    isBirthdayPassed,
+    message
+  };
+}
 
 // 남은 일수 포맷팅
   formatDaysRemaining(daysRemaining, isBirthdayToday) {
