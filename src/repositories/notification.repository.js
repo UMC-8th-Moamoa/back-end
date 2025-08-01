@@ -160,12 +160,11 @@ class NotificationRepository {
    * @param {string} message - 알림 메시지
    * @returns {Object} 생성된 알림 정보
    */
-  async createNotification(userId, type, message) {
+  async createNotification(userId, message) {
     try {
       const notification = await prisma.notification.create({
         data: {
           userId: userId,
-          type: type,
           message: message,
           isRead: false
         }
