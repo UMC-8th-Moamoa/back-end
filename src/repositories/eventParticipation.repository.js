@@ -132,14 +132,14 @@ class EventParticipationRepository {
     try {
       const followRelation = await prisma.follow.findUnique({
         where: {
-          follower_user_id_following_user_id: {
-            follower_user_id: followerUserId,
-            following_user_id: followingUserId
+          followerId_followingId: {
+            followerId: followerUserId,
+            followingId: followingUserId
           }
         }
       });
 
-      return followRelation && followRelation.status === 'accepted';
+      return !!followRelation;
     } catch (error) {
       console.error('팔로우 관계 확인 실패:', error);
       throw error;
