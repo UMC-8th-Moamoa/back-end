@@ -50,9 +50,12 @@ jobs:
           
           pm2 start ecosystem.config.cjs --env production
 
+          echo "Warming up app..."
+          curl -s http://localhost:3000/preload > /dev/null || true
+
           
           # 헬스체크
-          sleep 10
+          sleep 20
           if curl -f http://54.180.138.131:3000/health; then
             echo "Deployment successful"
             pm2 save
