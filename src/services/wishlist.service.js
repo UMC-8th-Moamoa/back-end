@@ -1,5 +1,6 @@
 import { wishlistRepository } from '../repositories/wishlist.repository.js';
 import { wishlistDto } from '../dtos/wishlist.dto.js';
+import { naverShoppingService } from './naverShopping.service.js';
 
 class WishlistService {
   async createWishlist(userId, wishlistData) {
@@ -140,19 +141,108 @@ class WishlistService {
     return wishlistDto.toMyWishlistsResponse(responseData);
   }
 
-  // 실제 구현에서는 외부 크롤링 서비스나 라이브러리 사용
+  // 네이버 쇼핑 API를 활용한 실제 크롤링 로직
   async crawlProductData(url) {
-    // TODO: 실제 크롤링 로직 구현
-    // 임시로 더미 데이터 반환
     try {
-      // 예시: puppeteer, cheerio 등을 사용한 크롤링
+      let searchQuery = '';
+      
+      // 1. URL 파라미터에서 검색어 추출 시도
+      try {
+        const urlObj = new URL(url);
+        searchQuery = urlObj.searchParams.get('query') || 
+                     urlObj.searchParams.get('q') || 
+                     urlObj.searchParams.get('keyword') ||
+                     urlObj.searchParams.get('search') ||
+                     urlObj.searchParams.get('prdNm') ||
+                     urlObj.searchParams.get('product');
+        
+        // 2. 경로에서 상품 정보 추출 시도
+        if (!searchQuery) {
+          const pathname = urlObj.pathname;
+          const pathSegments = pathname.split('/').filter(segment => segment.length > 0);
+          
+          // 일반적인 상품 URL 패턴에서 상품명 추출 시도
+          for (const segment of pathSegments) {
+            if (segment.length > 2 && !segment.match(/^\d+$/)) {
+              // 숫자만 있는 세그먼트는 제외하고, 의미있는 텍스트 찾기
+              searchQuery = decodeURIComponent(segment.replace(/[-_]/g, ' '));
+              break;
+            }
+          }
+        }
+        
+        // 3. 도메인명에서 브랜드명 추출
+        if (!searchQuery) {
+          const hostname = urlObj.hostname.replace('www.', '').replace('m.', '');
+          const domainParts = hostname.split('.');
+          
+          // 잘 알려진 쇼핑몰 도메인 체크
+          const knownMalls = {
+            'coupang.com': '쿠팡',
+            'gmarket.co.kr': '지마켓',
+            'auction.co.kr': '옥션',
+            '11st.co.kr': '11번가',
+            'yes24.com': 'YES24',
+            'interpark.com': '인터파크',
+            'lotte.com': '롯데',
+            'shinsegae.com': '신세계',
+            'ssg.com': 'SSG',
+            'homeplus.co.kr': '홈플러스'
+          };
+          
+          const mallName = knownMalls[hostname] || domainParts[0];
+          searchQuery = mallName + ' 상품';
+        }
+        
+      } catch (urlError) {
+        console.warn('URL 파싱 실패:', urlError.message);
+        searchQuery = '인기상품';
+      }
+
+      // 4. 검색어가 너무 짧으면 보완
+      if (searchQuery.length < 2) {
+        searchQuery = '인기상품';
+      }
+
+      console.log(`🔍 URL "${url}"에서 추출한 검색어: "${searchQuery}"`);
+
+      // 5. 네이버 쇼핑 API로 상품 검색
+      const products = await naverShoppingService.searchProducts(searchQuery, 5);
+      
+      if (!products || products.length === 0) {
+        console.warn(`검색어 "${searchQuery}"로 상품을 찾을 수 없습니다`);
+        
+        // 검색어를 더 간단하게 만들어서 재시도
+        const simplifiedQuery = searchQuery.split(' ')[0];
+        if (simplifiedQuery !== searchQuery && simplifiedQuery.length > 1) {
+          console.log(`🔍 간단한 검색어로 재시도: "${simplifiedQuery}"`);
+          const retryProducts = await naverShoppingService.searchProducts(simplifiedQuery, 1);
+          if (retryProducts && retryProducts.length > 0) {
+            const product = retryProducts[0];
+            return {
+              productName: product.productName,
+              price: product.price,
+              imageUrl: product.productImageUrl
+            };
+          }
+        }
+        
+        return null;
+      }
+
+      // 6. 가장 적합한 상품 선택 (첫 번째 상품)
+      const product = products[0];
+      
+      console.log(`✅ 크롤링 성공: ${product.productName} - ${product.price.toLocaleString()}원`);
+      
       return {
-        productName: "크롤링된 상품명",
-        price: 50000,
-        imageUrl: "https://example.com/crawled-image.jpg"
+        productName: product.productName,
+        price: product.price,
+        imageUrl: product.productImageUrl
       };
+      
     } catch (error) {
-      console.error('크롤링 실패:', error);
+      console.error('상품 데이터 크롤링 실패:', error);
       return null;
     }
   }
