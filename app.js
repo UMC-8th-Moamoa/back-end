@@ -248,6 +248,9 @@ app.use('/api/shopping', shoppingRoutes);
 app.use('/api/mypage', mypageRoutes);
 
 
+
+
+
 // 에러 처리
 app.use(notFoundHandler);
 app.use(globalErrorHandler);
@@ -306,4 +309,10 @@ process.on('unhandledRejection', (reason, promise) => {
   console.error('❌ 처리되지 않은 Promise 거부:', reason);
   console.error('Promise:', promise);
   process.exit(1);
+});
+
+// app.js
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+  if (process.send) process.send('ready'); // PM2에게 준비완료 신호
 });

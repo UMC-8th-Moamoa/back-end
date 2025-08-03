@@ -138,10 +138,9 @@
   model Notification {
     id           Int              @id @default(autoincrement())
     userId       Int
-    type         NotificationType
-    title        String           @db.VarChar(100)
-    message      String?          @db.Text
+    message      String          @db.Text
     isRead       Boolean          @default(false)
+    readAt       DateTime?
     createdAt    DateTime         @default(now())
     updatedAt    DateTime         @updatedAt
 
@@ -346,6 +345,7 @@
     sentAt          DateTime  @default(now())
     readAt          DateTime?
     createdAt       DateTime  @default(now())
+    updatedAt       DateTime  @updatedAt
 
     birthdayEvent BirthdayEvent? @relation(fields: [birthdayEventId], references: [id])
     sender        User           @relation("LetterSender", fields: [senderId], references: [id])
