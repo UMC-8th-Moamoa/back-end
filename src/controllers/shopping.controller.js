@@ -22,8 +22,8 @@ class shoppingController {
 
     static getItemDetail = catchAsync(async (req, res) => {
         const itemDetailRequest = new ItemDetailRequestDTO(req.query);
-        const { category, id } = itemDetailRequest.getValidatedData();
-        const item = await shoppingService.getItemDetail({ category, id });
+        const { id } = itemDetailRequest.getValidatedData();
+        const item = await shoppingService.getItemDetail({ id });
         const responseDTO = new ItemDetailResponseDTO(item);
         res.success(responseDTO.toResponse());
     })

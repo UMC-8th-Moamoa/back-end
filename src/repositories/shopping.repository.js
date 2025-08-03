@@ -11,6 +11,18 @@ class shoppingRepository {
         return items;
     };
 
+    /**
+     * @desc ID로 아이템 상세 정보 조회 (간소화된 버전)
+     */
+    static findItemDetailById = async (id) => {
+        const item = await prisma.item.findUnique({
+            where: {
+                id: id,
+            },
+        });
+        return item;
+    };
+
     static findItemDetailByIdAndCategory = async (category, id) => {
         const item = await prisma.item.findUnique({
             where: {
