@@ -7,10 +7,10 @@ class shoppingService {
         return items;
     }
 
-    static getItemDetail = async ({ category, id }) => {
-        const item = await shoppingRepository.findItemDetailByIdAndCategory(category, id);
+    static getItemDetail = async ({ id }) => {
+        const item = await shoppingRepository.findItemDetailById(id);
         if (!item) {
-            throw new ValidationError('Item not found with the provided category and ID.');
+            throw new ValidationError('Item not found with the provided ID.');
         }
         return item;
     }
