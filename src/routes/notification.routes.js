@@ -263,15 +263,11 @@ router.patch('/read-all',
  *             type: object
  *             required:
  *               - userId
- *               - type
  *               - message
  *             properties:
  *               userId:
  *                 type: integer
  *                 example: 123
- *               type:
- *                 type: string
- *                 example: "SAVINGS_COMPLETED"
  *               message:
  *                 type: string
  *                 example: "30,000원을 채원님의 모아에 저장했어요"

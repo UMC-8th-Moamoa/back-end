@@ -102,9 +102,8 @@ class UpcomingBirthdayRepository {
               )
           END as d_day
         FROM users u
-        INNER JOIN follows f ON u.id = f.following_user_id
-        WHERE f.follower_user_id = ?
-          AND f.status = 'accepted'
+        INNER JOIN follows f ON u.id = f.followingId
+        WHERE f.followerId = ?
           AND u.birthday IS NOT NULL
           AND (
             CASE 
@@ -170,9 +169,8 @@ class UpcomingBirthdayRepository {
               )
           END as d_day
         FROM users u
-        INNER JOIN follows f ON u.id = f.following_user_id
-        WHERE f.follower_user_id = ${userId}
-          AND f.status = 'accepted'
+        INNER JOIN follows f ON u.id = f.followingId
+        WHERE f.followerId = ${userId}
           AND u.birthday IS NOT NULL
           AND (
             CASE 
@@ -255,14 +253,14 @@ class UpcomingBirthdayRepository {
     try {
       const followRelation = await prisma.follow.findUnique({
         where: {
-          follower_user_id_following_user_id: {
-            follower_user_id: followerUserId,
-            following_user_id: followingUserId
+          followerId_followingId: {
+            followerId: followerUserId,
+            followingId: followingUserId
           }
         }
       });
 
-      return followRelation && followRelation.status === 'accepted';
+      return !!followRelation;
     } catch (error) {
       console.error('팔로우 관계 확인 실패:', error);
       throw error;
@@ -276,8 +274,7 @@ class UpcomingBirthdayRepository {
     try {
       return await prisma.follow.findMany({
         where: {
-          follower_user_id: userId,
-          status: 'accepted'
+          followerId: userId
         },
         include: {
           following: {
