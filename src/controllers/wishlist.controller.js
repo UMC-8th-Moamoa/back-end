@@ -98,7 +98,17 @@ import { wishlistService } from '../services/wishlist.service.js';
  * @swagger
  * /api/wishlists:
  *   post:
- *     summary: 위시리스트 등록
+ *     summary: 위시리스트 등록 (네이버 쇼핑 API 크롤링 지원)
+ *     description: |
+ *       위시리스트를 등록합니다. 두 가지 방식을 지원합니다:
+ *       
+ *       1. **URL 자동 입력**: 상품 URL을 제공하면 네이버 쇼핑 API를 통해 자동으로 상품 정보를 크롤링합니다.
+ *       2. **수동 입력**: 상품 정보를 직접 입력합니다.
+ *       
+ *       URL 자동 입력 시 다음과 같은 방식으로 검색어를 추출합니다:
+ *       - URL 파라미터에서 query, q, keyword, search 등의 값 추출
+ *       - URL 경로에서 상품명 추출
+ *       - 도메인명에서 브랜드명 추출
  *     tags: [Wishlists]
  *     security:
  *       - bearerAuth: []
@@ -112,10 +122,16 @@ import { wishlistService } from '../services/wishlist.service.js';
  *               - $ref: '#/components/schemas/WishlistCreateIMAGE'
  *           examples:
  *             URL 입력:
- *               summary: 자동 입력 (URL 크롤링)
+ *               summary: 자동 입력 (네이버 쇼핑 API 크롤링)
  *               value:
  *                 insertType: "URL"
- *                 url: "https://www.example.com/product/airpods"
+ *                 url: "https://shopping.naver.com/home/p/12345678"
+ *                 isPublic: true
+ *             쿠팡 URL:
+ *               summary: 쿠팡 상품 URL 예시
+ *               value:
+ *                 insertType: "URL"
+ *                 url: "https://www.coupang.com/vp/products/1234567890"
  *                 isPublic: true
  *             IMAGE 입력:
  *               summary: 수동 입력 (직접 입력)

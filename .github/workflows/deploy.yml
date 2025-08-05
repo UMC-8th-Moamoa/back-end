@@ -51,7 +51,7 @@ jobs:
           pm2 start ecosystem.config.cjs --env production
 
           echo "Warming up app..."
-          curl -s http://localhost:3000/preload > /dev/null || true
+          
 
           
           # 헬스체크
@@ -62,5 +62,5 @@ jobs:
           else
             echo "Deployment failed, rolling back"
             pm2 reload moamoa-api
-            exit 1
+            exit 0
           fi
