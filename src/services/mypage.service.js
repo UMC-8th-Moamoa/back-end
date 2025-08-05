@@ -7,6 +7,15 @@ import {
 
 class MypageService {
     async getMyInfo(userIdFromToken) {
+        console.log('🔍 Service: getMyInfo called with userIdFromToken:', userIdFromToken);
+        
+        if (!userIdFromToken) {
+            console.error('❌ Service: userIdFromToken is undefined/null');
+            const error = new Error('사용자 ID가 제공되지 않았습니다.');
+            error.statusCode = 400;
+            throw error;
+        }
+
         const userInfo = await mypageRepository.findUserByUserId(userIdFromToken, true);
 
         if (!userInfo) {
@@ -26,7 +35,17 @@ class MypageService {
 
         return formattedMyInfo;
     }
+
     async getMyInfoChange(userIdFromToken) {
+        console.log('🔍 Service: getMyInfoChange called with userIdFromToken:', userIdFromToken);
+        
+        if (!userIdFromToken) {
+            console.error('❌ Service: userIdFromToken is undefined/null');
+            const error = new Error('사용자 ID가 제공되지 않았습니다.');
+            error.statusCode = 400;
+            throw error;
+        }
+
         const userInfo = await mypageRepository.findUserByUserId(userIdFromToken, false);
 
         if (!userInfo) {
@@ -48,7 +67,26 @@ class MypageService {
     }
 
     async getOtherUserInfo(targetUserId, currentUserId) {
+        console.log('=== DEBUG: Service getOtherUserInfo ===');
+        console.log('targetUserId:', targetUserId);
+        console.log('currentUserId:', currentUserId);
+        
+        if (!targetUserId) {
+            console.error('❌ Service: targetUserId is undefined/null');
+            const error = new Error('대상 사용자 ID가 제공되지 않았습니다.');
+            error.statusCode = 400;
+            throw error;
+        }
+
+        if (!currentUserId) {
+            console.error('❌ Service: currentUserId is undefined/null');
+            const error = new Error('현재 사용자 ID가 제공되지 않았습니다.');
+            error.statusCode = 400;
+            throw error;
+        }
+
         const targetUserInfo = await mypageRepository.findUserByUserId(targetUserId, true);
+        console.log('✅ Service: Repository result:', targetUserInfo);
 
         if (!targetUserInfo) {
             const error = new Error('다른 사용자 정보를 찾을 수 없습니다.');
@@ -56,7 +94,14 @@ class MypageService {
             throw error;
         }
 
-        const isFollowing = await mypageRepository.isFollowingUser(currentUserId, targetUserId);
+        console.log('🔍 Service: Checking follow relationship - currentUserId:', currentUserId, 'targetUserId:', targetUserId);
+        
+        // Get both following relationships
+        let followRelationship = { is_following: false, is_follower: false };
+        if (currentUserId && targetUserId) {
+            followRelationship = await mypageRepository.getFollowRelationship(currentUserId, targetUserId);
+            console.log('✅ Service: Follow relationship result:', followRelationship);
+        }
 
         const formattedOtherInfo = new OtherInfoDTO({
             user_id: targetUserInfo.user_id,
@@ -64,56 +109,22 @@ class MypageService {
             birthday: targetUserInfo.birthday,
             followers_num: targetUserInfo.followers_num,
             following_num: targetUserInfo.following_num,
-            is_following: isFollowing,
+            is_following: followRelationship.is_following,
+            is_follower: followRelationship.is_follower,
             photo: targetUserInfo.photo
         });
 
+        console.log('✅ Service: Final formatted result:', formattedOtherInfo);
         return formattedOtherInfo;
-    }
-    async chooseKeyword(userIdFromToken, keywords) {
-        const updatedUser = await mypageRepository.updateUserKeywords(userIdFromToken, keywords);
-
-        if (!updatedUser) {
-            const error = new Error('키워드를 업데이트할 사용자 정보를 찾을 수 없습니다.');
-            error.statusCode = 404;
-            throw error;
-        } 
-
-        return updatedUser.keywords;
-    }
-    async blockUser(blockerUserId, blockedUserId, reason) {
-        const blocker = await mypageRepository.findUserByUserId(blockerUserId, false);
-        const blocked = await mypageRepository.findUserByUserId(blockedUserId, false);
-
-        if (!blocker) {
-            const error = new Error('차단을 요청하는 사용자 ID를 찾을 수 없습니다.');
-            error.statusCode = 404;
-            throw error;
-        }
-        if (!blocked) {
-            const error = new Error('차단할 대상 사용자 ID를 찾을 수 없습니다.');
-            error.statusCode = 404;
-            throw error;
-        }
-
-        const existingBlock = await mypageRepository.findBlock(blocker.id, blocked.id);
-        if (existingBlock) {
-            const error = new Error('이미 차단된 사용자입니다.');
-            error.statusCode = 409; // Conflict
-            throw error;
-        }
-
-        const blockedRecord = await mypageRepository.blockUser(blocker.id, blocked.id, reason);
-
-        return {
-            blocker_user_id: blockerUserId,
-            blocked_user_id: blockedUserId,
-            reason: blockedRecord.reason,
-            createdAt: blockedRecord.createdAt
-        };
     }
     
     async createCustomerServicePost(userId, title, content, isPrivate) {
+        if (!userId) {
+            const error = new Error('사용자 ID가 제공되지 않았습니다.');
+            error.statusCode = 400;
+            throw error;
+        }
+
         const user = await mypageRepository.findUserByUserId(userId, false);
         if (!user) {
             const error = new Error('사용자 정보를 찾을 수 없습니다.');
@@ -132,6 +143,12 @@ class MypageService {
     }
 
     async requestFollow(followerUserId, followingUserId) {
+        if (!followerUserId || !followingUserId) {
+            const error = new Error('팔로워 및 팔로잉 사용자 ID가 모두 필요합니다.');
+            error.statusCode = 400;
+            throw error;
+        }
+
         const follower = await mypageRepository.findUserByUserId(followerUserId, false);
         const following = await mypageRepository.findUserByUserId(followingUserId, false);
 

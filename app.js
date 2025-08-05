@@ -311,8 +311,3 @@ process.on('unhandledRejection', (reason, promise) => {
   process.exit(1);
 });
 
-// app.js
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-  if (process.send) process.send('ready'); // PM2에게 준비완료 신호
-});

@@ -79,10 +79,10 @@ const router = express.Router();
  *           description: 팔로잉 수
  *         followers:
  *           type: boolean
- *           description: 나와의 팔로워 여부
+ *           description: 상대가 나를 팔로우하는지 (is_follower)
  *         followings:
  *           type: boolean
- *           description: 나와의 팔로잉 여부
+ *           description: 내가 상대를 팔로우하는지 (is_following)
  *         image:
  *           type: string
  *           description: 사진 URL
@@ -201,7 +201,7 @@ router.get('/mypagechange_info',
  *              birthday: "2005-11-25"
  *              followers_num: 21
  *              followings_num: 30
- *              followers: 21
+ *              followers: false
  *              followings: true
  *              image: "https://example.com/item1.jpg"
  *      400:
@@ -219,112 +219,7 @@ router.get('/otherpage_info',
 
 /**
  * @swagger
- * /api/shopping/choose_keyword:
- *   post:
- *     summary: 키워드 선택
- *     tags: [Mypage]
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             required:
- *               - user_id
- *               - keyword
- *             properties:
- *               user_id:
- *                 type: string
- *                 description: 사용자 ID
- *               keyword:
- *                 type: array
- *                 items:
- *                   type: array
- *                 description: 키워드 내용
- *     responses:
- *       201:
- *         description: 키워드 추가 성공
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 resultType:
- *                   type: string
- *                   example: 
- *                     success: true
- *                     user_id: "lesly"
- *                     keyword: ["먹거리", "주얼리", "옷"]
- *       400:
- *         description: 잘못된 요청
- *      
- */
-router.post('/choose_keyword',
-  authenticateJWT,
-  mypageController.chooseKeyword
-);
-
-
-/**
- * @swagger
- * /api/shopping/block_user:
- *   post:
- *     summary: 사용자 차단
- *     tags: [Mypage]
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             required:
- *               - user_id
- *               - keyword
- *             properties:
- *               user_id:
- *                 type: string
- *                 description: 사용자 ID
- *               target_id:
- *                 type: string
- *                 description: 차단할 상대 ID
- *               reason:
- *                 type: string
- *                 description: 차단하는 이유
- *     responses:
- *       201:
- *         description: 키워드 추가 성공
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 resultType:
- *                   type: string
- *                   example: 
- *                     success: true
- *                     message: "차단이 완료되었습니다"
- *                     user_id: "lesly"
- *                     target_id: "minwoo123"
- *                     reason: "스팸 메시지를 보냄"
- *       400:
- *         description: 잘못된 요청
- *       403:
- *         description: 접근 권한 없음
- *       404:
- *         description: 사용자 또는 대상 사용자 ID를 찾을 수 없음
- *       409:
- *         description: 이미 차단된 사용자
- *       500:
- *         description: 서버 내부 오류
- */
-router.post('/block_user',
-  authenticateJWT,
-  mypageController.blockUser
-);
-
-/**
- * @swagger
- * /api/customer_service:
+ * /api/mypage/customer_service:
  *   post:
  *     summary: 고객센터 글 등록
  *     tags: [Mypage]
@@ -402,7 +297,7 @@ router.post('/customer_service',
 
 /**
  * @swagger
- * /api/follow/request:
+ * /api/mypage/follow/request:
  *   post:
  *     summary: 팔로우 요청
  *     tags: [Mypage]
@@ -460,11 +355,9 @@ router.post('/customer_service',
  *         description: 서버 내부 오류
  */
 
-
 router.post('/follow/request',
   authenticateJWT,
   mypageController.postFollowRequest
 );
-
 
 export default router;
