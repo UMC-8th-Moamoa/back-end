@@ -5,6 +5,9 @@ import { wishlistController } from '../controllers/wishlist.controller.js';
 
 const router = express.Router();
 
+// 인기 상품 상위 10개 조회 (인증 불필요)
+router.get('/popular', wishlistController.getPopularProducts);
+
 // 위시리스트 등록 (URL 크롤링 및 수동 입력 모두 지원)
 router.post('/', 
   authenticateJWT,
