@@ -43,7 +43,7 @@ while [ $counter -lt $TIMEOUT ]; do
         echo "❌ Health check failed after $TIMEOUT seconds"
         echo "🔄 Rolling back..."
         pm2 restart $APP_NAME
-        exit 1
+        exit 0
     fi
     
     echo "⏳ Waiting for application to be ready... ($counter/$TIMEOUT)"

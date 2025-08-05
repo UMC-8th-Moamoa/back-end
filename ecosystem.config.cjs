@@ -2,7 +2,7 @@ module.exports = {
   apps: [{
     name: 'moamoa-api',
     script: './app.js', // 또는 메인 파일
-    instances: 4, // CPU 코어 수에 맞게 조정
+    instances: "4", // CPU 코어 수에 맞게 조정
     exec_mode: 'cluster',
     
     // 무중단 배포 설정
