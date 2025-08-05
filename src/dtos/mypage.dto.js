@@ -71,13 +71,14 @@ export class MyInfoChangeDTO {
 }
 
 export class OtherInfoDTO {
-    constructor({ user_id, name, birthday, followers_num, following_num, is_following, photo }) {
+    constructor({ user_id, name, birthday, followers_num, following_num, is_following, is_follower, photo }) {
         this.user_id = user_id;
         this.name = name;
-        this.birthday = birthday ? this.#formatDate(birthday) : null; // #formatDate 사용
+        this.birthday = birthday ? this.#formatDate(birthday) : null;
         this.followers_num = followers_num || 0;
         this.following_num = following_num || 0;
-        this.is_following = is_following; // boolean 값
+        this.is_following = is_following; // 내가 상대를 팔로우하는지
+        this.is_follower = is_follower;   // 상대가 나를 팔로우하는지
         this.photo = photo || null;
     }
 
@@ -94,48 +95,6 @@ export class OtherInfoDTO {
         } catch (e) {
             return null;
         }
-    }
-}
-export class ChooseKeywordRequestDTO {
-    constructor(body) {
-        if (!body || !body.user_id || !Array.isArray(body.keyword)) {
-            throw new Error('user_id와 keyword 배열은 필수 파라미터입니다.');
-        }
-        if (typeof body.user_id !== 'string' || body.user_id.length < 4 || body.user_id.length > 20) {
-            throw new Error('user_id는 4자 이상 20자 이하의 문자열이어야 합니다.');
-        }
-        if (!/^[a-zA-Z0-9_]+$/.test(body.user_id)) {
-            throw new Error('user_id는 영문, 숫자, 언더스코어만 포함할 수 있습니다.');
-        }
-        if (body.keyword.some(k => typeof k !== 'string' || k.trim() === '')) {
-            throw new Error('keyword 배열의 모든 요소는 비어있지 않은 문자열이어야 합니다.');
-        }
-        this.user_id = body.user_id;
-        this.keyword = body.keyword.map(k => k.trim()); // 공백 제거
-    }
-}
-
-export class BlockUserRequestDTO {
-    constructor(body) {
-        if (!body || !body.user_id || !body.target_id) {
-            throw new Error('user_id와 target_id는 필수 파라미터입니다.');
-        }
-        if (typeof body.user_id !== 'string' || body.user_id.length < 4 || body.user_id.length > 20) {
-            throw new Error('user_id는 4자 이상 20자 이하의 문자열이어야 합니다.');
-        }
-        if (!/^[a-zA-Z0-9_]+$/.test(body.user_id)) {
-            throw new Error('user_id는 영문, 숫자, 언더스코어만 포함할 수 있습니다.');
-        }
-        if (typeof body.target_id !== 'string' || body.target_id.length < 4 || body.target_id.length > 20) {
-            throw new Error('target_id는 4자 이상 20자 이하의 문자열이어야 합니다.');
-        }
-        if (!/^[a-zA-Z0-9_]+$/.test(body.target_id)) {
-            throw new Error('target_id는 영문, 숫자, 언더스코어만 포함할 수 있습니다.');
-        }
-
-        this.user_id = body.user_id;
-        this.target_id = body.target_id;
-        this.reason = body.reason || null; // reason은 선택 사항
     }
 }
 
@@ -167,7 +126,6 @@ export class CreateCustomerServiceRequestDTO {
     }
 }
 
-// 새로운 DTO: FollowRequestDTO
 export class FollowRequestDTO {
     constructor(body) {
         if (!body || !body.user_id || !body.target_id) {
