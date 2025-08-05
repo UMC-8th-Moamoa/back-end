@@ -1,5 +1,7 @@
 import { catchAsync } from '../middlewares/errorHandler.js';
 import { wishlistService } from '../services/wishlist.service.js';
+import { naverShoppingService } from '../services/naverShopping.service.js';
+import { naverBestProductsService } from '../services/naverBestProducts.service.js';
 
 /**
  * @swagger
@@ -435,9 +437,240 @@ const getMyWishlists = catchAsync(async (req, res) => {
   }
 });
 
+/**
+ * @swagger
+ * /api/wishlists/popular:
+ *   get:
+ *     summary: 네이버 쇼핑 베스트 상품 상위 10개 조회
+ *     description: |
+ *       네이버 쇼핑 베스트 상품 페이지를 직접 크롤링하여 실시간 인기 상품 상위 10개의 데이터를 가져옵니다.
+ *       상품명, 상품가격, 상품이미지, 순위 데이터를 제공합니다.
+ *       
+ *       크롤링 방식:
+ *       1. **Puppeteer**: 브라우저 자동화로 동적 콘텐츠 크롤링
+ *       2. **Axios + Cheerio**: 정적 HTML 파싱 (빠른 대안)
+ *       3. **더미 데이터**: 크롤링 실패 시 대체 데이터 제공
+ *       
+ *       실제 네이버 쇼핑 베스트 상품 페이지에서 데이터를 가져오므로 실시간 인기 상품을 확인할 수 있습니다.
+ *     tags: [Wishlists]
+ *     parameters:
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           maximum: 20
+ *           default: 10
+ *         description: 가져올 상품 개수 (최대 20개)
+ *         example: 10
+ *     responses:
+ *       200:
+ *         description: 베스트 상품 목록 조회 성공
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 resultType:
+ *                   type: string
+ *                   example: "SUCCESS"
+ *                 error:
+ *                   type: null
+ *                 success:
+ *                   type: object
+ *                   properties:
+ *                     products:
+ *                       type: array
+ *                       items:
+ *                         type: object
+ *                         properties:
+ *                           productName:
+ *                             type: string
+ *                             description: 상품명
+ *                           price:
+ *                             type: integer
+ *                             description: 상품 가격
+ *                           productImageUrl:
+ *                             type: string
+ *                             description: 상품 이미지 URL
+ *                           url:
+ *                             type: string
+ *                             description: 상품 페이지 URL
+ *                           mallName:
+ *                             type: string
+ *                             description: 쇼핑몰명
+ *                           rank:
+ *                             type: integer
+ *                             description: 베스트 상품 순위
+ *                     total:
+ *                       type: integer
+ *                       description: 조회된 상품 개수
+ *                     source:
+ *                       type: string
+ *                       description: 데이터 출처
+ *                     crawledAt:
+ *                       type: string
+ *                       format: date-time
+ *                       description: 크롤링 수행 시간
+ *                     warning:
+ *                       type: string
+ *                       description: 경고 메시지 (더미 데이터 사용 시)
+ *             example:
+ *               resultType: "SUCCESS"
+ *               error: null
+ *               success:
+ *                 products:
+ *                   - productName: "삼성 갤럭시 S24 Ultra 256GB"
+ *                     price: 1570000
+ *                     productImageUrl: "https://shopping-phinf.pstatic.net/..."
+ *                     url: "https://shopping.naver.com/product/..."
+ *                     mallName: "네이버쇼핑"
+ *                     rank: 1
+ *                   - productName: "애플 아이폰 15 Pro 128GB"
+ *                     price: 1550000
+ *                     productImageUrl: "https://shopping-phinf.pstatic.net/..."
+ *                     url: "https://shopping.naver.com/product/..."
+ *                     mallName: "네이버쇼핑"
+ *                     rank: 2
+ *                 total: 10
+ *                 source: "네이버 쇼핑 베스트 상품"
+ *                 crawledAt: "2025-08-05T12:34:56.789Z"
+ *       400:
+ *         description: 크롤링 실패
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 resultType:
+ *                   type: string
+ *                   example: "FAIL"
+ *                 error:
+ *                   type: object
+ *                   properties:
+ *                     errorCode:
+ *                       type: string
+ *                       example: "CRAWLING_FAILED"
+ *                     reason:
+ *                       type: string
+ *                       example: "베스트 상품 데이터를 가져올 수 없습니다"
+ *                     data:
+ *                       type: object
+ *                       properties:
+ *                         limit:
+ *                           type: integer
+ *                 success:
+ *                   type: null
+ *       500:
+ *         description: 서버 오류
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 resultType:
+ *                   type: string
+ *                   example: "FAIL"
+ *                 error:
+ *                   type: object
+ *                   properties:
+ *                     errorCode:
+ *                       type: string
+ *                       example: "INTERNAL_ERROR"
+ *                     reason:
+ *                       type: string
+ *                       example: "베스트 상품 조회 중 오류가 발생했습니다"
+ *                 success:
+ *                   type: null
+ */
+const getPopularProducts = catchAsync(async (req, res) => {
+  const { limit = 10 } = req.query;
+  const requestedLimit = Math.min(parseInt(limit), 20); // 최대 20개로 제한
+
+  try {
+    console.log(`�️ 베스트 상품 ${requestedLimit}개 조회 요청`);
+    
+    // 네이버 쇼핑 베스트 상품 크롤링
+    const products = await naverBestProductsService.getBestProducts(requestedLimit);
+    
+    if (!products || products.length === 0) {
+      return res.error({
+        errorCode: "NO_PRODUCTS_FOUND",
+        reason: "베스트 상품을 찾을 수 없습니다. 잠시 후 다시 시도해주세요.",
+        data: { requestedLimit }
+      });
+    }
+
+    // 응답 데이터 구성 (유효성 검사 추가)
+    const responseProducts = products
+      .filter(product => {
+        // 유효한 상품명인지 검사 (최소 2글자 이상, 숫자만으로 구성된 이름 제외)
+        const isValidName = product.productName && 
+          product.productName.length >= 2 && 
+          !['정가', '할인율', '원', '할인', '무료배송', '리뷰'].includes(product.productName) &&
+          !/^[\d,\.원\s]+$/.test(product.productName) && // 숫자, 쉼표, 원만으로 구성된 이름 제외
+          product.productName !== product.price.toString();
+        
+        // 유효한 가격인지 검사 (1000원 이상)
+        const isValidPrice = product.price && product.price >= 1000;
+        
+        if (!isValidName) {
+          console.log(`❌ 유효하지 않은 상품명: "${product.productName}"`);
+        }
+        if (!isValidPrice) {
+          console.log(`❌ 유효하지 않은 가격: ${product.price}원`);
+        }
+        
+        return isValidName && isValidPrice;
+      })
+      .map((product, index) => ({
+        productName: product.productName,
+        price: product.price,
+        productImageUrl: product.productImageUrl || '',
+        url: product.url || '',
+        mallName: product.mallName || '네이버쇼핑',
+        rank: index + 1,
+        category: product.category || '기타'
+      }));
+
+    console.log(`✅ 유효한 베스트 상품 ${responseProducts.length}개 조회 완료`);
+    
+    // 유효한 상품이 없으면 에러 반환
+    if (responseProducts.length === 0) {
+      return res.error({
+        errorCode: "NO_VALID_PRODUCTS",
+        reason: "유효한 베스트 상품을 찾을 수 없습니다. API에서 올바르지 않은 데이터를 반환했습니다.",
+        data: { 
+          requestedLimit,
+          rawProductsCount: products.length,
+          invalidProducts: products.map(p => ({ name: p.productName, price: p.price }))
+        }
+      });
+    }
+    
+    res.success({
+      products: responseProducts,
+      total: responseProducts.length,
+      source: 'naver_api',
+      categories: [...new Set(responseProducts.map(p => p.category))],
+      crawledAt: new Date().toISOString()
+    });
+    
+  } catch (error) {
+    console.error('베스트 상품 조회 실패:', error);
+    
+    return res.error({
+      errorCode: "CRAWLING_FAILED",
+      reason: error.message || "베스트 상품 조회 중 오류가 발생했습니다",
+      data: { requestedLimit }
+    });
+  }
+});
+
 export const wishlistController = {
   createWishlist,
   getMyWishlists,
   updateWishlist,
-  deleteWishlist
+  deleteWishlist,
+  getPopularProducts
 };
