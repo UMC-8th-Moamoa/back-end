@@ -100,3 +100,7 @@ prisma/migrations/
 *.swp
 *.swo
 *~
+
+# AI directories
+blip2_ai/
+clip_ai/
