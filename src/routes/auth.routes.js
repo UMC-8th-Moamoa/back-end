@@ -352,74 +352,183 @@ router.post('/reset-password', validatePasswordReset, userController.resetPasswo
  */
 router.get('/nickname/:nickname/check', validateNicknameCheck, userController.checkNickname);
 
-/**
- * @swagger
- * /api/auth/google:
- *   get:
- *     summary: Google OAuth 로그인 시작
- *     tags: [Auth]
- *     responses:
- *       302:
- *         description: Google 인증 페이지로 리다이렉트
- */
-router.get('/google', (req, res, next) => {
-  import('passport').then(({ default: passport }) => {
-    passport.authenticate('google', { 
-      scope: ['profile', 'email'] 
-    })(req, res, next);
-  });
-});
-
-/**
- * @swagger
- * /api/auth/google/callback:
- *   get:
- *     summary: Google OAuth 콜백
- *     tags: [Auth]
- *     responses:
- *       302:
- *         description: 클라이언트로 리다이렉트 (토큰 포함)
- */
-router.get('/google/callback', handleSocialCallback('google'), catchAsync(async (req, res) => {
-  const user = req.user;
-  const tokens = generateTokenPair(user.id, user.email);
-  
-  const clientUrl = process.env.CLIENT_URL || 'http://localhost:3000';
-  res.redirect(`${clientUrl}/auth/callback?accessToken=${tokens.accessToken}&refreshToken=${tokens.refreshToken}`);
-}));
 
 /**
  * @swagger
  * /api/auth/kakao:
  *   get:
- *     summary: Kakao OAuth 로그인 시작
+ *     summary: 카카오 로그인 시작
  *     tags: [Auth]
+ *     description: 카카오 OAuth 인증 페이지로 리다이렉트
  *     responses:
  *       302:
- *         description: Kakao 인증 페이지로 리다이렉트
+ *         description: 카카오 인증 페이지로 리다이렉트
  */
-router.get('/kakao', (req, res, next) => {
-  import('passport').then(({ default: passport }) => {
-    passport.authenticate('kakao')(req, res, next);
-  });
-});
+router.get('/kakao', 
+  passport.authenticate('kakao', {
+    scope: ['profile_nickname', 'profile_image', 'account_email']
+  })
+);
 
 /**
  * @swagger
  * /api/auth/kakao/callback:
  *   get:
- *     summary: Kakao OAuth 콜백
+ *     summary: 카카오 로그인 콜백
  *     tags: [Auth]
+ *     description: 카카오에서 인증 후 콜백을 받는 엔드포인트
+ *     parameters:
+ *       - in: query
+ *         name: code
+ *         schema:
+ *           type: string
+ *         description: 카카오에서 전달받은 인가 코드
+ *       - in: query
+ *         name: error
+ *         schema:
+ *           type: string
+ *         description: 인증 실패 시 에러 코드
+ *       - in: query
+ *         name: error_description
+ *         schema:
+ *           type: string
+ *         description: 인증 실패 시 에러 설명
  *     responses:
  *       302:
- *         description: 클라이언트로 리다이렉트 (토큰 포함)
+ *         description: 클라이언트 앱으로 리다이렉트 (토큰 포함)
+ *       400:
+ *         description: 인증 실패
  */
-router.get('/kakao/callback', handleSocialCallback('kakao'), catchAsync(async (req, res) => {
-  const user = req.user;
-  const tokens = generateTokenPair(user.id, user.email);
-  
-  const clientUrl = process.env.CLIENT_URL || 'http://localhost:3000';
-  res.redirect(`${clientUrl}/auth/callback?accessToken=${tokens.accessToken}&refreshToken=${tokens.refreshToken}`);
-}));
+router.get('/kakao/callback', 
+  handleSocialCallback('kakao'),
+  catchAsync(async (req, res) => {
+    try {
+      // JWT 토큰 생성
+      const tokens = generateTokenPair(req.user.id, req.user.email);
+      
+      // 클라이언트 URL 설정
+      const clientUrl = process.env.CLIENT_URL || 'http://localhost:3000';
+      
+      // 토큰을 쿼리 파라미터로 전달하여 리다이렉트
+      const redirectUrl = `${clientUrl}/auth/callback?accessToken=${tokens.accessToken}&refreshToken=${tokens.refreshToken}`;
+      
+      res.redirect(redirectUrl);
+    } catch (error) {
+      console.error('카카오 로그인 콜백 처리 중 오류:', error);
+      const clientUrl = process.env.CLIENT_URL || 'http://localhost:3000';
+      res.redirect(`${clientUrl}/auth/error?message=${encodeURIComponent('로그인 처리 중 오류가 발생했습니다')}`);
+    }
+  })
+);
+/**
+ * @swagger
+ * /api/auth/kakao/unlink:
+ *   post:
+ *     summary: 카카오 계정 연결 해제
+ *     tags: [Auth]
+ *     security:
+ *       - bearerAuth: []
+ *     description: 사용자의 카카오 소셜 로그인 연결을 해제
+ *     responses:
+ *       200:
+ *         description: 연결 해제 성공
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 resultType:
+ *                   type: string
+ *                   example: SUCCESS
+ *                 success:
+ *                   type: object
+ *                   properties:
+ *                     message:
+ *                       type: string
+ *                       example: 카카오 계정 연결이 해제되었습니다
+ *       401:
+ *         description: 인증 필요
+ *       404:
+ *         description: 연결된 카카오 계정이 없음
+ */
+router.post('/kakao/unlink', 
+  authenticateJWT,
+  catchAsync(async (req, res) => {
+    const userId = req.user.id;
+    
+    // 카카오 소셜 로그인 정보 조회
+    const socialLogin = await prisma.socialLogin.findFirst({
+      where: {
+        userId: userId,
+        provider: 'kakao'
+      }
+    });
+    
+    if (!socialLogin) {
+      throw new NotFoundError('연결된 카카오 계정이 없습니다');
+    }
+    
+    // 소셜 로그인 정보 삭제
+    await prisma.socialLogin.delete({
+      where: { id: socialLogin.id }
+    });
+    
+    res.success({
+      message: '카카오 계정 연결이 해제되었습니다'
+    });
+  })
+);
+
+/**
+ * @swagger
+ * /api/auth/social/status:
+ *   get:
+ *     summary: 소셜 로그인 연결 상태 조회
+ *     tags: [Auth]
+ *     security:
+ *       - bearerAuth: []
+ *     description: 사용자의 소셜 로그인 연결 상태를 조회
+ *     responses:
+ *       200:
+ *         description: 연결 상태 조회 성공
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 resultType:
+ *                   type: string
+ *                   example: SUCCESS
+ *                 success:
+ *                   type: object
+ *                   properties:
+ *                     socialLogins:
+ *                       type: array
+ *                       items:
+ *                         type: object
+ *                         properties:
+ *                           provider:
+ *                             type: string
+ *                             example: kakao
+ *                           createdAt:
+ *                             type: string
+ *                             format: date-time
+ */
+router.get('/social/status', 
+  authenticateJWT,
+  catchAsync(async (req, res) => {
+    const userId = req.user.id;
+    
+    const socialLogins = await prisma.socialLogin.findMany({
+      where: { userId },
+      select: {
+        provider: true,
+        createdAt: true
+      }
+    });
+    
+    res.success({ socialLogins });
+  })
+);
 
 export default router;
