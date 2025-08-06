@@ -8,6 +8,12 @@ const router = express.Router();
 // 인기 상품 상위 10개 조회 (인증 불필요)
 router.get('/popular', wishlistController.getPopularProducts);
 
+// 이미지 분석을 통한 상품 추천 및 위시리스트 자동 등록 (인증 필요)
+router.post('/analyze', 
+  authenticateJWT,
+  wishlistController.analyzeImage
+);
+
 // 위시리스트 등록 (URL 크롤링 및 수동 입력 모두 지원)
 router.post('/', 
   authenticateJWT,
