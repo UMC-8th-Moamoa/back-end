@@ -103,3 +103,4 @@ prisma/migrations/
 
 # AI directories
 clip_ai/
+blip2_ai/venv/
