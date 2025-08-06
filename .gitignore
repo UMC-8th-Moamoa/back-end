@@ -102,5 +102,4 @@ prisma/migrations/
 *~
 
 # AI directories
-blip2_ai/
 clip_ai/
