@@ -21,7 +21,7 @@ router.post('/reset-password', userController.resetPassword);
 router.post('/email/check', userController.checkEmail);
 
 // 이메일 인증 코드 발송
-router.post('/verify-email', userController.sendEmailVerification);
+router.post('/email/verify-email', userController.sendEmailVerification);
 
 // 이메일 인증 코드 확인
 router.post('/email/send-code', userController.verifyEmailCode);
