@@ -217,7 +217,7 @@ router.post('/email/check', userController.checkEmail);
  *       200:
  *         description: 인증 코드 발송 성공
  */
-router.post('/email/send-id', validateEmailVerification, userController.sendEmailVerification);
+router.post('/email/verify-email', validateEmailVerification, userController.sendEmailVerification);
 
 /**
  * @swagger
