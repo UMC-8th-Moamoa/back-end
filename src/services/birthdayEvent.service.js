@@ -9,7 +9,7 @@ class BirthdayEventService {
     const { eventId } = options;
 
     // 1. 이벤트 기본 정보 조회
-    const event = await birthdayEventRepository.getEventById(eventId);
+    const event = await birthdayEventRepository.findEventById(eventId);
     if (!event) {
       throw new NotFoundError('생일 이벤트를 찾을 수 없습니다');
     }

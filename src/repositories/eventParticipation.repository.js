@@ -28,10 +28,9 @@ class EventParticipationRepository {
    */
   async getParticipantCount(eventId) {
     try {
-      return await prisma.eventParticipant.count({
+      return await prisma.birthdayEventParticipant.count({
         where: {
-          eventId: eventId,
-          status: 'active'
+          eventId: eventId
         }
       });
     } catch (error) {
@@ -45,7 +44,7 @@ class EventParticipationRepository {
    */
   async isUserParticipating(eventId, userId) {
     try {
-      const participation = await prisma.eventParticipant.findUnique({
+      const participation = await prisma.birthdayEventParticipant.findUnique({
         where: {
           eventId_userId: {
             eventId: eventId,
@@ -54,7 +53,7 @@ class EventParticipationRepository {
         }
       });
 
-      return participation && participation.status === 'active';
+      return participation !== null;
     } catch (error) {
       console.error('사용자 참여 확인 실패:', error);
       return false;
@@ -64,16 +63,13 @@ class EventParticipationRepository {
   /**
    * 이벤트 참여 추가
    */
-  async addParticipation(eventId, userId, amount, participationType) {
+  async addParticipation(eventId, userId, amount) {
     try {
-      return await prisma.eventParticipant.create({
+      return await prisma.birthdayEventParticipant.create({
         data: {
           eventId: eventId,
           userId: userId,
-          amount: amount,
-          participationType: participationType,
-          status: 'active',
-          participatedAt: new Date()
+          amount: amount
         }
       });
     } catch (error) {

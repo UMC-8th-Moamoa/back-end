@@ -4,7 +4,8 @@ import prisma from '../config/prismaClient.js';
 import { 
     MyInfoRequestDTO,
     ChooseKeywordRequestDTO,
-    BlockUserRequestDTO
+    BlockUserRequestDTO,
+    FollowRequestDTO
 } from '../dtos/mypage.dto.js';
 
 class mypageController {

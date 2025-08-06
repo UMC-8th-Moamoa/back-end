@@ -19,6 +19,9 @@ import { globalErrorHandler, notFoundHandler } from './src/middlewares/errorHand
 // WebSocket 초기화 import
 import { initializeSocket } from './src/utils/websocket/notificationSocket.js';
 
+// 자동 이벤트 서비스 import
+import './src/services/autoEvent.service.js';
+
 // Express 앱 생성
 const app = express();
 
@@ -216,13 +219,19 @@ import letterHomeRoutes from './src/routes/letterHome.routes.js';
 import upcomingBirthdayRoutes from './src/routes/upcomingBirthday.routes.js';
 import birthdayRoutes from './src/routes/birthday.routes.js';
 import calendarRoutes from './src/routes/calendar.routes.js';
+
+import myBirthdayRoutes from './src/routes/myBirthday.routes.js';
 import birthdayEventRoutes from './src/routes/birthdayEvent.routes.js';
 import eventParticipationRoutes from './src/routes/eventParticipation.routes.js';
+import wishlistVoteRoutes from './src/routes/wishlistVote.routes.js';
+
 import eventShareRoutes from './src/routes/eventShare.routes.js';
+
 import purchaseProofRoutes from './src/routes/purchaseProof.routes.js';
 
 import shoppingRoutes from './src/routes/shopping.routes.js';
 import mypageRoutes from './src/routes/mypage.routes.js';
+import testRoutes from './src/routes/test.routes.js';
 
 
 // 라우트 등록
@@ -239,13 +248,20 @@ app.use('/api/home', letterHomeRoutes);
 app.use('/api/birthdays', upcomingBirthdayRoutes)
 app.use('/api/users', birthdayRoutes);
 app.use('/api/calendar', calendarRoutes);
+app.use('/api/birthdays', myBirthdayRoutes);
 app.use('/api/birthdays', birthdayEventRoutes);
 app.use('/api/birthdays', eventParticipationRoutes);
+app.use('/api/birthdays', wishlistVoteRoutes);
+
 app.use('/api/birthdays', eventShareRoutes);
+
 app.use('/api/birthdays', purchaseProofRoutes);
 
 app.use('/api/shopping', shoppingRoutes);
 app.use('/api/mypage', mypageRoutes);
+
+// 테스트 라우트 (이벤트 강제 생성)
+app.use('/api/test', testRoutes);
 
 
 

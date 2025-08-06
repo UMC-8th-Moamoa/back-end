@@ -1,47 +1,59 @@
-//테스트 데이터 생성
-import prisma from '../src/config/prismaClient.js';
-import bcrypt from 'bcryptjs';
+import { PrismaClient } from '@prisma/client';
+const prisma = new PrismaClient();
 
 async function main() {
-  console.log('시드 데이터 입력 시작...');
-
-  // 테스트 사용자 생성
-  const hashedPassword = await bcrypt.hash('password123', 12);
-  
-  const testUser = await prisma.user.upsert({
-    where: { email: 'test@example.com' },
+  // 1. 사용자 생성 (or upsert)
+  const user = await prisma.user.upsert({
+    where: { email: 'user@example.com' },
     update: {},
     create: {
-      email: 'test@example.com',
-      password: hashedPassword,
-      name: '테스트 사용자',
-      phone: '010-1234-5678',
-      birthday: new Date('1990-01-01'),
-      cash: 10000,
-    },
+      user_id: 'user123',
+      name: '홍길동',
+      email: 'user@example.com',
+      password: 'Pass1234', // 실제로는 해시값 사용
+      birthday: new Date('1990-01-01')
+    }
   });
 
-  console.log('테스트 사용자 생성:', testUser);
-
-  // 테스트 위시리스트 생성
-  const testWishlist = await prisma.wishlist.create({
+  // 2. 위시리스트 생성
+  const wishlist = await prisma.wishlist.create({
     data: {
-      userId: testUser.id,
-      productName: 'iPhone 15 Pro',
-      price: 1500000,
-      productImageUrl: 'https://example.com/iphone15.jpg',
+      userId: user.id,
+      productImageUrl: 'https://example.com/image.jpg',
+      productName: '샘플 선물',
+      price: 50000,
       isPublic: true,
-    },
+    }
   });
 
-  console.log('테스트 위시리스트 생성:', testWishlist);
+  // 3. 생일 이벤트 생성
+  const event = await prisma.birthdayEvent.create({
+    data: {
+      wishlistId: wishlist.id,
+      birthdayPersonId: user.id,
+      creatorId: user.id,
+      title: '홍길동의 생일 이벤트',
+      deadline: new Date('2025-08-23T23:59:59Z'),
+      status: 'ACTIVE'
+    }
+  });
 
-  console.log('시드 데이터 입력 완료!');
+  // 4. 이벤트 참여자 추가
+  await prisma.birthdayEventParticipant.create({
+    data: {
+      eventId: event.id,
+      userId: user.id,
+      amount: 10000,
+      message: '축하해요!'
+    }
+  });
+
+  console.log('✅ 테스트 데이터 생성 완료');
 }
 
 main()
   .catch((e) => {
-    console.error('시드 데이터 입력 중 오류:', e);
+    console.error('❌ 에러 발생:', e);
     process.exit(1);
   })
   .finally(async () => {
