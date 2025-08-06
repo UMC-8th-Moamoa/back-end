@@ -90,8 +90,8 @@ if (process.env.NODE_ENV === 'production') {
 
 const allowedOrigins = [
   'http://localhost:3000',
-  'http://54.180.138.131:3000',
-  'http://54.180.138.131',  // 포트 없는 경우도 추가
+  'http://15.165.121.220:3000',
+  'http://15.165.121.220',  // 포트 없는 경우도 추가
 ];
 
 // CLIENT_URL이 있으면 추가
@@ -319,3 +319,4 @@ process.on('unhandledRejection', (reason, promise) => {
   console.error('Promise:', promise);
   process.exit(1);
 });
+
