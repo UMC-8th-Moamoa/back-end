@@ -11,7 +11,6 @@ import {
 import { 
   validateUserRegistration, 
   validateUserLogin,
-  validatePasswordChange,
   validateEmailVerification,
   validateEmailVerificationCode,
   validatePasswordResetRequest,
@@ -28,8 +27,7 @@ import {
   ValidationError
 } from '../middlewares/errorHandler.js';
 
-import { generateTokenPair, generateEmailVerificationToken, verifyEmailVerificationToken, generatePasswordResetToken, verifyPasswordResetToken } from '../utils/jwt.util.js';
-import { hashPassword, comparePassword, validatePasswordChange as validatePasswordChangeUtil } from '../utils/password.util.js';
+import { generateTokenPair } from '../utils/jwt.util.js';
 import userController from '../controllers/userController.controllers.js';
 
 const router = express.Router();
@@ -40,46 +38,6 @@ const prisma = new PrismaClient();
  * tags:
  *   name: Auth
  *   description: 사용자 인증 관리 API
- */
-
-/**
- * @swagger
- * components:
- *   schemas:
- *     User:
- *       type: object
- *       properties:
- *         id:
- *           type: integer
- *           description: 사용자 ID
- *         email:
- *           type: string
- *           description: 이메일
- *         name:
- *           type: string
- *           description: 이름
- *         photo:
- *           type: string
- *           description: 프로필 사진 URL
- *         createdAt:
- *           type: string
- *           format: date-time
- *           description: 생성일시
- *     
- *     AuthResponse:
- *       type: object
- *       properties:
- *         user:
- *           $ref: '#/components/schemas/User'
- *         tokens:
- *           type: object
- *           properties:
- *             accessToken:
- *               type: string
- *               description: JWT 액세스 토큰
- *             refreshToken:
- *               type: string
- *               description: JWT 리프레시 토큰
  */
 
 /**
@@ -98,6 +56,7 @@ const prisma = new PrismaClient();
  *               - email
  *               - password
  *               - name
+ *               - user_id
  *             properties:
  *               email:
  *                 type: string
@@ -112,6 +71,11 @@ const prisma = new PrismaClient();
  *                 minLength: 2
  *                 maxLength: 50
  *                 description: 이름
+ *               user_id:
+ *                 type: string
+ *                 minLength: 4
+ *                 maxLength: 50
+ *                 description: 사용자 ID
  *               phone:
  *                 type: string
  *                 description: 휴대폰 번호
@@ -122,20 +86,6 @@ const prisma = new PrismaClient();
  *     responses:
  *       201:
  *         description: 회원가입 성공
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 resultType:
- *                   type: string
- *                   example: SUCCESS
- *                 success:
- *                   $ref: '#/components/schemas/AuthResponse'
- *       400:
- *         description: 잘못된 요청
- *       409:
- *         description: 이미 존재하는 이메일
  */
 router.post('/register', validateUserRegistration, userController.register);
 
@@ -164,20 +114,7 @@ router.post('/register', validateUserRegistration, userController.register);
  *     responses:
  *       200:
  *         description: 로그인 성공
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 resultType:
- *                   type: string
- *                   example: SUCCESS
- *                 success:
- *                   $ref: '#/components/schemas/AuthResponse'
- *       401:
- *         description: 인증 실패
  */
- 
 router.post('/login', validateUserLogin, userController.login);
 
 /**
@@ -201,24 +138,6 @@ router.post('/login', validateUserLogin, userController.login);
  *     responses:
  *       200:
  *         description: 토큰 갱신 성공
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 resultType:
- *                   type: string
- *                   example: SUCCESS
- *                 success:
- *                   type: object
- *                   properties:
- *                     tokens:
- *                       type: object
- *                       properties:
- *                         accessToken:
- *                           type: string
- *                         refreshToken:
- *                           type: string
  */
 router.post('/refresh', validateRefreshToken, userController.refreshToken);
 
@@ -236,7 +155,98 @@ router.post('/refresh', validateRefreshToken, userController.refreshToken);
  */
 router.get('/me', authenticateJWT, userController.getMe);
 
-// auth.routes.js의 기존 라우트들 아래에 추가
+/**
+ * @swagger
+ * /api/auth/logout:
+ *   post:
+ *     summary: 로그아웃
+ *     tags: [Auth]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: 로그아웃 성공
+ */
+router.post('/logout', authenticateJWT, userController.logout);
+
+/**
+ * @swagger
+ * /api/auth/email/check:
+ *   post:
+ *     summary: 이메일 중복 확인
+ *     tags: [Auth]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - email
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 format: email
+ *                 description: 확인할 이메일
+ *     responses:
+ *       200:
+ *         description: 이메일 중복 확인 결과
+ */
+router.post('/email/check', userController.checkEmail);
+
+/**
+ * @swagger
+ * /api/auth/email/verify-email:
+ *   post:
+ *     summary: 이메일 인증 코드 발송
+ *     tags: [Auth]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - email
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 format: email
+ *                 description: 인증 코드를 받을 이메일
+ *     responses:
+ *       200:
+ *         description: 인증 코드 발송 성공
+ */
+router.post('/email/verify-email', validateEmailVerification, userController.sendEmailVerification);
+
+/**
+ * @swagger
+ * /api/auth/email/send-code:
+ *   post:
+ *     summary: 이메일 인증 코드 확인
+ *     tags: [Auth]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - email
+ *               - code
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 format: email
+ *                 description: 이메일
+ *               code:
+ *                 type: string
+ *                 description: 인증 코드
+ *     responses:
+ *       200:
+ *         description: 인증 코드 확인 성공
+ */
+router.post('/email/send-code', validateEmailVerificationCode, userController.verifyEmailCode);
 
 /**
  * @swagger
@@ -266,26 +276,6 @@ router.get('/me', authenticateJWT, userController.getMe);
  */
 router.post('/find-id', userController.findUserId);
 
-
-/**
- * @swagger
- * /api/auth/nickname/{nickname}/check:
- *   get:
- *     summary: 닉네임 중복 확인
- *     tags: [Auth]
- *     parameters:
- *       - in: path
- *         name: nickname
- *         required: true
- *         schema:
- *           type: string
- *         description: 확인할 닉네임
- *     responses:
- *       200:
- *         description: 닉네임 중복 여부 확인 성공
- */
-router.get('/nickname/:nickname/check', userController.checkNickname);
-
 /**
  * @swagger
  * /api/auth/find-password:
@@ -309,7 +299,7 @@ router.get('/nickname/:nickname/check', userController.checkNickname);
  *       200:
  *         description: 비밀번호 재설정 이메일 발송 성공
  */
-router.post('/find-password', userController.requestPasswordReset);
+router.post('/find-password', validatePasswordResetRequest, userController.requestPasswordReset);
 
 /**
  * @swagger
@@ -341,103 +331,26 @@ router.post('/find-password', userController.requestPasswordReset);
  *       200:
  *         description: 비밀번호 재설정 성공
  */
-router.post('/reset-password', userController.resetPassword);
+router.post('/reset-password', validatePasswordReset, userController.resetPassword);
 
 /**
  * @swagger
- * /api/auth/email/check:
- *   post:
- *     summary: 이메일 중복 확인
+ * /api/auth/nickname/{nickname}/check:
+ *   get:
+ *     summary: 닉네임 중복 확인
  *     tags: [Auth]
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             required:
- *               - email
- *             properties:
- *               email:
- *                 type: string
- *                 format: email
- *                 description: 확인할 이메일
+ *     parameters:
+ *       - in: path
+ *         name: nickname
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: 확인할 닉네임
  *     responses:
  *       200:
- *         description: 이메일 중복 확인 결과
+ *         description: 닉네임 중복 여부 확인 성공
  */
-router.post('/email/check', userController.checkEmail);
-
-/**
- * @swagger
- * /api/auth/verify-email:
- *   post:
- *     summary: 이메일 인증 코드 발송
- *     tags: [Auth]
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             required:
- *               - email
- *             properties:
- *               email:
- *                 type: string
- *                 format: email
- *                 description: 인증 코드를 받을 이메일
- *     responses:
- *       200:
- *         description: 인증 코드 발송 성공
- */
-router.post('/verify-email', userController.sendEmailVerification);
-
-/**
- * @swagger
- * /api/auth/email/send-code:
- *   post:
- *     summary: 이메일 인증 코드 확인
- *     tags: [Auth]
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             required:
- *               - email
- *               - code
- *             properties:
- *               email:
- *                 type: string
- *                 format: email
- *                 description: 이메일
- *               code:
- *                 type: string
- *                 description: 인증 코드
- *     responses:
- *       200:
- *         description: 인증 코드 확인 성공
- */
-router.post('/email/send-code', userController.verifyEmailCode);
-
-
-
-
-/**
- * @swagger
- * /api/auth/logout:
- *   post:
- *     summary: 로그아웃
- *     tags: [Auth]
- *     security:
- *       - bearerAuth: []
- *     responses:
- *       200:
- *         description: 로그아웃 성공
- */
-router.post('/logout', authenticateJWT, userController.logout);
+router.get('/nickname/:nickname/check', validateNicknameCheck, userController.checkNickname);
 
 /**
  * @swagger
