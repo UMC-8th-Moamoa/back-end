@@ -1,5 +1,4 @@
 import express from 'express';
-import { createServer } from 'http';
 import swaggerUi from 'swagger-ui-express';
 import swaggerJsdoc from 'swagger-jsdoc';
 import cors from 'cors';
@@ -16,17 +15,8 @@ dotenv.config();
 import passport from './src/config/passport.config.js';
 import { globalErrorHandler, notFoundHandler } from './src/middlewares/errorHandler.js';
 
-// WebSocket 초기화 import
-import { initializeSocket } from './src/utils/websocket/notificationSocket.js';
-
 // Express 앱 생성
 const app = express();
-
-// HTTP 서버 생성 (WebSocket을 위해)
-const httpServer = createServer(app);
-
-// WebSocket 서버 초기화
-initializeSocket(httpServer);
 
 // 미들웨어 설정
 
@@ -34,77 +24,14 @@ initializeSocket(httpServer);
 app.use(morgan(process.env.NODE_ENV === 'development' ? 'dev' : 'combined'));
 
 // 보안 미들웨어
-// helmet 설정을 수정하세요
-// app.use(helmet({
-//   contentSecurityPolicy: {
-//     directives: {
-//       defaultSrc: ["'self'"],
-//       styleSrc: ["'self'", "'unsafe-inline'"],
-//       scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
-//       imgSrc: ["'self'", "data:", "https:"],
-//     },
-//   },
-// }));
-// Express 앱에 헬스체크 엔드포인트 추가
-app.get('/health', (req, res) => {
-  // 데이터베이스 연결 상태 확인
-  const dbStatus = checkDatabaseConnection();
-  
-  const healthStatus = {
-    status: 'ok',
-    timestamp: new Date().toISOString(),
-    uptime: process.uptime(),
-    environment: process.env.NODE_ENV,
-    version: process.env.npm_package_version,
-    memory: process.memoryUsage(),
-    database: dbStatus
-  };
+app.use(helmet());
 
-  if (dbStatus.status === 'error') {
-    return res.status(503).json({
-      ...healthStatus,
-      status: 'error'
-    });
-  }
-
-  res.status(200).json(healthStatus);
-});
-
-// 데이터베이스 연결 확인 함수 (예시)
-function checkDatabaseConnection() {
-  try {
-    // 실제 DB 연결 상태 확인 로직
-    // MongoDB: mongoose.connection.readyState
-    // MySQL: connection.ping()
-    return { status: 'ok', connected: true };
-  } catch (error) {
-    return { status: 'error', message: error.message };
-  }
-}
-
-// PM2와의 연동을 위한 ready 신호
-if (process.env.NODE_ENV === 'production') {
-  process.send('ready');
-}
-
-const allowedOrigins = [
-  'http://localhost:3000',
-  'http://54.180.138.131:3000',
-  'http://54.180.138.131',  // 포트 없는 경우도 추가
-];
-
-// CLIENT_URL이 있으면 추가
-if (process.env.CLIENT_URL && !allowedOrigins.includes(process.env.CLIENT_URL)) {
-  allowedOrigins.push(process.env.CLIENT_URL);
-}
-
+// CORS 설정
 app.use(cors({
-  origin: allowedOrigins,
+  origin: process.env.CLIENT_URL || 'http://localhost:3000',
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'Cookie', 'X-Requested-With'],
-  exposedHeaders: ['Set-Cookie'],  // 클라이언트가 쿠키에 접근 가능
-  maxAge: 86400  // Preflight 캐싱 (24시간)
+  allowedHeaders: ['Content-Type', 'Authorization', 'Cookie']
 }));
 
 // 기본 미들웨어
@@ -190,11 +117,7 @@ app.get('/', (req, res) => {
     docs: `${baseUrl}/api-docs`,
     health: `${baseUrl}/health`,
     environment: process.env.NODE_ENV,
-    version: '1.0.0',
-    websocket: {
-      enabled: true,
-      endpoint: `ws://localhost:${process.env.PORT || 3000}`
-    }
+    version: '1.0.0'
   });
 });
 
@@ -205,59 +128,37 @@ app.get('/health', (req, res) => {
     timestamp: new Date().toISOString(),
     uptime: Math.floor(process.uptime()),
     environment: process.env.NODE_ENV,
-    database: process.env.DATABASE_URL ? '연결됨' : '설정 필요',
-    websocket: 'active'
+    database: process.env.DATABASE_URL ? '연결됨' : '설정 필요'
   });
 });
 
 // API 라우트들 - 존재하는 파일들만 import
 import authRoutes from './src/routes/auth.routes.js';
-import userRoutes from './src/routes/user.routes.js';
+//import userRoutes from './src/routes/user.routes.js';
 
 import wishlistRoutes from './src/routes/wishlist.routes.js';
 import letterRoutes from './src/routes/letter.routes.js';
 
-import notificationRoutes from './src/routes/notification.routes.js';
-
-import moaRoutes from './src/routes/moa.routes.js';
-import letterHomeRoutes from './src/routes/letterHome.routes.js';
-import upcomingBirthdayRoutes from './src/routes/upcomingBirthday.routes.js';
-import birthdayRoutes from './src/routes/birthday.routes.js';
-import calendarRoutes from './src/routes/calendar.routes.js';
-import birthdayEventRoutes from './src/routes/birthdayEvent.routes.js';
-import eventParticipationRoutes from './src/routes/eventParticipation.routes.js';
-import eventShareRoutes from './src/routes/eventShare.routes.js';
-import purchaseProofRoutes from './src/routes/purchaseProof.routes.js';
+import moaRoutes from './src/routes/moa.route.js';
+import birthdayRoutes from './src/routes/birthday.route.js';
+import calendarRoutes from './src/routes/calendar.route.js';
+import purchaseProofRoutes from './src/routes/purchaseProof.route.js';
 
 import shoppingRoutes from './src/routes/shopping.routes.js';
-import mypageRoutes from './src/routes/mypage.routes.js';
-
 
 // 라우트 등록
 app.use('/api/auth', authRoutes);
-app.use('/api/users', userRoutes);
+//app.use('/api', userRoutes);
 
 app.use('/api/wishlists', wishlistRoutes);
 app.use('/api/letters', letterRoutes);
 
-app.use('/api/notifications', notificationRoutes);
-
 app.use('/api/moas', moaRoutes);
-app.use('/api/home', letterHomeRoutes);
-app.use('/api/birthdays', upcomingBirthdayRoutes)
 app.use('/api/users', birthdayRoutes);
 app.use('/api/calendar', calendarRoutes);
-app.use('/api/birthdays', birthdayEventRoutes);
-app.use('/api/birthdays', eventParticipationRoutes);
-app.use('/api/birthdays', eventShareRoutes);
-app.use('/api/birthdays', purchaseProofRoutes);
+app.use('/api/birthday-events', purchaseProofRoutes);
 
 app.use('/api/shopping', shoppingRoutes);
-app.use('/api/mypage', mypageRoutes);
-
-
-
-
 
 // 에러 처리
 app.use(notFoundHandler);
@@ -267,41 +168,93 @@ app.use(globalErrorHandler);
 const PORT = process.env.PORT || 3000;
 const NODE_ENV = process.env.NODE_ENV || 'development';
 
-// 🚀 HTTP 서버 시작 (WebSocket 포함)
-httpServer.listen(PORT, '0.0.0.0', () => {
-  console.log(`🚀 서버가 포트 ${PORT}에서 실행 중입니다`);
-  console.log(`📝 환경: ${NODE_ENV}`);
-  console.log(`📚 API 문서: http://localhost:${PORT}/api-docs`);
-  console.log(`🏥 헬스체크: http://localhost:${PORT}/health`);
-  console.log(`🔔 알림 API: http://localhost:${PORT}/api/notifications`);
-  console.log(`🌐 WebSocket: ws://localhost:${PORT}`);
-  console.log(`📅 달력 API: http://localhost:${PORT}/api/calendar/birthdays`);
-  console.log(`🎁 구매인증 API: http://localhost:${PORT}/api/birthday-events/{eventId}/proof`);
-});
+// 포트 사용 여부 확인 함수
+import { createServer } from 'net';
 
-// 에러 핸들링
-httpServer.on('error', (error) => {
-  if (error.code === 'EADDRINUSE') {
-    console.error(`❌ 포트 ${PORT}이 이미 사용 중입니다`);
-    process.exit(1);
-  } else {
-    console.error('❌ 서버 시작 중 오류 발생:', error);
+function checkPortInUse(port) {
+  return new Promise((resolve) => {
+    const server = createServer();
+    
+    server.listen(port, () => {
+      server.once('close', () => {
+        resolve(false); // 포트 사용 가능
+      });
+      server.close();
+    });
+    
+    server.on('error', () => {
+      resolve(true); // 포트 사용 중
+    });
+  });
+}
+
+// 사용 가능한 포트 찾기
+async function findAvailablePort(startPort) {
+  let port = startPort;
+  while (await checkPortInUse(port)) {
+    console.log(`⚠️ 포트 ${port}이 사용 중입니다. 다음 포트를 시도합니다...`);
+    port++;
+    if (port > startPort + 10) {
+      throw new Error('사용 가능한 포트를 찾을 수 없습니다');
+    }
+  }
+  return port;
+}
+
+// 서버 시작
+async function startServer() {
+  try {
+    const availablePort = await findAvailablePort(PORT);
+    
+    if (availablePort !== PORT) {
+      console.log(`📝 포트 ${PORT}에서 ${availablePort}로 변경합니다`);
+    }
+    
+    const server = app.listen(availablePort, () => {
+      console.log(`🚀 서버가 포트 ${availablePort}에서 실행 중입니다`);
+      console.log(`📝 환경: ${NODE_ENV}`);
+      console.log(`📚 API 문서: http://localhost:${availablePort}/api-docs`);
+      console.log(`🏥 헬스체크: http://localhost:${availablePort}/health`);
+      console.log(`📅 달력 API: http://localhost:${availablePort}/api/calendar/birthdays`);
+      console.log(`🎁 구매인증 API: http://localhost:${availablePort}/api/birthday-events/{eventId}/proof`);
+      console.log(`🛍️ 인기상품 API: http://localhost:${availablePort}/api/wishlists/popular`);
+    });
+
+    // 에러 핸들링
+    server.on('error', (error) => {
+      if (error.code === 'EADDRINUSE') {
+        console.error(`❌ 포트 ${availablePort}이 이미 사용 중입니다`);
+        process.exit(1);
+      } else {
+        console.error('❌ 서버 시작 중 오류 발생:', error);
+        process.exit(1);
+      }
+    });
+
+    return server;
+  } catch (error) {
+    console.error('❌ 서버 시작 실패:', error);
     process.exit(1);
   }
-});
+}
+
+// 서버 시작 실행
+const serverPromise = startServer();
 
 // 시스템 종료 시 정리
-process.on('SIGTERM', () => {
+process.on('SIGTERM', async () => {
   console.log('🛑 SIGTERM 신호 수신. 서버를 정리합니다...');
-  httpServer.close(() => {
+  const server = await serverPromise;
+  server.close(() => {
     console.log('✅ 서버가 정상적으로 종료되었습니다');
     process.exit(0);
   });
 });
 
-process.on('SIGINT', () => {
+process.on('SIGINT', async () => {
   console.log('\n🛑 SIGINT 신호 수신. 서버를 정리합니다...');
-  httpServer.close(() => {
+  const server = await serverPromise;
+  server.close(() => {
     console.log('✅ 서버가 정상적으로 종료되었습니다');
     process.exit(0);
   });
@@ -318,4 +271,3 @@ process.on('unhandledRejection', (reason, promise) => {
   console.error('Promise:', promise);
   process.exit(1);
 });
-
