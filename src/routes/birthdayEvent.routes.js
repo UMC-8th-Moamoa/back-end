@@ -113,9 +113,6 @@ const router = express.Router();
  *           type: string
  *           nullable: true
  *           description: 상품 이미지 URL
- *         category:
- *           type: string
- *           description: 상품 카테고리
  *         createdAt:
  *           type: string
  *           format: date-time
@@ -216,7 +213,6 @@ const router = express.Router();
  *                           name: "데디카 플렉시스드 오트"
  *                           price: 35000
  *                           image: "https://example.com/wishlist1.jpg"
- *                           category: "의류"
  *                           createdAt: "2025-07-10T10:00:00Z"
  *               empty_wishlist:
  *                 summary: 위시리스트가 없는 경우

@@ -131,6 +131,7 @@ passport.use(new JwtStrategy(
         where: { id: payload.userId },
         select: {
           id: true,
+          user_id: true,
           email: true,
           name: true,
           photo: true,

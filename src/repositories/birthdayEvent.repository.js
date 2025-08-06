@@ -5,7 +5,7 @@ class BirthdayEventRepository {
    * 생일 이벤트 상세 정보 조회
    */
   async findEventById(eventId) {
-    return await prisma.birthdayEvent.findUnique({
+    const event = await prisma.birthdayEvent.findUnique({
       where: { id: eventId },
       include: {
         birthdayPerson: {
@@ -27,23 +27,48 @@ class BirthdayEventRepository {
             }
           },
           orderBy: {
-            participatedAt: 'desc'
-          }
-        },
-        wishlistItems: {
-          where: {
-            isPublic: true
-          },
-          select: {
-            id: true,
-            name: true,
-            price: true,
-            image: true,
-            isPublic: true
+            createdAt: 'desc'
           }
         }
       }
     });
+
+    if (!event) {
+      return null;
+    }
+
+    // 생일자의 위시리스트 조회
+    const wishlist = await prisma.wishlist.findMany({
+      where: {
+        userId: event.birthdayPersonId,
+        isPublic: true
+      },
+      select: {
+        id: true,
+        productName: true,
+        price: true,
+        productImageUrl: true,
+        productUrl: true,
+        createdAt: true
+      },
+      orderBy: {
+        createdAt: 'desc'
+      }
+    });
+
+    // 남은 기간 계산
+    const now = new Date();
+    const deadline = new Date(event.deadline);
+    const timeDiff = deadline.getTime() - now.getTime();
+    const daysLeft = Math.ceil(timeDiff / (1000 * 3600 * 24));
+
+    // 이벤트 정보에 추가 데이터 포함
+    return {
+      ...event,
+      wishlist,
+      daysLeft: daysLeft > 0 ? daysLeft : 0,
+      isExpired: daysLeft <= 0
+    };
   }
 
   /**
@@ -52,6 +77,37 @@ class BirthdayEventRepository {
   async createBirthdayEvent(eventData) {
     return await prisma.birthdayEvent.create({
       data: eventData,
+      include: {
+        birthdayPerson: {
+          select: {
+            id: true,
+            name: true,
+            photo: true,
+            birthday: true
+          }
+        }
+      }
+    });
+  }
+
+  /**
+   * 특정 생일자와 날짜로 이벤트 조회
+   */
+  async getEventByBirthdayPersonAndDate(birthdayPersonId, targetDate) {
+    const startOfDay = new Date(targetDate);
+    startOfDay.setHours(0, 0, 0, 0);
+    
+    const endOfDay = new Date(targetDate);
+    endOfDay.setHours(23, 59, 59, 999);
+
+    return await prisma.birthdayEvent.findFirst({
+      where: {
+        birthdayPersonId: birthdayPersonId,
+        deadline: {
+          gte: startOfDay,
+          lte: endOfDay
+        }
+      },
       include: {
         birthdayPerson: {
           select: {
@@ -129,8 +185,102 @@ class BirthdayEventRepository {
    * 참여자 수 조회
    */
   async countParticipants(eventId) {
-    return await prisma.eventParticipant.count({
+    return await prisma.birthdayEventParticipant.count({
       where: { eventId }
+    });
+  }
+
+  /**
+   * 팔로우 관계 확인
+   */
+  async isFollowing(followerId, followingId) {
+    const follow = await prisma.follow.findUnique({
+      where: {
+        followerId_followingId: {
+          followerId,
+          followingId
+        }
+      }
+    });
+    
+    return follow !== null;
+  }
+
+  /**
+   * 사용자 정보 조회
+   */
+  async getUserById(userId) {
+    return await prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        name: true,
+        photo: true,
+        birthday: true
+      }
+    });
+  }
+
+  /**
+   * 이벤트 참여자 목록 조회
+   */
+  async getParticipants(eventId) {
+    const participants = await prisma.birthdayEventParticipant.findMany({
+      where: { eventId },
+      include: {
+        user: {
+          select: {
+            id: true,
+            name: true,
+            photo: true
+          }
+        }
+      },
+      orderBy: {
+        createdAt: 'desc'
+      }
+    });
+
+    return participants.map(participant => ({
+      userId: participant.user.id,
+      userName: participant.user.name,
+      userPhoto: participant.user.photo,
+      amount: participant.amount,
+      message: participant.message,
+      participatedAt: participant.createdAt
+    }));
+  }
+
+  /**
+   * 위시리스트 개수 조회
+   */
+  async getWishlistCount(userId) {
+    return await prisma.wishlist.count({
+      where: {
+        userId,
+        isPublic: true
+      }
+    });
+  }
+
+  /**
+   * 모든 위시리스트 아이템 조회
+   */
+  async getAllWishlistItems(userId) {
+    return await prisma.wishlist.findMany({
+      where: {
+        userId,
+        isPublic: true
+      },
+      select: {
+        id: true,
+        productName: true,
+        price: true,
+        productImageUrl: true
+      },
+      orderBy: {
+        createdAt: 'desc'
+      }
     });
   }
 
@@ -138,7 +288,7 @@ class BirthdayEventRepository {
    * 특정 사용자가 특정 이벤트에 참여했는지 확인
    */
   async checkUserParticipation(eventId, userId) {
-    const participation = await prisma.eventParticipant.findUnique({
+    const participation = await prisma.birthdayEventParticipant.findUnique({
       where: {
         eventId_userId: {
           eventId,
@@ -154,11 +304,10 @@ class BirthdayEventRepository {
    * 이벤트 참여자 추가
    */
   async addParticipant(eventId, userId) {
-    return await prisma.eventParticipant.create({
+    return await prisma.birthdayEventParticipant.create({
       data: {
         eventId,
-        userId,
-        participatedAt: new Date()
+        userId
       },
       include: {
         user: {
@@ -176,7 +325,7 @@ class BirthdayEventRepository {
    * 이벤트 참여자 제거
    */
   async removeParticipant(eventId, userId) {
-    return await prisma.eventParticipant.delete({
+    return await prisma.birthdayEventParticipant.delete({
       where: {
         eventId_userId: {
           eventId,
