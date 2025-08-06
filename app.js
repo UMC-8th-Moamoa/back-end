@@ -84,7 +84,9 @@ function checkDatabaseConnection() {
 
 // PM2와의 연동을 위한 ready 신호
 if (process.env.NODE_ENV === 'production') {
-  process.send('ready');
+  if (typeof process.send === 'function') {
+    process.send('ready');
+  }
 }
 
 // CORS 설정
@@ -310,4 +312,6 @@ process.on('unhandledRejection', (reason, promise) => {
   console.error('Promise:', promise);
   process.exit(1);
 });
+
+
 
