@@ -41,7 +41,7 @@ module.exports = {
   deploy: {
     production: {
       user: 'ec2-user',
-      host: '54.180.138.131',
+      host: '15.165.121.220',
       ref: 'origin/dev',
       repo: 'https://github.com/rudals02/dev.git',
       path: '/home/ec2-user/moamoa-api',

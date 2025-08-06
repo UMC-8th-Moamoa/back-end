@@ -85,21 +85,30 @@ function checkDatabaseConnection() {
   }
 }
 
-// PM2와의 연동을 위한 ready 신호
 if (process.env.NODE_ENV === 'production') {
-  process.send('ready');
+  if (typeof process.send === 'function') {
+    process.send('ready');
+  }
 }
 
-// CORS 설정
+const allowedOrigins = [
+  'http://localhost:3000',
+  'http://15.165.121.220:3000',
+  'http://15.165.121.220',  // 포트 없는 경우도 추가
+];
+
+// CLIENT_URL이 있으면 추가
+if (process.env.CLIENT_URL && !allowedOrigins.includes(process.env.CLIENT_URL)) {
+  allowedOrigins.push(process.env.CLIENT_URL);
+}
+
 app.use(cors({
-  origin: [
-    process.env.CLIENT_URL || 'http://localhost:3000',
-    'http://54.180.138.131:3000',  // 가상서버 URL 추가
-    'http://localhost:3000'
-  ],
+  origin: allowedOrigins,
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'Cookie']
+  allowedHeaders: ['Content-Type', 'Authorization', 'Cookie', 'X-Requested-With'],
+  exposedHeaders: ['Set-Cookie'],  // 클라이언트가 쿠키에 접근 가능
+  maxAge: 86400  // Preflight 캐싱 (24시간)
 }));
 
 // 기본 미들웨어

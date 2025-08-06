@@ -98,7 +98,7 @@ class UserController {
 
   /**
    * 이메일 인증 코드 발송
-   * POST /api/auth/verify-email
+   * POST /api/auth/email/verify-email
    */
   sendEmailVerification = catchAsync(async (req, res) => {
     const emailVerificationDto = new EmailVerificationDto(req.body);

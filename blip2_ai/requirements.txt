@@ -1,0 +1,9 @@
+# 필요한 라이브러리 목록
+torch
+transformers
+accelerate
+Pillow
+flask
+requests
+fairscale
+sentencepiece

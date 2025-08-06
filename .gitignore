@@ -5,6 +5,7 @@ yarn-debug.log*
 yarn-error.log*
 
 # Environment variables
+blip2_ai/credentials/translate-key.json
 .env
 .env.local
 .env.development
@@ -99,3 +100,7 @@ prisma/migrations/
 *.swp
 *.swo
 *~
+
+# AI directories
+clip_ai/
+blip2_ai/venv/
