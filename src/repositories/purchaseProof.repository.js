@@ -8,11 +8,9 @@ class PurchaseProofRepository {
       select: {
         id: true,
         birthdayPersonId: true,
-        creatorId: true,
         title: true,
         status: true,
         deadline: true,
-        targetAmount: true,
         currentAmount: true,
         birthdayPerson: {
           select: {

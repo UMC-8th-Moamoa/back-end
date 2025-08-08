@@ -225,6 +225,57 @@ class AutoEventService {
     console.log('수동 자동 이벤트 생성 트리거...');
     await this.createAutoEventsForUpcomingBirthdays();
   }
+
+  /**
+   * 특정 사용자의 활성 이벤트를 강제로 완료 상태로 변경 (테스트용)
+   * @param {number} userId - 사용자 ID
+   */
+  async triggerForceCompleteEvent(userId) {
+    try {
+      console.log(`수동 이벤트 강제 완료 트리거... (사용자 ID: ${userId})`);
+
+      // 현재 활성 이벤트 조회
+      const activeEvent = await prisma.birthdayEvent.findFirst({
+        where: {
+          birthdayPersonId: userId,
+          status: 'active'
+        },
+        include: {
+          birthdayPerson: {
+            select: {
+              name: true
+            }
+          }
+        }
+      });
+
+      if (!activeEvent) {
+        console.log('현재 활성 상태인 생일 이벤트가 없습니다.');
+        return null;
+      }
+
+      console.log(`활성 이벤트 발견: ${activeEvent.birthdayPerson.name}님의 이벤트 (ID: ${activeEvent.id})`);
+
+      // 이벤트 상태를 completed로 변경
+      const completedEvent = await prisma.birthdayEvent.update({
+        where: {
+          id: activeEvent.id
+        },
+        data: {
+          status: 'completed',
+          updatedAt: new Date()
+        }
+      });
+
+      console.log(`이벤트가 성공적으로 완료되었습니다! (완료 시간: ${completedEvent.updatedAt})`);
+      
+      return completedEvent;
+
+    } catch (error) {
+      console.error('이벤트 강제 완료 중 오류 발생:', error);
+      throw error;
+    }
+  }
 }
 
 export const autoEventService = new AutoEventService();

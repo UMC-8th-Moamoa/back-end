@@ -166,6 +166,7 @@ model Wishlist {
 
   user           User                     @relation(fields: [userId], references: [id], onDelete: Cascade)
   analysisRequests WishlistAnalysisRequest[]
+  selectedInEvents BirthdayEventSelectedItem[]
   
   votes          WishlistVote[]
 
@@ -220,6 +221,7 @@ model BirthdayEvent {
   letters         Letter[]
   purchaseProof   PurchaseProof?
   shareTokens     EventShareToken[]
+  selectedItems   BirthdayEventSelectedItem[]
   
   contributions      Contribution[]
   wishlistVotes      WishlistVote[]
@@ -417,4 +419,19 @@ createdAt DateTime @default(now())
 event BirthdayEvent @relation(fields: [eventId], references: [id], onDelete: Cascade)
 
 @@map("event_share_tokens")
+}
+
+// 생일자가 선택한 위시리스트 상품 테이블
+model BirthdayEventSelectedItem {
+  id          Int      @id @default(autoincrement())
+  eventId     Int
+  wishlistId  Int
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  event    BirthdayEvent @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  wishlist Wishlist      @relation(fields: [wishlistId], references: [id], onDelete: Cascade)
+
+  @@unique([eventId, wishlistId])
+  @@map("birthday_event_selected_items")
 }
