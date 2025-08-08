@@ -74,4 +74,44 @@ router.get('/events/active', async (req, res) => {
   }
 });
 
+// 테스트용: 특정 사용자의 이벤트 강제 완료
+router.post('/events/force-complete', async (req, res) => {
+  try {
+    const { userId } = req.body;
+    
+    if (!userId) {
+      return res.status(400).json({
+        success: false,
+        error: 'userId가 필요합니다.'
+      });
+    }
+
+    console.log(`사용자 ID ${userId}의 이벤트 강제 완료 시작...`);
+    
+    // autoEvent.service.js의 강제 완료 메서드 호출
+    const result = await autoEventService.triggerForceCompleteEvent(parseInt(userId));
+
+    if (!result) {
+      return res.json({
+        success: false,
+        message: '활성 상태인 생일 이벤트가 없습니다.'
+      });
+    }
+
+    res.json({
+      success: true,
+      message: `사용자 ID ${userId}의 이벤트가 성공적으로 완료되었습니다.`,
+      eventId: result.id,
+      completedAt: result.updatedAt
+    });
+
+  } catch (error) {
+    console.error('이벤트 강제 완료 실패:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
 export default router;

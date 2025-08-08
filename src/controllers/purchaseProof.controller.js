@@ -33,6 +33,7 @@ class PurchaseProofController {
 
   // 구매 인증 조회
   async getPurchaseProof(req, res) {
+    const userId = req.user.id;
     const { eventId } = req.params;
 
     // 이벤트 ID 검증
@@ -45,7 +46,7 @@ class PurchaseProofController {
     }
 
     // 서비스 레이어 호출
-    const result = await purchaseProofService.getPurchaseProof(eventIdNumber);
+    const result = await purchaseProofService.getPurchaseProof(userId, eventIdNumber);
 
     // 응답 DTO 사용
     const responseDTO = new PurchaseProofGetResponseDTO(result);

@@ -6,24 +6,24 @@ import { NotFoundError, ValidationError } from '../middlewares/errorHandler.js';
  */
 class MyBirthdayService {
   /**
-   * 현재 진행 중인 생일 이벤트 정보 조회
+   * 완료된 생일 이벤트 정보 조회 (최종 결과 조회)
    * @param {number} userId - 생일자 사용자 ID
    * @returns {Object} 이벤트 정보
    */
   async getCurrentEvent(userId) {
     try {
-      // 현재 진행 중인 이벤트 조회
+      // 완료된 이벤트 조회
       const event = await myBirthdayRepository.getCurrentEventByUserId(userId);
       
       if (!event) {
-        throw new NotFoundError('현재 진행 중인 생일 이벤트가 없습니다');
+        throw new NotFoundError('완료된 생일 이벤트가 없습니다');
       }
 
       // 참여자 정보 조회
       const participants = await myBirthdayRepository.getEventParticipants(event.id);
       
-      // 남은 일수 계산
-      const daysRemaining = this.calculateDaysRemaining(event.deadline);
+      // 완료된 이벤트이므로 남은 일수는 0
+      const daysRemaining = 0;
       
       // 총 모인 금액 계산
       const totalAmount = await myBirthdayRepository.getTotalAmount(event.id);
@@ -41,17 +41,18 @@ class MyBirthdayService {
         deadline: event.deadline,
         daysRemaining,
         birthdayDate: event.birthdayDate,
-        status: event.status
+        status: event.status,
+        completedAt: event.updatedAt
       };
 
     } catch (error) {
-      console.error('현재 이벤트 조회 서비스 오류:', error);
+      console.error('완료된 이벤트 조회 서비스 오류:', error);
       
       if (error instanceof NotFoundError) {
         throw error;
       }
       
-      throw new Error('이벤트 정보를 가져오는 중 오류가 발생했습니다');
+      throw new Error('완료된 이벤트 정보를 가져오는 중 오류가 발생했습니다');
     }
   }
 

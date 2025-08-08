@@ -442,6 +442,16 @@ const router = express.Router();
 router.get('/me/event', authenticateJWT, MyBirthdayController.getCurrentEvent);
 
 // 내 생일 이벤트 위시리스트 조회
+// 내 생일 이벤트 위시리스트 조회
 router.get('/me/event/wishlist', authenticateJWT, MyBirthdayWishlistController.getMyBirthdayWishlist);
+
+// 위시리스트 상품 선택
+router.put('/me/event/wishlist/select', authenticateJWT, MyBirthdayWishlistController.selectWishlistProducts);
+
+// 정산 가능 여부 확인
+router.post('/me/event/wishlist/confirm', authenticateJWT, MyBirthdayWishlistController.confirmBudget);
+
+// 구글폼 정산 링크 제공
+router.get('/me/event/formlink', authenticateJWT, MyBirthdayWishlistController.getSettlementFormLink);
 
 export default router;

@@ -21,9 +21,9 @@ class PurchaseProofService {
       throw new ForbiddenError('생일 주인공만 구매 인증을 등록할 수 있습니다');
     }
 
-    // 이벤트 상태 확인 (활성 상태여야 함)
-    if (event.status !== 'active') {
-      throw new ValidationError('활성 상태가 아닌 이벤트입니다');
+    // 이벤트 상태 확인 (완료된 상태여야 함)
+    if (event.status !== 'completed') {
+      throw new ValidationError('완료된 이벤트에만 구매 인증을 등록할 수 있습니다');
     }
 
     // 이미 구매 인증이 등록되었는지 확인
@@ -46,13 +46,13 @@ class PurchaseProofService {
       message
     });
 
-    // 참여자 정보 반환 (실제로는 구매 인증만 등록하면 됨)
+    // 참여자 정보 반환
     const recipients = participants
       .filter(p => p.userId !== userId) // 자기 자신 제외
       .map(p => ({
         id: p.userId,
         name: p.userName,
-        messageId: null // PurchaseProof 테이블에는 개별 메시지 ID가 없음
+        messageId: null
       }));
 
     return {
@@ -70,13 +70,20 @@ class PurchaseProofService {
     };
   }
 
-  // 구매 인증 조회
-  async getPurchaseProof(eventId) {
+  // 구매 인증 조회 (이벤트 참여자 및 생일 주인공만)
+  async getPurchaseProof(userId, eventId) {
     // 이벤트 존재 확인
     const event = await purchaseProofRepository.getBirthdayEventById(eventId);
     
     if (!event) {
       throw new NotFoundError('존재하지 않는 이벤트입니다');
+    }
+
+    // 권한 확인: 생일 주인공이거나 이벤트 참여자여야 함
+    const isAuthorized = await this.checkPurchaseProofViewPermission(userId, eventId, event.birthdayPersonId);
+    
+    if (!isAuthorized) {
+      throw new ForbiddenError('구매 인증을 조회할 권한이 없습니다 (이벤트 참여자 또는 생일 주인공만 가능)');
     }
 
     // 구매 인증 조회
@@ -110,7 +117,19 @@ class PurchaseProofService {
     };
   }
 
-  // Letter 테이블은 사용하지 않음 (PurchaseProof 테이블에 모든 정보 저장)
+  // 구매 인증 조회 권한 확인
+  async checkPurchaseProofViewPermission(userId, eventId, birthdayPersonId) {
+    // 생일 주인공인 경우
+    if (userId === birthdayPersonId) {
+      return true;
+    }
+
+    // 이벤트 참여자인지 확인
+    const participants = await purchaseProofRepository.getEventParticipants(eventId);
+    const isParticipant = participants.some(participant => participant.userId === userId);
+    
+    return isParticipant;
+  }
 
   // 구매 인증 데이터 검증
   validateProofData(proofImages, message) {
