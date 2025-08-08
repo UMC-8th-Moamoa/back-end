@@ -175,94 +175,72 @@ class UserService {
     return new SuccessResponseDto('비밀번호가 성공적으로 변경되었습니다');
   }
 
-  /**
-   * 이메일 인증 코드 발송
-   * @param {EmailVerificationDto} emailVerificationDto - 이메일 인증 정보
-   * @returns {Promise<Object>} 인증 코드 발송 결과
-   */
   async sendEmailVerification(emailVerificationDto) {
-    const { email } = emailVerificationDto;
+  const { email, purpose } = emailVerificationDto;
 
-    // 사용자 존재 확인
-    const user = await userRepository.findByEmail(email);
+  const user = await userRepository.findByEmail(email);
+
+  // 목적에 따라 가입 여부 체크
+  if (purpose === 'signup') {
+    if (user) {
+      throw new DuplicateEmailError('이미 가입된 이메일입니다');
+    }
+  } else if (purpose === 'reset') {
     if (!user) {
       throw new NotFoundError('사용자를 찾을 수 없습니다');
     }
-
-    // 이미 인증된 사용자인지 확인
-    if (user.emailVerified) {
-      return new SuccessResponseDto('이미 인증된 이메일입니다');
-    }
-
-    // 6자리 인증 코드 생성
-    const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
-
-    // 인증 토큰 생성 (10분 유효)
-    const verificationToken = generateEmailVerificationToken(email, verificationCode);
-
-    // TODO: 실제 이메일 발송 로직 구현
-    // await this.sendVerificationEmail(email, verificationCode);
-
-    // 개발 환경에서는 콘솔에 출력
-    if (process.env.NODE_ENV === 'development') {
-      console.log(`이메일 인증 코드 (${email}): ${verificationCode}`);
-    }
-
-    const response = {
-      message: '인증 코드가 발송되었습니다'
-    };
-
-    // 개발 환경에서만 토큰 반환
-    if (process.env.NODE_ENV === 'development') {
-      response.verificationToken = verificationToken;
-    }
-
-    return response;
+  } else {
+    throw new ValidationError('purpose는 signup 또는 reset이어야 합니다');
   }
 
-  /**
-   * 이메일 인증 코드 확인
-   * @param {EmailVerificationCodeDto} emailVerificationCodeDto - 이메일 인증 코드 정보
-   * @returns {Promise<SuccessResponseDto>} 성공 응답
-   */
+  // 6자리 인증 코드 생성
+  const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
+
+  // 인증 토큰 생성 (10분 유효)
+  const verificationToken = generateEmailVerificationToken(email, verificationCode);
+
+  // TODO: 실제 이메일 발송 로직 구현
+  if (process.env.NODE_ENV === 'development') {
+    console.log(`이메일 인증 코드 (${email}): ${verificationCode}`);
+  }
+
+  const response = { message: '인증 코드가 발송되었습니다' };
+
+  if (process.env.NODE_ENV === 'development') {
+    response.verificationToken = verificationToken;
+  }
+
+  return response;
+}
+
+
   async verifyEmailCode(emailVerificationCodeDto) {
-    const { email, code } = emailVerificationCodeDto;
+  const { email, code, purpose } = emailVerificationCodeDto;
 
-    // 사용자 존재 확인
-    const user = await userRepository.findByEmail(email);
+  const user = await userRepository.findByEmail(email);
+
+  if (purpose === 'reset') {
     if (!user) {
       throw new NotFoundError('사용자를 찾을 수 없습니다');
     }
+  }
 
-    // 개발 환경에서는 간단한 코드 검증
-    if (process.env.NODE_ENV === 'development') {
-      const isValidCode = code.length === 6 && /^\d{6}$/.test(code);
-      if (!isValidCode) {
-        throw new ValidationError('유효하지 않은 인증 코드입니다');
-      }
+  // 개발 환경에서는 간단한 코드 검증
+  if (process.env.NODE_ENV === 'development') {
+    const isValidCode = code.length === 6 && /^\d{6}$/.test(code);
+    if (!isValidCode) {
+      throw new ValidationError('유효하지 않은 인증 코드입니다');
     }
+  }
 
-    // 이메일 인증 상태 업데이트
+  // 회원가입의 경우: DB 업데이트 필요 없음
+  if (purpose === 'reset' && user) {
     await userRepository.updateEmailVerification(user.id, true);
-
-    return new SuccessResponseDto('이메일 인증이 완료되었습니다');
   }
 
-  /**
-   * 아이디 찾기
-   * @param {FindUserIdDto} findUserIdDto - 아이디 찾기 정보
-   * @returns {Promise<MaskedEmailResponseDto>} 마스킹된 이메일 응답
-   */
-  async findUserId(findUserIdDto) {
-    const { name, phone } = findUserIdDto;
+  return new SuccessResponseDto('이메일 인증이 완료되었습니다');
+}
 
-    const user = await userRepository.findByNameAndPhone(name, phone);
-    if (!user) {
-      throw new NotFoundError('일치하는 사용자 정보를 찾을 수 없습니다');
-    }
-
-    return new MaskedEmailResponseDto(user.email);
-  }
 
   /**
    * 비밀번호 재설정 요청

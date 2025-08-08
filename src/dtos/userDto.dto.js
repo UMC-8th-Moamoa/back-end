@@ -79,16 +79,19 @@ export class ChangePasswordDto {
 
 // 이메일 인증 요청 DTO
 export class EmailVerificationDto {
-  constructor({ email }) {
+  constructor({ email, purpose}) {
     this.email = email;
+
+    this.purpose = purpose;
   }
 }
 
 // 이메일 인증 코드 확인 DTO
 export class EmailVerificationCodeDto {
-  constructor({ email, code }) {
+  constructor({ email, code, purpose}) {
     this.email = email;
     this.code = code;
+    this.purpose = purpose;
   }
 }
 
