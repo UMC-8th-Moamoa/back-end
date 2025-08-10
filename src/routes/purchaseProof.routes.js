@@ -94,7 +94,7 @@ const router = express.Router();
  * @swagger
  * /api/birthdays/{eventId}/proof:
  *   post:
- *     summary: 선물 구매 인증 등록
+ *     summary: 선물 구매 인증 등록 (생일 주인공만)
  *     tags: [PurchaseProof]
  *     security:
  *       - bearerAuth: []
@@ -163,9 +163,130 @@ const router = express.Router();
  *       500:
  *         description: 서버 내부 오류
  */
+// 구매 인증 등록 (생일 주인공만 가능)
 router.post('/:eventId/proof', 
-  authenticateJWT,           // JWT 인증 필수
+  authenticateJWT,
   PurchaseProofController.createPurchaseProof
+);
+
+/**
+ * @swagger
+ * /api/birthdays/{eventId}/proof:
+ *   get:
+ *     summary: 구매 인증 조회 (이벤트 참여자 및 생일 주인공)
+ *     tags: [PurchaseProof]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: eventId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *         description: 이벤트 ID
+ *     responses:
+ *       200:
+ *         description: 구매 인증 조회 성공
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 resultType:
+ *                   type: string
+ *                   example: SUCCESS
+ *                 error:
+ *                   type: null
+ *                 success:
+ *                   type: object
+ *                   properties:
+ *                     event:
+ *                       type: object
+ *                       properties:
+ *                         id:
+ *                           type: integer
+ *                           description: 이벤트 ID
+ *                         birthdayPerson:
+ *                           type: object
+ *                           properties:
+ *                             id:
+ *                               type: integer
+ *                               description: 생일 주인공 ID
+ *                             name:
+ *                               type: string
+ *                               description: 생일 주인공 이름
+ *                             photo:
+ *                               type: string
+ *                               description: 생일 주인공 사진
+ *                     purchaseProof:
+ *                       type: object
+ *                       properties:
+ *                         proofImages:
+ *                           type: array
+ *                           items:
+ *                             type: string
+ *                           description: 구매 인증 이미지 URL 배열
+ *                     thankYouMessage:
+ *                       type: object
+ *                       properties:
+ *                         totalSent:
+ *                           type: integer
+ *                           description: 총 발송 수
+ *                         message:
+ *                           type: string
+ *                           description: 감사 메시지 내용
+ *                         sentAt:
+ *                           type: string
+ *                           format: date-time
+ *                           description: 발송 시간
+ *                         recipients:
+ *                           type: array
+ *                           items:
+ *                             type: object
+ *                             properties:
+ *                               id:
+ *                                 type: integer
+ *                               name:
+ *                                 type: string
+ *                               photo:
+ *                                 type: string
+ *                           description: 수신자 목록
+ *             example:
+ *               resultType: "SUCCESS"
+ *               error: null
+ *               success:
+ *                 event:
+ *                   id: 1
+ *                   birthdayPerson:
+ *                     id: 1
+ *                     name: "김생일"
+ *                     photo: "https://example.com/profile.jpg"
+ *                 purchaseProof:
+ *                   proofImages: ["https://example.com/proof1.jpg"]
+ *                 thankYouMessage:
+ *                   totalSent: 3
+ *                   message: "너무 감사해요:)"
+ *                   sentAt: "2024-08-24T14:00:00Z"
+ *                   recipients:
+ *                     - id: 2
+ *                       name: "이참여자"
+ *                       photo: "https://example.com/user2.jpg"
+ *       400:
+ *         description: 잘못된 요청 (유효하지 않은 이벤트 ID)
+ *       401:
+ *         description: 인증 필요
+ *       403:
+ *         description: 권한 없음 (이벤트 참여자가 아님)
+ *       404:
+ *         description: 존재하지 않는 이벤트 또는 구매 인증이 없음
+ *       500:
+ *         description: 서버 내부 오류
+ */
+// 구매 인증 조회 (이벤트 참여자 및 생일 주인공만)
+router.get('/:eventId/proof', 
+  authenticateJWT,
+  PurchaseProofController.getPurchaseProof
 );
 
 export default router;

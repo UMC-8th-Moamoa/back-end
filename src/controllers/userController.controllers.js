@@ -96,27 +96,18 @@ class UserController {
     res.success(result);
   });
 
-  /**
-   * 이메일 인증 코드 발송
-   * POST /api/auth/email/verify-email
-   */
   sendEmailVerification = catchAsync(async (req, res) => {
-    const emailVerificationDto = new EmailVerificationDto(req.body);
+    const emailVerificationDto = new EmailVerificationDto(req.body); // email + purpose
     const result = await userService.sendEmailVerification(emailVerificationDto);
-    
     res.success(result);
   });
 
-  /**
-   * 이메일 인증 코드 확인
-   * POST /api/auth/email/send-code
-   */
   verifyEmailCode = catchAsync(async (req, res) => {
-    const emailVerificationCodeDto = new EmailVerificationCodeDto(req.body);
+    const emailVerificationCodeDto = new EmailVerificationCodeDto(req.body); // email + code + purpose
     const result = await userService.verifyEmailCode(emailVerificationCodeDto);
-    
     res.success(result);
   });
+
 
   /**
    * 비밀번호 변경
