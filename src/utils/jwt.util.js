@@ -53,13 +53,16 @@ export const generateRefreshToken = (userId, email) => {
  * @returns {Object} - 토큰 쌍 객체
  */
 export const generateTokenPair = (userId, email) => {
+  console.log(`[TOKENS][ISSUE] userId=${userId} email=${email}`);
   const accessToken = generateAccessToken(userId, email);
   const refreshToken = generateRefreshToken(userId, email);
-
-  return {
-    accessToken,
-    refreshToken
-  };
+  // 토큰 안의 payload도 한 번 decode해서 확인
+  try {
+    const a = jwt.decode(accessToken);
+    const r = jwt.decode(refreshToken);
+    console.log(`[TOKENS][PAYLOAD] access.userId=${a?.userId} refresh.userId=${r?.userId}`);
+  } catch {}
+  return { accessToken, refreshToken };
 };
 
 /**
@@ -96,27 +99,15 @@ export const verifyAccessToken = (token) => {
  * @returns {Object} - 디코딩된 페이로드
  */
 export const verifyRefreshToken = (token) => {
-  try {
-    const decoded = jwt.verify(token, JWT_REFRESH_SECRET, {
-      issuer: 'moamoa-platform',
-      audience: 'moamoa-users'
-    });
-
-    if (decoded.type !== 'refresh') {
-      throw new UnauthorizedError('유효하지 않은 리프레시 토큰입니다');
-    }
-
-    return decoded;
-  } catch (error) {
-    if (error.name === 'TokenExpiredError') {
-      throw new TokenExpiredError('만료된 리프레시 토큰입니다');
-    }
-    if (error.name === 'JsonWebTokenError') {
-      throw new UnauthorizedError('유효하지 않은 리프레시 토큰입니다');
-    }
-    throw error;
-  }
+  const decoded = jwt.verify(token, JWT_REFRESH_SECRET, {
+    issuer: 'moamoa-platform',
+    audience: 'moamoa-users'
+  });
+  if (decoded.type !== 'refresh') throw new UnauthorizedError('유효하지 않은 리프레시 토큰입니다');
+  console.log(`[TOKENS][REFRESH] decoded.userId=${decoded.userId} email=${decoded.email}`);
+  return decoded;
 };
+
 
 /**
  * 토큰에서 사용자 ID 추출
@@ -257,6 +248,9 @@ export const verifyPasswordResetToken = (token) => {
     throw error;
   }
 };
+
+
+
 
 export default {
   generateAccessToken,
