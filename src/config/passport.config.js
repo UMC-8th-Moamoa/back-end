@@ -124,6 +124,9 @@ passport.use(new JwtStrategy(
   {
     jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
     secretOrKey: process.env.JWT_SECRET || 'fallback-jwt-secret',
+    // ✅ issuer/audience도 함께 검증 (jwt.util.js와 일치)
+    issuer: 'moamoa-platform',
+    audience: 'moamoa-users'
   },
   async (payload, done) => {
     try {

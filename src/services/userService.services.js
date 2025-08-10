@@ -103,8 +103,8 @@ class UserService {
 
     // 소셜 로그인 전용 계정인지 확인
     if (!user.password && Array.isArray(user.socialLogins) && user.socialLogins.length > 0) {
-    throw new UnauthorizedError('소셜 로그인으로 가입된 계정입니다');
-  }
+      throw new UnauthorizedError('소셜 로그인으로 가입된 계정입니다');
+    }
     // 비밀번호 검증
     const isValidPassword = await comparePassword(password, user.password);
     if (!isValidPassword) {
@@ -114,14 +114,15 @@ class UserService {
     // 마지막 로그인 시간 업데이트
     await userRepository.updateLastLoginAt(user.id);
 
-    // JWT 토큰 생성
-    const tokens = generateTokenPair(user.id, user.user_id);
+    // ✅ JWT 토큰 생성: 두 번째 인수는 반드시 이메일이어야 함
+    const tokens = generateTokenPair(user.id, user.email);
 
     // 민감한 정보 제거
     const { password: _, socialLogins, ...userWithoutPassword } = user;
 
     return new AuthResponseDto(userWithoutPassword, tokens);
   }
+
   /**
    * 사용자 정보 조회
    * @param {number} userId - 사용자 ID
@@ -176,71 +177,81 @@ class UserService {
   }
 
   async sendEmailVerification(emailVerificationDto) {
-  const { email, purpose } = emailVerificationDto;
+    const { email, purpose } = emailVerificationDto;
 
-  const user = await userRepository.findByEmail(email);
+    const user = await userRepository.findByEmail(email);
 
-  // 목적에 따라 가입 여부 체크
-  if (purpose === 'signup') {
-    if (user) {
-      throw new DuplicateEmailError('이미 가입된 이메일입니다');
+    // 목적에 따라 가입 여부 체크
+    if (purpose === 'signup') {
+      if (user) {
+        throw new DuplicateEmailError('이미 가입된 이메일입니다');
+      }
+    } else if (purpose === 'reset') {
+      if (!user) {
+        throw new NotFoundError('사용자를 찾을 수 없습니다');
+      }
+    } else {
+      throw new ValidationError('purpose는 signup 또는 reset이어야 합니다');
     }
-  } else if (purpose === 'reset') {
-    if (!user) {
-      throw new NotFoundError('사용자를 찾을 수 없습니다');
+
+    // 6자리 인증 코드 생성
+    const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
+
+    // 인증 토큰 생성 (10분 유효)
+    const verificationToken = generateEmailVerificationToken(email, verificationCode);
+
+    // TODO: 실제 이메일 발송 로직 구현
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`이메일 인증 코드 (${email}): ${verificationCode}`);
     }
-  } else {
-    throw new ValidationError('purpose는 signup 또는 reset이어야 합니다');
+
+    const response = { message: '인증 코드가 발송되었습니다' };
+
+    // 개발 환경에서는 프론트 디버깅을 위해 토큰/만료 안내 제공
+    if (process.env.NODE_ENV === 'development') {
+      response.verificationToken = verificationToken;
+      response.expiresIn = '10m';
+    }
+
+    return response;
   }
-
-  // 6자리 인증 코드 생성
-  const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
-
-  // 인증 토큰 생성 (10분 유효)
-  const verificationToken = generateEmailVerificationToken(email, verificationCode);
-
-  // TODO: 실제 이메일 발송 로직 구현
-  if (process.env.NODE_ENV === 'development') {
-    console.log(`이메일 인증 코드 (${email}): ${verificationCode}`);
-  }
-
-  const response = { message: '인증 코드가 발송되었습니다' };
-
-  if (process.env.NODE_ENV === 'development') {
-    response.verificationToken = verificationToken;
-  }
-
-  return response;
-}
-
 
   async verifyEmailCode(emailVerificationCodeDto) {
-  const { email, code, purpose } = emailVerificationCodeDto;
+    // token을 함께 받으면 토큰으로 검증, 없으면 개발환경에서만 간단 검증
+    const { email, code, purpose, token } = emailVerificationCodeDto;
 
-  const user = await userRepository.findByEmail(email);
+    const user = await userRepository.findByEmail(email);
 
-  if (purpose === 'reset') {
-    if (!user) {
-      throw new NotFoundError('사용자를 찾을 수 없습니다');
+    if (purpose === 'reset') {
+      if (!user) {
+        throw new NotFoundError('사용자를 찾을 수 없습니다');
+      }
     }
-  }
 
-  // 개발 환경에서는 간단한 코드 검증
-  if (process.env.NODE_ENV === 'development') {
-    const isValidCode = code.length === 6 && /^\d{6}$/.test(code);
-    if (!isValidCode) {
-      throw new ValidationError('유효하지 않은 인증 코드입니다');
+    if (token) {
+      // ✅ 토큰 기반 검증 (권장)
+      const decoded = verifyEmailVerificationToken(token);
+      if (decoded.email !== email || decoded.code !== code) {
+        throw new ValidationError('인증 코드가 일치하지 않습니다');
+      }
+    } else if (process.env.NODE_ENV === 'development') {
+      // 개발 환경에서는 최소 형식 검증만 허용
+      const isValidCode = code.length === 6 && /^\d{6}$/.test(code);
+      if (!isValidCode) {
+        throw new ValidationError('유효하지 않은 인증 코드입니다');
+      }
+    } else {
+      // 운영 환경에서 토큰이 없으면 거부
+      throw new ValidationError('검증 토큰이 필요합니다');
     }
+
+    // 회원가입의 경우: DB 업데이트 필요 없음
+    if (purpose === 'reset' && user) {
+      await userRepository.updateEmailVerification(user.id, true);
+    }
+
+    return new SuccessResponseDto('이메일 인증이 완료되었습니다');
   }
-
-  // 회원가입의 경우: DB 업데이트 필요 없음
-  if (purpose === 'reset' && user) {
-    await userRepository.updateEmailVerification(user.id, true);
-  }
-
-  return new SuccessResponseDto('이메일 인증이 완료되었습니다');
-}
-
 
   /**
    * 비밀번호 재설정 요청
@@ -273,6 +284,7 @@ class UserService {
     // 개발 환경에서만 토큰 반환
     if (process.env.NODE_ENV === 'development') {
       response.resetToken = resetToken;
+      response.expiresIn = '30m';
     }
 
     return response;
