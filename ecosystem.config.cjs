@@ -16,9 +16,12 @@ module.exports = {
       PORT: 3000
     },
     env_production: {
-      NODE_ENV: 'production',
-      JWT_REFRESH_SECRET: process.env.JWT_REFRESH_SECRET
-    },
+        NODE_ENV: "production",
+        JWT_SECRET: "3817",
+        JWT_REFRESH_SECRET: "h3X7P!9zQ2m@vB1kL4yE0aS8uW5rT6n", 
+        JWT_EXPIRES_IN: "2h",
+        JWT_REFRESH_EXPIRES_IN: "14d"
+      },
     
     // 로그 설정
     log_file: './logs/combined.log',
