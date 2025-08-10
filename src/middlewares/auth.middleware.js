@@ -242,10 +242,34 @@ export const authenticateSession = (req, res, next) => {
 };
 
 /**
+ * 소셜 로그인 제공업체가 활성화되어 있는지 확인하는 함수
+ */
+const isProviderEnabled = (provider) => {
+  switch (provider) {
+    case 'kakao':
+      return !!(process.env.KAKAO_CLIENT_ID && process.env.KAKAO_CLIENT_SECRET);
+    default:
+      return false;
+  }
+};
+
+/**
  * 소셜 로그인 콜백 처리 미들웨어
  */
 export const handleSocialCallback = (provider) => {
   return (req, res, next) => {
+    // 제공업체가 활성화되어 있는지 확인
+    if (!isProviderEnabled(provider)) {
+      const clientUrl = process.env.CLIENT_URL || 'http://localhost:3000';
+      return res.redirect(`${clientUrl}/auth/error?message=${encodeURIComponent(`${provider} 로그인이 현재 비활성화되어 있습니다`)}`);
+    }
+
+    // 해당 전략이 passport에 등록되어 있는지 확인
+    if (!passport._strategies[provider]) {
+      const clientUrl = process.env.CLIENT_URL || 'http://localhost:3000';
+      return res.redirect(`${clientUrl}/auth/error?message=${encodeURIComponent(`${provider} 로그인 설정이 올바르지 않습니다`)}`);
+    }
+
     passport.authenticate(provider, { session: false }, (error, user, info) => {
       if (error) {
         const clientUrl = process.env.CLIENT_URL || 'http://localhost:3000';
@@ -254,7 +278,7 @@ export const handleSocialCallback = (provider) => {
       
       if (!user) {
         const clientUrl = process.env.CLIENT_URL || 'http://localhost:3000';
-        return res.redirect(`${clientUrl}/auth/error?message=${encodeURIComponent('소셜 로그인에 실패했습니다')}`);
+        return res.redirect(`${clientUrl}/auth/error?message=${encodeURIComponent(`${provider} 로그인에 실패했습니다`)}`);
       }
       
       req.user = user;
@@ -262,6 +286,7 @@ export const handleSocialCallback = (provider) => {
     })(req, res, next);
   };
 };
+
 export default {
   authenticateLocal,
   authenticateJWT,

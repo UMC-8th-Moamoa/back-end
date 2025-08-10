@@ -150,12 +150,11 @@ passport.use(new JwtStrategy(
   }
 ));
 
-// 3. Kakao OAuth Strategy (업데이트된 버전)
-if (process.env.KAKAO_CLIENT_ID) {
+if (process.env.KAKAO_CLIENT_ID && process.env.KAKAO_CLIENT_SECRET) {
   passport.use(new KakaoStrategy(
     {
       clientID: process.env.KAKAO_CLIENT_ID,
-      clientSecret: process.env.KAKAO_CLIENT_SECRET || '',
+      clientSecret: process.env.KAKAO_CLIENT_SECRET,
       callbackURL: "/api/auth/kakao/callback"
     },
     async (accessToken, refreshToken, profile, done) => {
@@ -236,9 +235,8 @@ if (process.env.KAKAO_CLIENT_ID) {
 
         // 새 사용자 생성
         const newUserData = {
-          user_id: await generateUniqueUserId(), // 중복되지 않는 랜덤 user_id
           email: kakaoEmail || `kakao_${kakaoId}@kakao.temp`,
-          name: kakaoNickname || await generateRandomNickname(), // 카카오 닉네임 또는 랜덤 닉네임
+          name: kakaoNickname || '카카오 사용자',
           photo: kakaoProfileImage || null,
           emailVerified: !!kakaoEmail, // 카카오에서 이메일을 제공하면 인증된 것으로 간주
           password: '', // 소셜 로그인 사용자는 비밀번호 없음
@@ -272,8 +270,10 @@ if (process.env.KAKAO_CLIENT_ID) {
       }
     }
   ));
+  
+  console.log('✅ 카카오 OAuth 전략이 등록되었습니다.');
 } else {
-  console.warn('⚠️  카카오 OAuth 설정이 없습니다. KAKAO_CLIENT_ID 환경 변수를 확인하세요.');
+  console.warn('⚠️  카카오 OAuth 설정이 없습니다. KAKAO_CLIENT_ID와 KAKAO_CLIENT_SECRET 환경 변수를 확인하세요.');
 }
 
 export default passport;
