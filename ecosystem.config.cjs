@@ -17,7 +17,7 @@ module.exports = {
     },
     env_production: {
       NODE_ENV: 'production',
-      PORT: 3000
+      JWT_REFRESH_SECRET: process.env.JWT_REFRESH_SECRET
     },
     
     // 로그 설정
