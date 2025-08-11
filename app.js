@@ -32,10 +32,8 @@ initializeSocket(httpServer);
 
 // 로깅 미들웨어
 app.use(morgan(process.env.NODE_ENV === 'production' ? 'dev' : 'combined'));
-app.use(cors({
-  origin: allowedOrigins,
-  credentials: true
-}));
+
+
 
 
 // Express 앱에 헬스체크 엔드포인트 추가
@@ -86,6 +84,7 @@ const allowedOrigins = [
   'http://54.180.138.131', // 포트 없는 경우도 추가
   'https://www.moamoas.com',
   'https://moamoas.com',
+
 ];
 
 
