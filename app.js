@@ -31,20 +31,13 @@ initializeSocket(httpServer);
 // 미들웨어 설정
 
 // 로깅 미들웨어
-app.use(morgan(process.env.NODE_ENV === 'development' ? 'dev' : 'combined'));
+app.use(morgan(process.env.NODE_ENV === 'production' ? 'dev' : 'combined'));
+app.use(cors({
+  origin: allowedOrigins,
+  credentials: true
+}));
 
-// 보안 미들웨어
-// helmet 설정을 수정하세요
-// app.use(helmet({
-//   contentSecurityPolicy: {
-//     directives: {
-//       defaultSrc: ["'self'"],
-//       styleSrc: ["'self'", "'unsafe-inline'"],
-//       scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
-//       imgSrc: ["'self'", "data:", "https:"],
-//     },
-//   },
-// }));
+
 // Express 앱에 헬스체크 엔드포인트 추가
 app.get('/health', (req, res) => {
   // 데이터베이스 연결 상태 확인
@@ -90,8 +83,13 @@ if (process.env.NODE_ENV === 'production') {
 const allowedOrigins = [
   'http://localhost:3000',
   'http://54.180.138.131:3000',
-  'http://54.180.138.131',  // 포트 없는 경우도 추가
+  'http://54.180.138.131', // 포트 없는 경우도 추가
+  'https://www.moamoas.com',
+  'https://moamoas.com',
 ];
+
+
+app.set('trust proxy', 1);
 
 // CLIENT_URL이 있으면 추가
 if (process.env.CLIENT_URL && !allowedOrigins.includes(process.env.CLIENT_URL)) {
@@ -123,6 +121,18 @@ app.use(session({
     maxAge: 24 * 60 * 60 * 1000 // 24시간
   }
 }));
+
+
+
+//쿠키 설정
+res.cookie('email_verify_token', token, {
+  httpOnly: true,
+  secure: process.env.NODE_ENV === 'production', // 프록시 뒤 HTTPS면 true
+  sameSite: 'lax', // 폼/링크 이동 시 전달됨, 크로스도메인이면 'none' 필요
+  maxAge: 10 * 60 * 1000,
+});
+
+
 
 // Passport 초기화
 app.use(passport.initialize());

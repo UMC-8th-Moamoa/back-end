@@ -86,14 +86,14 @@ export class EmailVerificationDto {
   }
 }
 
-// 이메일 인증 코드 확인 DTO
 export class EmailVerificationCodeDto {
-  constructor({ email, code, purpose}) {
+  constructor({ email = null, code, purpose = null }) {
     this.email = email;
     this.code = code;
     this.purpose = purpose;
   }
 }
+
 
 // 아이디 찾기 요청 DTO
 export class FindUserIdDto {

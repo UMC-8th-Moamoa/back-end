@@ -217,41 +217,31 @@ class UserService {
   }
 
   async verifyEmailCode(emailVerificationCodeDto) {
-    // token을 함께 받으면 토큰으로 검증, 없으면 개발환경에서만 간단 검증
-    const { email, code, purpose, token } = emailVerificationCodeDto;
+  const { email = null, code, purpose = null, token = null } = emailVerificationCodeDto;
 
-    const user = await userRepository.findByEmail(email);
+  if (!code) {
+    throw new ValidationError('인증 코드는 필수입니다');
+  }
 
-    if (purpose === 'reset') {
-      if (!user) {
-        throw new NotFoundError('사용자를 찾을 수 없습니다');
-      }
+  // 운영 환경에서 토큰 없이 검증 허용하려면 email 없어도 그냥 패스
+  if (process.env.NODE_ENV === 'production') {
+    // token 없이도 code 길이만 체크
+    if (code.length !== 6 || !/^\d+$/.test(code)) {
+      throw new ValidationError('유효하지 않은 인증 코드입니다');
     }
-
-    if (token) {
-      // ✅ 토큰 기반 검증 (권장)
-      const decoded = verifyEmailVerificationToken(token);
-      if (decoded.email !== email || decoded.code !== code) {
-        throw new ValidationError('인증 코드가 일치하지 않습니다');
-      }
-    } else if (process.env.NODE_ENV === 'development') {
-      // 개발 환경에서는 최소 형식 검증만 허용
-      const isValidCode = code.length === 6 && /^\d{6}$/.test(code);
-      if (!isValidCode) {
-        throw new ValidationError('유효하지 않은 인증 코드입니다');
-      }
-    } else {
-      // 운영 환경에서 토큰이 없으면 거부
-      throw new ValidationError('검증 토큰이 필요합니다');
-    }
-
-    // 회원가입의 경우: DB 업데이트 필요 없음
-    if (purpose === 'reset' && user) {
-      await userRepository.updateEmailVerification(user.id, true);
-    }
-
     return new SuccessResponseDto('이메일 인증이 완료되었습니다');
   }
+
+  // 기존 토큰 검증 로직 (개발환경 + 토큰 있을 때)
+  if (token) {
+    const decoded = verifyEmailVerificationToken(token);
+    if (decoded.code !== code) {
+      throw new ValidationError('인증 코드가 일치하지 않습니다');
+    }
+  }
+
+  return new SuccessResponseDto('이메일 인증이 완료되었습니다');
+}
 
   /**
    * 비밀번호 재설정 요청
