@@ -149,6 +149,41 @@ class UserService {
     return new NicknameCheckResponseDto(available);
   }
 
+  async findUserId(findUserIdDto) {
+  const { email, phone } = findUserIdDto;
+
+  if (!email && !phone) {
+    throw new Error('이메일이나 전화번호 중 하나를 입력해주세요.');
+  }
+
+  let user;
+  if (email) {
+    user = await prisma.user.findUnique({
+      where: { email }
+    });
+    if (!user) throw new Error('가입 이력이 없는 이메일입니다.');
+  } else if (phone) {
+    user = await prisma.user.findUnique({
+      where: { phone }
+    });
+    if (!user) throw new Error('가입 이력이 없는 전화번호입니다.');
+  }
+
+  // 이메일 발송
+  await sendEmail({
+    to: user.email,
+    subject: '[MOA MOA] 아이디 찾기 안내',
+    text: `회원님의 아이디는 ${user.user_id} 입니다.`
+  });
+
+  return {
+    message: '회원님의 이메일로 아이디를 전송했습니다.'
+  };
+}
+
+
+
+
   /**
    * 비밀번호 변경
    * @param {number} userId - 사용자 ID

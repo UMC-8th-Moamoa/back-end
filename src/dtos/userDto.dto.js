@@ -95,13 +95,14 @@ export class EmailVerificationCodeDto {
 }
 
 
-// 아이디 찾기 요청 DTO
+// 아이디 찾기 DTO
 export class FindUserIdDto {
-  constructor({ name, phone }) {
-    this.name = name;
-    this.phone = phone;
+  constructor({ email, phone }) {
+    this.email = email || null;
+    this.phone = phone || null;
   }
 }
+
 
 // 비밀번호 재설정 요청 DTO
 export class PasswordResetRequestDto {
