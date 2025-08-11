@@ -317,4 +317,4 @@ process.on('unhandledRejection', (reason, promise) => {
   console.error('❌ 처리되지 않은 Promise 거부:', reason);
   console.error('Promise:', promise);
   process.exit(1);
-});g
+});
