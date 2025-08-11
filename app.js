@@ -19,9 +19,6 @@ import { globalErrorHandler, notFoundHandler } from './src/middlewares/errorHand
 // WebSocket 초기화 import
 import { initializeSocket } from './src/utils/websocket/notificationSocket.js';
 
-// 자동 이벤트 서비스 import
-import './src/services/autoEvent.service.js';
-
 // Express 앱 생성
 const app = express();
 
@@ -85,16 +82,15 @@ function checkDatabaseConnection() {
   }
 }
 
+// PM2와의 연동을 위한 ready 신호
 if (process.env.NODE_ENV === 'production') {
-  if (typeof process.send === 'function') {
-    process.send('ready');
-  }
+  process.send('ready');
 }
 
 const allowedOrigins = [
   'http://localhost:3000',
-  'http://15.165.121.220:3000',
-  'http://15.165.121.220',  // 포트 없는 경우도 추가
+  'http://54.180.138.131:3000',
+  'http://54.180.138.131',  // 포트 없는 경우도 추가
 ];
 
 // CLIENT_URL이 있으면 추가
@@ -160,7 +156,7 @@ const swaggerOptions = {
     },
     servers: [
       {
-        url: `${process.env.API_BASE_URL || 'http://localhost:3000'}/api`,
+        url: `${process.env.API_BASE_URL || 'http://localhost:3000'}`,
         description: '개발 서버'
       }
     ],
@@ -228,19 +224,13 @@ import letterHomeRoutes from './src/routes/letterHome.routes.js';
 import upcomingBirthdayRoutes from './src/routes/upcomingBirthday.routes.js';
 import birthdayRoutes from './src/routes/birthday.routes.js';
 import calendarRoutes from './src/routes/calendar.routes.js';
-
-import myBirthdayRoutes from './src/routes/myBirthday.routes.js';
 import birthdayEventRoutes from './src/routes/birthdayEvent.routes.js';
 import eventParticipationRoutes from './src/routes/eventParticipation.routes.js';
-import wishlistVoteRoutes from './src/routes/wishlistVote.routes.js';
-
 import eventShareRoutes from './src/routes/eventShare.routes.js';
-
 import purchaseProofRoutes from './src/routes/purchaseProof.routes.js';
 
 import shoppingRoutes from './src/routes/shopping.routes.js';
 import mypageRoutes from './src/routes/mypage.routes.js';
-import testRoutes from './src/routes/test.routes.js';
 
 
 // 라우트 등록
@@ -257,20 +247,13 @@ app.use('/api/home', letterHomeRoutes);
 app.use('/api/birthdays', upcomingBirthdayRoutes)
 app.use('/api/users', birthdayRoutes);
 app.use('/api/calendar', calendarRoutes);
-app.use('/api/birthdays', myBirthdayRoutes);
 app.use('/api/birthdays', birthdayEventRoutes);
 app.use('/api/birthdays', eventParticipationRoutes);
-app.use('/api/birthdays', wishlistVoteRoutes);
-
 app.use('/api/birthdays', eventShareRoutes);
-
 app.use('/api/birthdays', purchaseProofRoutes);
 
 app.use('/api/shopping', shoppingRoutes);
 app.use('/api/mypage', mypageRoutes);
-
-// 테스트 라우트 (이벤트 강제 생성)
-app.use('/api/test', testRoutes);
 
 
 
@@ -334,5 +317,4 @@ process.on('unhandledRejection', (reason, promise) => {
   console.error('❌ 처리되지 않은 Promise 거부:', reason);
   console.error('Promise:', promise);
   process.exit(1);
-});
-
+});g
