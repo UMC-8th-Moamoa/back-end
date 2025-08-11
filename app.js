@@ -268,7 +268,7 @@ app.use('/api/mypage', mypageRoutes);
 
 
 
-// 에러 처리
+
 app.use(notFoundHandler);
 app.use(globalErrorHandler);
 
