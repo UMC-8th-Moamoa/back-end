@@ -123,13 +123,6 @@ app.use(session({
 
 
 
-//쿠키 설정
-res.cookie('email_verify_token', token, {
-  httpOnly: true,
-  secure: process.env.NODE_ENV === 'production', // 프록시 뒤 HTTPS면 true
-  sameSite: 'lax', // 폼/링크 이동 시 전달됨, 크로스도메인이면 'none' 필요
-  maxAge: 10 * 60 * 1000,
-});
 
 
 

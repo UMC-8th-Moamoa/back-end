@@ -97,10 +97,21 @@ class UserController {
   });
 
   sendEmailVerification = catchAsync(async (req, res) => {
-    const emailVerificationDto = new EmailVerificationDto(req.body); // email + purpose
-    const result = await userService.sendEmailVerification(emailVerificationDto);
-    res.success(result);
-  });
+  const emailVerificationDto = new EmailVerificationDto(req.body); // email + purpose
+  const result = await userService.sendEmailVerification(emailVerificationDto);
+
+  // 인증 토큰을 쿠키로 저장 (result 안에 token이 있다고 가정)
+  if (result?.token) {
+    res.cookie('email_verify_token', result.token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax', // 크로스도메인 테스트 필요하면 'none'
+      maxAge: 10 * 60 * 1000, // 10분
+    });
+  }
+
+  res.success(result);
+});
 
   verifyEmailCode = catchAsync(async (req, res) => {
     const emailVerificationCodeDto = new EmailVerificationCodeDto(req.body); // email + code + purpose
