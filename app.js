@@ -233,7 +233,7 @@ import purchaseProofRoutes from './src/routes/purchaseProof.routes.js';
 
 import shoppingRoutes from './src/routes/shopping.routes.js';
 import mypageRoutes from './src/routes/mypage.routes.js';
-import testRoutes from './src/routes/test.routes.js';
+import demoRoutes from './src/routes/demo.routes.js';
 
 
 // 라우트 등록
@@ -242,6 +242,7 @@ app.use('/api/users', userRoutes);
 
 app.use('/api/wishlists', wishlistRoutes);
 app.use('/api/letters', letterRoutes);
+app.use('/api/demo', demoRoutes);
 
 app.use('/api/notifications', notificationRoutes);
 
@@ -265,8 +266,7 @@ app.use('/api/birthdays', purchaseProofRoutes);
 app.use('/api/shopping', shoppingRoutes);
 app.use('/api/mypage', mypageRoutes);
 
-// 테스트 라우트 (이벤트 강제 생성)
-app.use('/api/test', testRoutes);
+
 
 
 
