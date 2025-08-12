@@ -1,18 +1,15 @@
 import userRepository from '../repositories/userRepository.repositories.js';
 import prisma from '../config/prismaClient.js'; 
+import { hashPassword, validatePasswordStrength } from '../utils/password.util.js'; // ✅ compare/validatePasswordChange 제거
+import * as passwordResetRepository from '../repositories/passwordReset.repositories.js';
 
 
-import { 
-  hashPassword, 
-  comparePassword, 
-  validatePasswordChange as validatePasswordChangeUtil
-} from '../utils/password.util.js';
 import { 
   generateTokenPair, 
   generateEmailVerificationToken, 
-  verifyEmailVerificationToken,
-  generatePasswordResetToken,
-  verifyPasswordResetToken
+  verifyEmailVerificationToken
+  
+  
 } from '../utils/jwt.util.js';
 import {
   DuplicateEmailError,
@@ -202,26 +199,57 @@ class UserService {
    * @param {ChangePasswordDto} changePasswordDto - 비밀번호 변경 정보
    * @returns {Promise<SuccessResponseDto>} 성공 응답
    */
-  async changePassword(userId, changePasswordDto) {
-    const { currentPassword, newPassword } = changePasswordDto;
+  async resetPasswordWithTicket(ticketId, newPassword) {
+  const ticket = await passwordResetRepository.getValidTicket(ticketId);
+  if (!ticket) throw new ValidationError('인증 절차가 만료되었습니다. 다시 시도해주세요.');
 
-    // 현재 사용자 정보 조회
-    const user = await userRepository.findByIdWithPassword(userId);
-    if (!user) {
-      throw new NotFoundError('사용자를 찾을 수 없습니다');
-    }
+  const { isValid, errors } = validatePasswordStrength(newPassword);
+  if (!isValid) throw new ValidationError(errors.join(', '));
 
-    // 비밀번호 변경 검증
-    await validatePasswordChangeUtil(currentPassword, newPassword, user.password);
+  const hashed = await hashPassword(newPassword);
+  await userRepository.updatePassword(ticket.userId, hashed);
+  await passwordResetRepository.consumeTicket(ticketId);
 
-    // 새 비밀번호 해싱
-    const hashedNewPassword = await hashPassword(newPassword);
+  return new SuccessResponseDto('비밀번호가 성공적으로 재설정되었습니다');
+}
 
-    // 비밀번호 업데이트
-    await userRepository.updatePassword(userId, hashedNewPassword);
-
-    return new SuccessResponseDto('비밀번호가 성공적으로 변경되었습니다');
+// userService.js
+async verifyEmailCode({ email, code }) {
+  if (!email || !code) {
+    throw new ValidationError('email과 code는 필수입니다');
   }
+
+  // 1) 사용자 조회
+  const user = await userRepository.findByEmail(email);
+  if (!user) throw new NotFoundError('사용자를 찾을 수 없습니다');
+
+  // 2) 코드 검증
+  const isValid = await emailVerificationRepository.verifyCode(email, code);
+  if (!isValid) throw new ValidationError('잘못된 인증 코드입니다');
+
+  // 3) 이메일 인증 처리
+  await userRepository.updateEmailVerified(user.id, true);
+
+  // 4) 비밀번호 재설정 티켓 발급
+  const ticket = await passwordResetRepository.createTicket(user.id);
+
+  // 5) verificationToken 생성
+  const verificationToken = generateEmailVerificationToken({
+    email,
+    code,
+    type: 'reset', // 목적에 맞게 변경
+  });
+
+  // 6) 응답
+  return new SuccessResponseDto('이메일 인증이 완료되었습니다', {
+    resetTicket: ticket.id,
+    expiresIn: '30m',
+    verificationToken
+  });
+}
+
+
+
 
   async sendEmailVerification(emailVerificationDto) {
     const { email, purpose } = emailVerificationDto;
@@ -290,68 +318,48 @@ class UserService {
   return new SuccessResponseDto('이메일 인증이 완료되었습니다');
 }
 
-  /**
-   * 비밀번호 재설정 요청
-   * @param {PasswordResetRequestDto} passwordResetRequestDto - 비밀번호 재설정 요청 정보
-   * @returns {Promise<Object>} 재설정 링크 발송 결과
-   */
-  async requestPasswordReset(passwordResetRequestDto) {
-    const { email } = passwordResetRequestDto;
+  // UserService 클래스 내부에 추가
+async resetPasswordByCode(passwordResetDto) {
+  const { email, code, newPassword, token = null } = passwordResetDto;
 
-    const user = await userRepository.findByEmail(email);
-    if (!user) {
-      throw new NotFoundError('등록되지 않은 이메일입니다');
-    }
-
-    // 비밀번호 재설정 토큰 생성
-    const resetToken = generatePasswordResetToken(email, user.id);
-
-    // TODO: 실제 이메일 발송 로직 구현
-    // await this.sendPasswordResetEmail(email, resetToken);
-
-    // 개발 환경에서는 콘솔에 출력
-    if (process.env.NODE_ENV === 'development') {
-      console.log(`비밀번호 재설정 토큰 (${email}): ${resetToken}`);
-    }
-
-    const response = {
-      message: '비밀번호 재설정 링크가 이메일로 발송되었습니다'
-    };
-
-    // 개발 환경에서만 토큰 반환
-    if (process.env.NODE_ENV === 'development') {
-      response.resetToken = resetToken;
-      response.expiresIn = '30m';
-    }
-
-    return response;
+  // 6자리 숫자 코드 형태 1차 검증
+  if (!email || !code || !newPassword) {
+    throw new ValidationError('email, code, newPassword는 필수입니다');
+  }
+  if (!/^\d{6}$/.test(code)) {
+    throw new ValidationError('인증 코드는 6자리 숫자여야 합니다');
   }
 
-  /**
-   * 비밀번호 재설정
-   * @param {PasswordResetDto} passwordResetDto - 비밀번호 재설정 정보
-   * @returns {Promise<SuccessResponseDto>} 성공 응답
-   */
-  async resetPassword(passwordResetDto) {
-    const { token, newPassword } = passwordResetDto;
+  // (중요) 코드 검증: 이미 있는 이메일 인증 검증 로직 재사용
+  // - 개발환경: token 있으면 verifyEmailVerificationToken으로 일치 여부 확인
+  // - 운영환경: verifyEmailCode가 길이/형식만 체크하는 상태면,
+  //   실제론 DB에 코드 저장/검증하는 저장소가 필요합니다. (추후 반영 권장)
+  await this.verifyEmailCode(
+    new EmailVerificationCodeDto({ email, code, purpose: 'reset', token })
+  );
 
-    // 토큰 검증
-    const decoded = verifyPasswordResetToken(token);
-
-    // 사용자 존재 확인
-    const user = await userRepository.findById(decoded.userId);
-    if (!user) {
-      throw new NotFoundError('사용자를 찾을 수 없습니다');
-    }
-
-    // 새 비밀번호 해싱
-    const hashedNewPassword = await hashPassword(newPassword);
-
-    // 비밀번호 업데이트
-    await userRepository.updatePassword(user.id, hashedNewPassword);
-
-    return new SuccessResponseDto('비밀번호가 성공적으로 재설정되었습니다');
+  // 사용자 조회
+  const user = await userRepository.findByEmail(email);
+  if (!user) {
+    // 존재 노출을 피하려면 메시지를 일반화해도 됨
+    throw new NotFoundError('사용자를 찾을 수 없습니다');
   }
+
+  // 새 비밀번호 정책 검증 (유틸에 정책 함수가 없다면 간단 검사라도)
+  // 예: validatePasswordChangeUtil는 현재비번 비교 로직이 섞여있을 수 있어 별도 정책 함수 권장
+  if (newPassword.length < 8) {
+    throw new ValidationError('새 비밀번호는 최소 8자 이상이어야 합니다');
+  }
+
+  // 해싱 후 업데이트
+  const hashed = await hashPassword(newPassword);
+  await userRepository.updatePassword(user.id, hashed);
+
+  // (선택) 해당 이메일의 인증코드 무효화 처리 필요 시 여기에 추가
+
+  return new SuccessResponseDto('비밀번호가 성공적으로 재설정되었습니다');
+}
+
 
   /**
    * 사용자 정보 수정

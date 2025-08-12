@@ -70,12 +70,14 @@ export class AuthResponseDto {
 
 // 비밀번호 변경 요청 DTO
 export class ChangePasswordDto {
-  constructor({ currentPassword, newPassword, confirmPassword }) {
-    this.currentPassword = currentPassword;
+  constructor({newPassword, confirmPassword }) {
+  
     this.newPassword = newPassword;
     this.confirmPassword = confirmPassword;
   }
 }
+
+
 
 // 이메일 인증 요청 DTO
 export class EmailVerificationDto {
@@ -151,10 +153,10 @@ export class MaskedEmailResponseDto {
   }
 }
 
-// 성공 응답 DTO
 export class SuccessResponseDto {
-  constructor(message) {
+  constructor(message, data = null) {
     this.message = message;
+    if (data !== null) this.data = data;
   }
 }
 
