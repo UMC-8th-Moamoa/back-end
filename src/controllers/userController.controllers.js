@@ -119,29 +119,9 @@ class UserController {
     res.success(result);
   });
 
-  sendPasswordCode = catchAsync(async (req, res) => {
-    // name, phone, purpose
-    const dto = new SendPasswordCodeDto(req.body);
-    const result = await userService.sendPasswordCode(dto);
-
-    // 이메일 인증 토큰(코드 포함) 쿠키 저장 – 기존 verifyEmail처럼 10분 유지
-    if (result?.token) {
-      res.cookie('email_verify_token', result.token, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'lax',
-        maxAge: 10 * 60 * 1000,
-      });
-    }
-
-    res.success({
-      message: '비밀번호 재설정 인증 코드가 가입 이메일로 발송되었어',
-      // 개발환경에서는 디버그용 정보 포함
-      ...(process.env.NODE_ENV === 'development' ? { debug: result.debug } : {})
-    });
-  });
-
   
+
+
   /**
    * 비밀번호 변경
    * PUT /api/users/password

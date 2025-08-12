@@ -162,34 +162,6 @@ router.post('/refresh', validateRefreshToken, userController.refreshToken);
  */
 router.get('/me', authenticateJWT, userController.getMe);
 
-/**
- * @swagger
- * /api/auth/send-password-code:
- *   post:
- *     summary: 비밀번호 재설정용 인증코드 발송 (이름+휴대폰 → 가입 이메일로 전송)
- *     tags: [Auth]
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             required: [name, phone, purpose]
- *             properties:
- *               name:
- *                 type: string
- *               phone:
- *                 type: string
- *                 example: "010-1234-5678"
- *               purpose:
- *                 type: string
- *                 enum: [reset]
- *                 description: 현재는 reset만 허용
- *     responses:
- *       200:
- *         description: 인증 코드 발송 성공
- */
-router.post('/send-password-code', validateSendPasswordCode, userController.sendPasswordCode);
 
 /**
  * @swagger

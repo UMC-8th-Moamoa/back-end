@@ -103,13 +103,7 @@ export class FindUserIdDto {
   }
 }
 
-export class SendPasswordCodeDto {
-  constructor({ name, phone, purpose }) {
-    this.name = name;
-    this.phone = phone;
-    this.purpose = purpose;
-  }
-}
+
 
 // 비밀번호 재설정 요청 DTO
 export class PasswordResetRequestDto {
@@ -182,7 +176,6 @@ export default {
   ChangePasswordDto,
   EmailVerificationDto,
   EmailVerificationCodeDto,
-  SendPasswordCodeDto,
   FindUserIdDto,
   PasswordResetRequestDto,
   PasswordResetDto,

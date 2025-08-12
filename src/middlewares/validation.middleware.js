@@ -113,26 +113,7 @@ const validateUserLogin = [
 ];
 
 
-// 비번 재설정용 코드 발송 유효성 검사 (이름+휴대폰 → 가입 이메일로 전송)
-const validateSendPasswordCode = [
-  body('name')
-    .isString().withMessage('name은 문자열이어야 합니다')
-    .trim()
-    .notEmpty().withMessage('name을 입력해주세요')
-    .isLength({ max: 50 }).withMessage('name은 50자 이하여야 합니다'),
 
-  body('phone')
-    .isString().withMessage('phone은 문자열이어야 합니다')
-    .customSanitizer(v => String(v).replace(/-/g, ''))  // 하이픈 제거
-    .matches(/^01[0-9]\d{7,8}$/).withMessage('phone 형식이 올바르지 않아 (예: 01012345678, 0112345678)'),
-
-  body('purpose')
-    .isString().withMessage('purpose는 문자열이어야 합니다')
-    .customSanitizer(v => String(v).toLowerCase())
-    .isIn(['reset']).withMessage('purpose는 reset만 가능합니다'),
-
-  handleValidationErrors
-];
 
 // 프로필 업데이트 유효성 검사
 const validateProfileUpdate = [
