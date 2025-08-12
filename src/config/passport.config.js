@@ -158,7 +158,7 @@ if (process.env.KAKAO_CLIENT_ID && process.env.KAKAO_CLIENT_SECRET) {
     {
       clientID: process.env.KAKAO_CLIENT_ID,
       clientSecret: process.env.KAKAO_CLIENT_SECRET,
-      callbackURL: "/api/auth/kakao/callback"
+      callbackURL: process.env.KAKAO_REDIRECT_URI
     },
     async (accessToken, refreshToken, profile, done) => {
       try {

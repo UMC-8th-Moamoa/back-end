@@ -1,6 +1,5 @@
 import userRepository from '../repositories/userRepository.repositories.js';
-import { demoService } from './demo.service.js';
-import prisma from '../config/prismaClient.js'; // 경로는 실제 구조에 맞게 수정
+import prisma from '../config/prismaClient.js'; 
 
 
 import { 
