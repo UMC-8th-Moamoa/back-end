@@ -208,6 +208,7 @@ app.get('/health', (req, res) => {
 // API 라우트들 - 존재하는 파일들만 import
 import authRoutes from './src/routes/auth.routes.js';
 import userRoutes from './src/routes/user.routes.js';
+import uploadRoutes from './src/routes/upload.route.js';
 
 import wishlistRoutes from './src/routes/wishlist.routes.js';
 import letterRoutes from './src/routes/letter.routes.js';
@@ -239,6 +240,7 @@ import demoRoutes from './src/routes/demo.routes.js';
 // 라우트 등록
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
+app.use('/api/upload', uploadRoutes);
 
 app.use('/api/wishlists', wishlistRoutes);
 app.use('/api/letters', letterRoutes);
