@@ -81,6 +81,7 @@ if (process.env.NODE_ENV === 'production') {
 const allowedOrigins = [
   'http://localhost:3000',
   'http://54.180.138.131:3000',
+  'http://localhost:5173',
   'http://54.180.138.131', // 포트 없는 경우도 추가
   'https://www.moamoas.com',
   'https://moamoas.com',
