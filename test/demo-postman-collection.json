@@ -1,0 +1,254 @@
+{
+  "info": {
+    "name": "데모 데이 API 테스트",
+    "description": "데모 데이 기능을 위한 API 테스트 컬렉션",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3000/api"
+    },
+    {
+      "key": "jwtToken",
+      "value": "YOUR_JWT_TOKEN_HERE",
+      "description": "로그인 후 받은 JWT 토큰을 여기에 입력하세요"
+    },
+    {
+      "key": "shareLink",
+      "value": "",
+      "description": "데모 이벤트 생성 후 자동으로 설정됩니다"
+    }
+  ],
+  "item": [
+    {
+      "name": "1. 데모 이벤트 생성",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{jwtToken}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/demo/events",
+          "host": ["{{baseUrl}}"],
+          "path": ["demo", "events"]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "// 응답에서 shareLink 추출하여 환경 변수에 저장",
+              "if (pm.response.code === 201) {",
+              "    const responseJson = pm.response.json();",
+              "    if (responseJson.result && responseJson.result.shareLink) {",
+              "        pm.collectionVariables.set('shareLink', responseJson.result.shareLink);",
+              "        console.log('공유 링크가 설정되었습니다:', responseJson.result.shareLink);",
+              "        console.log('완전한 공유 URL:', responseJson.result.shareUrl);",
+              "    }",
+              "}",
+              "",
+              "pm.test('데모 이벤트 생성 성공', function () {",
+              "    pm.response.to.have.status(201);",
+              "    pm.expect(pm.response.json().result).to.have.property('shareLink');",
+              "    pm.expect(pm.response.json().result).to.have.property('shareUrl');",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "2. 공유 링크로 데모 이벤트 조회 (비회원)",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/demo/events/{{shareLink}}/public",
+          "host": ["{{baseUrl}}"],
+          "path": ["demo", "events", "{{shareLink}}", "public"]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('공유 링크 조회 성공', function () {",
+              "    pm.response.to.have.status(200);",
+              "    pm.expect(pm.response.json().result).to.have.property('title');",
+              "    pm.expect(pm.response.json().result).to.have.property('userName');",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "3. 데모 편지 작성 (비회원)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"writerName\": \"테스트 작성자\",\n  \"content\": \"안녕하세요! 이것은 데모 데이를 위한 테스트 편지입니다. 🎉 정말 멋진 프로젝트네요!\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/demo/events/{{shareLink}}/letters",
+          "host": ["{{baseUrl}}"],
+          "path": ["demo", "events", "{{shareLink}}", "letters"]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('데모 편지 작성 성공', function () {",
+              "    pm.response.to.have.status(201);",
+              "    pm.expect(pm.response.json().result).to.have.property('writerName');",
+              "    pm.expect(pm.response.json().result).to.have.property('content');",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "4. 내 데모 편지들 조회",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{jwtToken}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/demo/letters?page=1&size=10",
+          "host": ["{{baseUrl}}"],
+          "path": ["demo", "letters"],
+          "query": [
+            {
+              "key": "page",
+              "value": "1"
+            },
+            {
+              "key": "size",
+              "value": "10"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('내 데모 편지들 조회 성공', function () {",
+              "    pm.response.to.have.status(200);",
+              "    pm.expect(pm.response.json().result).to.have.property('content');",
+              "    pm.expect(pm.response.json().result).to.have.property('totalElements');",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "5. 내 데모 이벤트 조회",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{jwtToken}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/demo/events/my",
+          "host": ["{{baseUrl}}"],
+          "path": ["demo", "events", "my"]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('내 데모 이벤트 조회 성공', function () {",
+              "    pm.response.to.have.status(200);",
+              "    pm.expect(pm.response.json().result).to.have.property('shareLink');",
+              "    pm.expect(pm.response.json().result).to.have.property('shareUrl');",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "6. 추가 편지 작성 (다른 작성자)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"writerName\": \"친구A\",\n  \"content\": \"데모 데이 화이팅! 정말 멋진 프레젠테이션이 될 것 같아요! 💪\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/demo/events/{{shareLink}}/letters",
+          "host": ["{{baseUrl}}"],
+          "path": ["demo", "events", "{{shareLink}}", "letters"]
+        }
+      }
+    },
+    {
+      "name": "7. 또 다른 편지 작성",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"writerName\": \"동료B\",\n  \"content\": \"UMC 8기 프로젝트가 이렇게 완성도 높다니! 정말 대단해요. 데모 데이에서 좋은 결과 있기를 바라겠습니다! 🎯\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/demo/events/{{shareLink}}/letters",
+          "host": ["{{baseUrl}}"],
+          "path": ["demo", "events", "{{shareLink}}", "letters"]
+        }
+      }
+    }
+  ]
+}

@@ -92,7 +92,7 @@ public/uploads/*
 !public/uploads/.gitkeep
 
 # Prisma
-prisma/migrations/
+#prisma/migrations/
 
 # IDE
 .vscode/
