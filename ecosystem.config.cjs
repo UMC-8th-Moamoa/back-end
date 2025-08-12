@@ -20,7 +20,12 @@ module.exports = {
         JWT_SECRET: "3817",
         JWT_REFRESH_SECRET: "h3X7P!9zQ2m@vB1kL4yE0aS8uW5rT6n", 
         JWT_EXPIRES_IN: "2h",
-        JWT_REFRESH_EXPIRES_IN: "14d"
+        JWT_REFRESH_EXPIRES_IN: "14d",
+        // S3 설정 추가
+        AWS_ACCESS_KEY: "your_aws_access_key",
+        AWS_SECRET_ACCESS_KEY: "your_aws_secret_key",
+        AWS_REGION: "ap-northeast-2",
+        AWS_S3_BUCKET_NAME: "moamoas-s3"
       },
     
     // 로그 설정

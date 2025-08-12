@@ -1,0 +1,151 @@
+{
+  "info": {
+    "name": "S3 Upload API",
+    "description": "S3 Presigned URL 업로드 API 테스트 컬렉션",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3000/api/upload",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "1. 사용자 이미지 업로드 URL 생성",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"fileName\": \"profile.jpg\",\n  \"fileType\": \"image/jpeg\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrl}}/user-image/upload-url",
+          "host": ["{{baseUrl}}"],
+          "path": ["user-image", "upload-url"]
+        },
+        "description": "사용자 프로필 이미지 업로드를 위한 Presigned URL 생성"
+      },
+      "response": []
+    },
+    {
+      "name": "2. 위시리스트 이미지 업로드 URL 생성",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"fileName\": \"wishlist_item.png\",\n  \"fileType\": \"image/png\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrl}}/wishlist-image/upload-url",
+          "host": ["{{baseUrl}}"],
+          "path": ["wishlist-image", "upload-url"]
+        },
+        "description": "위시리스트 아이템 이미지 업로드를 위한 Presigned URL 생성"
+      },
+      "response": []
+    },
+    {
+      "name": "3. S3에 실제 파일 업로드",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "image/jpeg",
+            "description": "파일의 MIME 타입에 맞게 변경"
+          }
+        ],
+        "body": {
+          "mode": "file",
+          "file": {}
+        },
+        "url": {
+          "raw": "{{uploadUrl}}",
+          "host": ["{{uploadUrl}}"]
+        },
+        "description": "1단계 또는 2단계에서 받은 uploadUrl을 여기에 붙여넣고 파일을 업로드하세요"
+      },
+      "response": []
+    },
+    {
+      "name": "4. 이미지 삭제",
+      "request": {
+        "method": "DELETE",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"imageUrl\": \"https://moamoas-s3.s3.ap-northeast-2.amazonaws.com/users/example.jpg\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrl}}/image",
+          "host": ["{{baseUrl}}"],
+          "path": ["image"]
+        },
+        "description": "S3에서 이미지 파일 삭제"
+      },
+      "response": []
+    },
+    {
+      "name": "5. 업로드 완료 확인",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"fileUrl\": \"https://moamoas-s3.s3.ap-northeast-2.amazonaws.com/users/example.jpg\",\n  \"fileName\": \"profile.jpg\",\n  \"fileSize\": 1024000\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrl}}/confirm",
+          "host": ["{{baseUrl}}"],
+          "path": ["confirm"]
+        },
+        "description": "업로드 완료 후 서버에 알림"
+      },
+      "response": []
+    }
+  ]
+}
