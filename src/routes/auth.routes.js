@@ -1,7 +1,6 @@
 import express from 'express';
 import { PrismaClient } from '@prisma/client';
 import passport from 'passport';
-import { validateSendPasswordCode } from '../middlewares/validation.middleware.js';
 import { 
   authenticateLocal, 
   authenticateJWT, 
