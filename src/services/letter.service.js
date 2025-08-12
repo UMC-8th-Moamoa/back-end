@@ -10,6 +10,7 @@ const createLetter = async (userId, letterData) => {
     content, 
     letterPaperId, 
     envelopeId, 
+    fontId,
     envelopeImageUrl 
   } = letterData;
 
@@ -38,7 +39,7 @@ const createLetter = async (userId, letterData) => {
 
   // 4. 편지지 소유권 확인
   const letterPaper = await letterRepository.findUserItemById(letterPaperId, userId);
-  if (!letterPaper || letterPaper.item.category !== 'LETTER_PAPER') {
+  if (!letterPaper || letterPaper.item.category !== 'paper') {
     const error = new Error('보유하지 않은 편지지이거나 올바르지 않은 편지지입니다');
     error.status = 400;
     throw error;
@@ -46,13 +47,23 @@ const createLetter = async (userId, letterData) => {
 
   // 5. 편지봉투 소유권 확인
   const envelope = await letterRepository.findUserItemById(envelopeId, userId);
-  if (!envelope || envelope.item.category !== 'STICKER') {
+  if (!envelope || envelope.item.category !== 'envelope') {
     const error = new Error('보유하지 않은 편지봉투이거나 올바르지 않은 편지봉투입니다');
     error.status = 400;
     throw error;
   }
 
-  // 6. 편지 생성
+  // 6. 폰트 소유권 확인 (선택사항)
+  if (fontId) {
+    const font = await letterRepository.findUserItemById(fontId, userId);
+    if (!font || font.item.category !== 'font') {
+      const error = new Error('보유하지 않은 폰트이거나 올바르지 않은 폰트입니다');
+      error.status = 400;
+      throw error;
+    }
+  }
+
+  // 7. 편지 생성
   const createData = {
     birthdayEventId,
     senderId,
@@ -61,6 +72,7 @@ const createLetter = async (userId, letterData) => {
     content,
     letterPaperId,
     envelopeId,
+    fontId,
     envelopeImageUrl,
     sentAt: new Date()
   };
@@ -107,11 +119,11 @@ const updateLetter = async (letterId, userId, updateData) => {
   }
 
   // 3. 아이템 소유권 확인 (변경하려는 아이템이 있을 경우)
-  const { letterPaperId, envelopeId, envelopeImageUrl, ...directUpdateData } = updateData;
+  const { letterPaperId, envelopeId, fontId, envelopeImageUrl, ...directUpdateData } = updateData;
 
   if (letterPaperId) {
     const letterPaper = await letterRepository.findUserItemById(letterPaperId, userId);
-    if (!letterPaper || letterPaper.item.category !== 'LETTER_PAPER') {
+    if (!letterPaper || letterPaper.item.category !== 'paper') {
       const error = new Error('보유하지 않은 편지지이거나 올바르지 않은 편지지입니다');
       error.status = 400;
       throw error;
@@ -120,8 +132,17 @@ const updateLetter = async (letterId, userId, updateData) => {
 
   if (envelopeId) {
     const envelope = await letterRepository.findUserItemById(envelopeId, userId);
-    if (!envelope || envelope.item.category !== 'STICKER') {
+    if (!envelope || envelope.item.category !== 'envelope') {
       const error = new Error('보유하지 않은 편지봉투이거나 올바르지 않은 편지봉투입니다');
+      error.status = 400;
+      throw error;
+    }
+  }
+
+  if (fontId) {
+    const font = await letterRepository.findUserItemById(fontId, userId);
+    if (!font || font.item.category !== 'font') {
+      const error = new Error('보유하지 않은 폰트이거나 올바르지 않은 폰트입니다');
       error.status = 400;
       throw error;
     }
@@ -132,6 +153,7 @@ const updateLetter = async (letterId, userId, updateData) => {
     ...directUpdateData,
     ...(letterPaperId !== undefined && { letterPaperId }),
     ...(envelopeId !== undefined && { envelopeId }),
+    ...(fontId !== undefined && { fontId }),
     ...(envelopeImageUrl !== undefined && { envelopeImageUrl })
   };
   
@@ -211,6 +233,7 @@ const getLetters = async (birthdayEventId, page, size) => {
       title: letter.title,
       letterPaperId: letter.letterPaperId,
       envelopeId: letter.envelopeId,
+      fontId: letter.fontId,
       envelopeImageUrl: letter.envelopeImageUrl
     }));
 
@@ -257,6 +280,7 @@ const getLetterById = async (letterId, userId) => {
       content: letter.content,
       letterPaperId: letter.letterPaperId,
       envelopeId: letter.envelopeId,
+      fontId: letter.fontId,
       envelopeImageUrl: letter.envelopeImageUrl,
       sentAt: letter.sentAt,
       readAt: letter.readAt

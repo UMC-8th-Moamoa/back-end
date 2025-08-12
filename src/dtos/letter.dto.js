@@ -8,6 +8,7 @@ class LetterDto {
       content: letter.content,
       letterPaperId: letter.letterPaperId || null,
       envelopeId: letter.envelopeId || null,
+      fontId: letter.fontId || null,
       envelopeImageUrl: letter.envelopeImageUrl || null,
       sentAt: letter.sentAt
     };
@@ -23,6 +24,7 @@ class LetterDto {
       content: letter.content,
       letterPaperId: letter.letterPaperId,
       envelopeId: letter.envelopeId,
+      fontId: letter.fontId,
       envelopeImageUrl: letter.envelopeImageUrl,
       sentAt: letter.sentAt,
       readAt: letter.readAt,

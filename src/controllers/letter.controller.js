@@ -313,6 +313,9 @@ const getLetterById = async (req, res) => {
  *         envelopeId:
  *           type: integer
  *           description: 선택한 편지봉투 ID
+ *         fontId:
+ *           type: integer
+ *           description: 선택한 폰트 ID (선택사항)
  *         envelopeImageUrl:
  *           type: string
  *           format: uri
@@ -342,6 +345,9 @@ const getLetterById = async (req, res) => {
  *         envelopeId:
  *           type: integer
  *           description: 선택한 편지봉투 ID
+ *         fontId:
+ *           type: integer
+ *           description: 선택한 폰트 ID
  *         envelopeImageUrl:
  *           type: string
  *           description: 편지봉투에 표시할 이미지 URL
@@ -434,6 +440,9 @@ const createLetter = catchAsync(async (req, res) => {
  *               envelopeId:
  *                 type: integer
  *                 description: 편지봉투 변경
+ *               fontId:
+ *                 type: integer
+ *                 description: 폰트 변경 (선택사항)
  *               envelopeImageUrl:
  *                 type: string
  *                 format: uri
