@@ -88,6 +88,7 @@ model User {
   
   wishlistVotes           WishlistVote[]
   contributions           Contribution[]
+  searchHistories         SearchHistory[]
 
   @@map("users")
 }
@@ -437,4 +438,17 @@ model BirthdayEventSelectedItem {
 
   @@unique([eventId, wishlistId])
   @@map("birthday_event_selected_items")
+}
+
+// 검색 기록 테이블
+model SearchHistory {
+  id         Int      @id @default(autoincrement())
+  userId     Int
+  searchTerm String   @db.VarChar(100)
+  searchedAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, searchedAt(sort: Desc)])
+  @@map("search_histories")
 }
