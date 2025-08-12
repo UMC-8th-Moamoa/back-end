@@ -172,12 +172,17 @@ class UserService {
     if (!user) throw new Error('가입 이력이 없는 전화번호입니다.');
   }
 
-  // 이메일 발송
-  await sendEmail({
-    to: user.email,
-    subject: '[MOA MOA] 아이디 찾기 안내',
-    text: `회원님의 아이디는 ${user.user_id} 입니다.`
-  });
+  // 이메일 발송 (현재 비활성화됨 - 실제 이메일 서비스 구현 후 활성화)
+  // await sendEmail({
+  //   to: user.email,
+  //   subject: '[MOA MOA] 아이디 찾기 안내',
+  //   text: `회원님의 아이디는 ${user.user_id} 입니다.`
+  // });
+
+  // 개발 환경에서는 콘솔에 출력
+  if (process.env.NODE_ENV === 'development') {
+    console.log(`아이디 찾기: ${user.email}로 아이디 ${user.user_id} 전송 (실제 이메일 발송 비활성화)`);
+  }
 
   return {
     message: '회원님의 이메일로 아이디를 전송했습니다.'
