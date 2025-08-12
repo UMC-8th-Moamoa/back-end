@@ -570,5 +570,6 @@ export {
   validatePasswordReset,
   validateNicknameCheck,
   validateRefreshToken,
+  validateSendPasswordCode,
   handleValidationErrors
 };
