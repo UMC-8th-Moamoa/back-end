@@ -1,6 +1,6 @@
 import userRepository from '../repositories/userRepository.repositories.js';
 import prisma from '../config/prismaClient.js'; // 경로는 실제 구조에 맞게 수정
-//import { sendEmail } from '../utils/email.util.js';
+
 
 import { 
   hashPassword, 
@@ -138,6 +138,39 @@ class UserService {
     }
 
     return new UserResponseDto(user);
+  }
+  
+
+
+  async sendPasswordCode(dto) {
+    const { name, phone, purpose } = dto;
+
+    if (String(purpose).toLowerCase() !== 'reset') {
+      throw new ValidationError('purpose는 reset만 허용됩니다');
+    }
+
+    // 이름+휴대폰으로 사용자 검색
+    const user = await userRepository.findByNameAndPhone(name, phone);
+    if (!user) {
+      throw new NotFoundError('일치하는 사용자를 찾을 수 없습니다');
+    }
+
+    // 6자리 코드 생성
+    const code = Math.floor(100000 + Math.random() * 900000).toString();
+
+    // 이메일 인증 토큰 생성(10분 유효, 기존 함수 재사용)
+    const token = generateEmailVerificationToken(user.email, code);
+
+    // 실제 메일 발송 (기존 유틸 재사용 또는 TODO 로깅)
+    await this.sendVerificationEmail(user.email, code);
+
+    const result = { token };
+    if (process.env.NODE_ENV === 'development') {
+      result.debug = { email: user.email, code, expiresIn: '10m' };
+      console.log(`[send-password-code][DEV] ${user.email} ← 코드 ${code}`);
+    }
+
+    return result;
   }
 
   /**
