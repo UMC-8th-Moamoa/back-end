@@ -1,3 +1,5 @@
+import { getCurrentKSTISOString } from '../utils/datetime.util.js';
+
 class AppError extends Error {
   constructor(message, statusCode = 500, errorCode = "UNKNOWN_ERROR", data = null) {
     super(message);
@@ -136,7 +138,7 @@ const globalErrorHandler = (err, req, res, next) => {
   const message = err.message || "서버 오류가 발생했습니다";
 
   // 에러 로깅
-  console.error(`[${new Date().toISOString()}] ${req.method} ${req.path}`);
+  console.error(`[${getCurrentKSTISOString()}] ${req.method} ${req.path}`);
   console.error(`에러 코드: ${errorCode}`);
   console.error(`에러 메시지: ${message}`);
   

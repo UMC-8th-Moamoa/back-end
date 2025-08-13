@@ -462,6 +462,20 @@ if (isKakaoEnabled()) {
 
 /**
  * @swagger
+ * /api/auth/trigger/birthdayevent:
+ *   post:
+ *     summary: 생일 이벤트 수동 생성 트리거 (개발/테스트용)
+ *     tags: [Auth]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: 생일 이벤트 생성 트리거 성공
+ */
+router.post('/trigger-birthday-event', authenticateJWT, userController.triggerBirthdayEvent);
+
+/**
+ * @swagger
  * /api/auth/social/status:
  *   get:
  *     summary: 소셜 로그인 연결 상태 조회

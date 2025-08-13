@@ -1,5 +1,6 @@
 import { myBirthdayWishlistRepository } from '../repositories/myBirthdayWishlist.repository.js';
 import { NotFoundError, ValidationError } from '../middlewares/errorHandler.js';
+import { toKSTISOString } from '../utils/datetime.util.js';
 
 /**
  * 내 생일 위시리스트 서비스
@@ -64,7 +65,7 @@ class MyBirthdayWishlistService {
           price: product.price,
           image: product.productImageUrl,
           isSelected: product.isSelected,
-          addedAt: product.createdAt.toISOString(),
+          addedAt: toKSTISOString(product.createdAt),
           voteCount: product.voteCount
         })),
         pagination: {

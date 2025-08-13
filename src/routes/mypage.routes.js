@@ -360,4 +360,193 @@ router.post('/follow/request',
   mypageController.postFollowRequest
 );
 
+/**
+ * @swagger
+ * /api/mypage/change_id:
+ *   put:
+ *     summary: 로그인용 사용자 ID 변경
+ *     description: 마이페이지에서 현재 사용자의 로그인용 ID를 새로운 ID로 변경합니다. ID는 중복될 수 없으며, 특정 조건을 만족해야 합니다.
+ *     tags: [Mypage]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - newUserId
+ *             properties:
+ *               newUserId:
+ *                 type: string
+ *                 description: 새로운 로그인용 사용자 ID (4-20자, 영문/숫자/언더스코어만 허용)
+ *                 pattern: "^[a-zA-Z0-9_]{4,20}$"
+ *                 example: "new_user_id_2025"
+ *           example:
+ *             newUserId: "new_user_id_2025"
+ *     responses:
+ *       200:
+ *         description: 성공
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 resultType:
+ *                   type: string
+ *                   example: "SUCCESS"
+ *                 error:
+ *                   type: null
+ *                 success:
+ *                   type: object
+ *                   properties:
+ *                     previousUserId:
+ *                       type: string
+ *                       description: 이전 사용자 ID
+ *                       example: "chaon_gold"
+ *                     newUserId:
+ *                       type: string
+ *                       description: 새로운 사용자 ID
+ *                       example: "moa123"
+ *                     message:
+ *                       type: string
+ *                       description: 성공 메시지
+ *                       example: "사용자 ID가 성공적으로 변경되었습니다"
+ *                     changedAt:
+ *                       type: string
+ *                       format: date-time
+ *                       description: 변경 시간
+ *                       example: "2025-08-13T10:30:00Z"
+ *             example:
+ *               resultType: "SUCCESS"
+ *               error: null
+ *               success:
+ *                 previousUserId: "chaon_gold"
+ *                 newUserId: "moa123"
+ *                 message: "사용자 ID가 성공적으로 변경되었습니다"
+ *                 changedAt: "2025-08-13T10:30:00Z"
+ *       400:
+ *         description: 잘못된 요청
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 resultType:
+ *                   type: string
+ *                   example: "FAIL"
+ *                 error:
+ *                   type: object
+ *                   properties:
+ *                     errorCode:
+ *                       type: string
+ *                       example: "V001"
+ *                     reason:
+ *                       type: string
+ *                       example: "새로운 사용자 ID는 4-20자의 영문, 숫자, 언더스코어만 허용됩니다"
+ *                     data:
+ *                       type: null
+ *                 success:
+ *                   type: null
+ *             examples:
+ *               invalid_format:
+ *                 summary: 잘못된 ID 형식
+ *                 value:
+ *                   resultType: "FAIL"
+ *                   error:
+ *                     errorCode: "V001"
+ *                     reason: "새로운 사용자 ID는 4-20자의 영문, 숫자, 언더스코어만 허용됩니다"
+ *                     data: null
+ *                   success: null
+ *               empty_user_id:
+ *                 summary: ID 누락
+ *                 value:
+ *                   resultType: "FAIL"
+ *                   error:
+ *                     errorCode: "V002"
+ *                     reason: "새로운 사용자 ID를 입력해주세요"
+ *                     data: null
+ *                   success: null
+ *               same_user_id:
+ *                 summary: 동일한 ID
+ *                 value:
+ *                   resultType: "FAIL"
+ *                   error:
+ *                     errorCode: "V003"
+ *                     reason: "현재 ID와 동일합니다. 다른 ID를 입력해주세요"
+ *                     data: null
+ *                   success: null
+ *       401:
+ *         description: 인증 실패
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 resultType:
+ *                   type: string
+ *                   example: "FAIL"
+ *                 error:
+ *                   type: object
+ *                   properties:
+ *                     errorCode:
+ *                       type: string
+ *                       example: "A001"
+ *                     reason:
+ *                       type: string
+ *                       example: "인증이 필요합니다"
+ *                     data:
+ *                       type: null
+ *                 success:
+ *                   type: null
+ *       409:
+ *         description: 중복된 사용자 ID
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 resultType:
+ *                   type: string
+ *                   example: "FAIL"
+ *                 error:
+ *                   type: object
+ *                   properties:
+ *                     errorCode:
+ *                       type: string
+ *                       example: "D001"
+ *                     reason:
+ *                       type: string
+ *                       example: "이미 사용 중인 사용자 ID입니다"
+ *                     data:
+ *                       type: null
+ *                 success:
+ *                   type: null
+ *       500:
+ *         description: 서버 내부 오류
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 resultType:
+ *                   type: string
+ *                   example: "FAIL"
+ *                 error:
+ *                   type: object
+ *                   properties:
+ *                     errorCode:
+ *                       type: string
+ *                       example: "S001"
+ *                     reason:
+ *                       type: string
+ *                       example: "서버 내부 오류가 발생했습니다"
+ *                     data:
+ *                       type: null
+ *                 success:
+ *                   type: null
+ */
+router.put('/change_id', authenticateJWT, mypageController.changeUserId);
+
 export default router;

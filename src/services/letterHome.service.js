@@ -1,5 +1,6 @@
 import { letterHomeRepository } from '../repositories/letterHome.repository.js';
 import { ValidationError } from '../middlewares/errorHandler.js';
+import { toKSTISOString, formatDateToKST } from '../utils/datetime.util.js';
 
 // 편지 홈 화면 관련 비즈니스 로직
 class LetterHomeService {
@@ -42,7 +43,7 @@ class LetterHomeService {
       birthday: this.formatDate(event.birthdayPerson.birthday),
       hasLetter: !!event.userLetter,
       letterId: event.userLetter?.id || null,
-      lastModified: event.userLetter?.updatedAt?.toISOString() || null,
+      lastModified: event.userLetter?.updatedAt ? toKSTISOString(event.userLetter.updatedAt) : null,
       daysLeft: this.calculateDaysLeft(event.birthdayPerson.birthday)
     }));
 
@@ -83,7 +84,7 @@ class LetterHomeService {
 // 날짜 포맷팅 (YYYY-MM-DD)
 
   formatDate(date) {
-    return date.toISOString().split('T')[0];
+    return formatDateToKST(date);
   }
 
 // 페이지네이션 정보 생성

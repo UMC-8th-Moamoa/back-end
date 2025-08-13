@@ -24,19 +24,14 @@ class AutoEventService {
   }
 
   /**
-   * 일주일 후 생일인 사용자들의 자동 이벤트 생성
+   * 오늘부터 7일 이내 생일인 사용자들의 자동 이벤트 생성
    */
   async createAutoEventsForUpcomingBirthdays() {
     try {
-      // 7일 후의 날짜 계산
-      const sevenDaysLater = new Date();
-      sevenDaysLater.setDate(sevenDaysLater.getDate() + 7);
-      sevenDaysLater.setHours(0, 0, 0, 0);
+      // 오늘부터 7일 이내 생일인 사용자들 찾기
+      const upcomingBirthdayUsers = await this.findUsersWithUpcomingBirthdays();
 
-      // 7일 후에 생일인 사용자들 찾기
-      const upcomingBirthdayUsers = await this.findUsersWithUpcomingBirthdays(sevenDaysLater);
-
-      console.log(`7일 후 생일인 사용자 ${upcomingBirthdayUsers.length}명 발견`);
+      console.log(`오늘부터 7일 이내 생일인 사용자 ${upcomingBirthdayUsers.length}명 발견`);
 
       for (const user of upcomingBirthdayUsers) {
         await this.createAutoEventForUser(user);
@@ -50,9 +45,9 @@ class AutoEventService {
   }
 
   /**
-   * 7일 후 생일인 사용자 찾기
+   * 오늘부터 7일 이내 생일인 사용자 찾기
    */
-  async findUsersWithUpcomingBirthdays(targetDate) {
+  async findUsersWithUpcomingBirthdays() {
     const users = await prisma.user.findMany({
       where: {
         birthday: {
@@ -74,7 +69,7 @@ class AutoEventService {
       }
     });
 
-    // 올해와 내년 생일을 고려하여 필터링
+    // 오늘부터 7일 이내 생일인 사용자들 필터링
     const usersWithUpcomingBirthdays = users.filter(user => {
       if (!user.birthday) return false;
 
@@ -82,7 +77,10 @@ class AutoEventService {
       if (user.birthdayEvents.length > 0) return false;
 
       const birthday = new Date(user.birthday);
-      const currentYear = targetDate.getFullYear();
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      
+      const currentYear = today.getFullYear();
       
       // 올해 생일
       const thisYearBirthday = new Date(
@@ -98,11 +96,26 @@ class AutoEventService {
         birthday.getDate()
       );
 
-      // 목표 날짜와 일치하는지 확인
-      return (
-        this.isSameDate(thisYearBirthday, targetDate) ||
-        this.isSameDate(nextYearBirthday, targetDate)
-      );
+      // 올해 생일이 오늘 이전이면 내년 생일을 사용
+      const targetBirthday = thisYearBirthday < today ? nextYearBirthday : thisYearBirthday;
+
+      // 생일까지의 날짜 차이 계산
+      const daysUntilBirthday = Math.ceil((targetBirthday - today) / (1000 * 60 * 60 * 24));
+
+      // 오늘부터 7일 이내인지 확인 (0일 = 오늘, 7일 = 7일 후)
+      return daysUntilBirthday >= 0 && daysUntilBirthday <= 7;
+    });
+
+    console.log(`필터링 결과: ${usersWithUpcomingBirthdays.length}명`);
+    usersWithUpcomingBirthdays.forEach(user => {
+      const birthday = new Date(user.birthday);
+      const today = new Date();
+      const currentYear = today.getFullYear();
+      const thisYearBirthday = new Date(currentYear, birthday.getMonth(), birthday.getDate());
+      const targetBirthday = thisYearBirthday < today ? 
+        new Date(currentYear + 1, birthday.getMonth(), birthday.getDate()) : thisYearBirthday;
+      const daysUntil = Math.ceil((targetBirthday - today) / (1000 * 60 * 60 * 24));
+      console.log(`- ${user.name}: ${daysUntil}일 후 생일 (${targetBirthday.toLocaleDateString()})`);
     });
 
     return usersWithUpcomingBirthdays;

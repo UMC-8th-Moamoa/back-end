@@ -180,6 +180,32 @@ class MypageRepository {
         });
     }
 
+    async updateUserId(userId, newUserId) {
+        console.log('🔍 Repository: updateUserId called with userId:', userId, 'newUserId:', newUserId);
+        
+        if (!userId || !newUserId) {
+            console.error('❌ updateUserId called with undefined parameters:', { userId, newUserId });
+            throw new Error('userId and newUserId are required');
+        }
+
+        const updatedUser = await prisma.user.update({
+            where: { id: userId },
+            data: { user_id: newUserId },
+            select: {
+                id: true,
+                user_id: true,
+                name: true,
+                email: true,
+                phone: true,
+                photo: true,
+                updatedAt: true
+            }
+        });
+
+        console.log('✅ Repository: User ID successfully updated:', updatedUser);
+        return updatedUser;
+    }
+
     async findFollow(followerId, followingId) {
         if (!followerId || !followingId) {
             console.error('❌ findFollow called with undefined parameters:', { followerId, followingId });

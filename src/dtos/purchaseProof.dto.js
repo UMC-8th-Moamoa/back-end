@@ -1,4 +1,6 @@
 // 구매 인증 등록 요청 DTO
+import { getCurrentKSTISOString } from '../utils/datetime.util.js';
+
 export class PurchaseProofRequestDTO {
   constructor(params, body) {
     this.eventId = params.eventId ? parseInt(params.eventId) : null;
@@ -72,7 +74,7 @@ export class ThankYouMessageInfoDTO {
   constructor(messageData) {
     this.totalSent = messageData.totalSent || 0;
     this.message = messageData.message || '';
-    this.sentAt = messageData.sentAt || new Date().toISOString();
+    this.sentAt = messageData.sentAt || getCurrentKSTISOString();
     this.recipients = messageData.recipients ? 
       messageData.recipients.map(recipient => new MessageRecipientDTO(recipient)) : [];
   }

@@ -1,6 +1,7 @@
 import userRepository from '../repositories/userRepository.repositories.js';
+import { autoEventService } from './autoEvent.service.js';
 import prisma from '../config/prismaClient.js'; 
-
+import { demoService } from './demo.service.js';
 
 import { 
   hashPassword, 
@@ -84,6 +85,10 @@ class UserService {
 
     const user = await userRepository.create(userData);
 
+    // 생일이 일주일 이내라면 즉시 이벤트 생성
+    if (birthday) {
+      await this.checkAndCreateImmediateBirthdayEvent(user);
+    }
     // 회원가입 성공 후 데모 이벤트 자동 생성
     try {
       await demoService.createDemoEvent(user.id);
@@ -97,6 +102,67 @@ class UserService {
     const tokens = generateTokenPair(user.id, user.email);
 
     return new AuthResponseDto(user, tokens);
+  }
+
+  /**
+   * 회원가입 시 생일이 일주일 이내라면 즉시 이벤트 생성
+   * @param {Object} user - 새로 생성된 사용자 정보
+   */
+  async checkAndCreateImmediateBirthdayEvent(user) {
+    try {
+      if (!user.birthday) return;
+
+      // 이미 활성 이벤트가 있는지 확인
+      const existingEvent = await prisma.birthdayEvent.findFirst({
+        where: {
+          birthdayPersonId: user.id,
+          status: 'active',
+          deadline: {
+            gte: new Date() // 현재 시간 이후 마감인 이벤트
+          }
+        }
+      });
+
+      if (existingEvent) {
+        console.log(`${user.name}님은 이미 활성 생일 이벤트가 있습니다 (ID: ${existingEvent.id})`);
+        return;
+      }
+
+      const birthday = new Date(user.birthday);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      
+      const currentYear = today.getFullYear();
+      
+      // 올해 생일
+      const thisYearBirthday = new Date(
+        currentYear,
+        birthday.getMonth(),
+        birthday.getDate()
+      );
+
+      // 내년 생일
+      const nextYearBirthday = new Date(
+        currentYear + 1,
+        birthday.getMonth(),
+        birthday.getDate()
+      );
+
+      // 올해 생일이 오늘 이전이면 내년 생일을 사용
+      const targetBirthday = thisYearBirthday < today ? nextYearBirthday : thisYearBirthday;
+
+      // 생일까지의 날짜 차이 계산
+      const daysUntilBirthday = Math.ceil((targetBirthday - today) / (1000 * 60 * 60 * 24));
+
+      // 일주일 이내라면 즉시 이벤트 생성 (0일 = 오늘, 7일 = 7일 후)
+      if (daysUntilBirthday >= 0 && daysUntilBirthday <= 7) {
+        console.log(`회원가입 시 즉시 생일 이벤트 생성: ${user.name}님 (${daysUntilBirthday}일 후 생일)`);
+        await autoEventService.createAutoEventForUser(user);
+      }
+    } catch (error) {
+      console.error('회원가입 시 즉시 생일 이벤트 생성 실패:', error);
+      // 에러가 발생해도 회원가입은 성공시킴
+    }
   }
 
   /**
@@ -387,6 +453,11 @@ class UserService {
     // 사용자 정보 업데이트
     const updatedUser = await userRepository.update(userId, updateData);
 
+    // 생일이 변경되고 일주일 이내라면 즉시 이벤트 생성 체크
+    if (birthday) {
+      await this.checkAndCreateImmediateBirthdayEvent(updatedUser);
+    }
+
     return new UserResponseDto(updatedUser);
   }
 
@@ -448,6 +519,11 @@ class UserService {
     }
 
     user = await userRepository.create(userData);
+
+    // 생일이 일주일 이내라면 즉시 이벤트 생성 (소셜 로그인 사용자의 경우 생일 정보가 없을 수 있음)
+    if (userData.birthday) {
+      await this.checkAndCreateImmediateBirthdayEvent(user);
+    }
 
     // 소셜 로그인 정보 생성 (User 테이블의 user_id 사용)
     await userRepository.createSocialLogin(user.user_id, provider, socialId);
@@ -561,6 +637,39 @@ class UserService {
       return new TokenResponseDto(tokens.accessToken, tokens.refreshToken);
     } catch (error) {
       throw new UnauthorizedError('유효하지 않은 리프레시 토큰입니다');
+    }
+  }
+
+  /**
+   * 특정 사용자의 생일 이벤트 수동 생성 트리거 (개발/테스트용)
+   * @param {number} userId - 사용자 ID
+   */
+  async triggerBirthdayEventForUser(userId) {
+    // 사용자 정보 조회
+    const user = await userRepository.findById(userId);
+    if (!user) {
+      throw new NotFoundError('사용자를 찾을 수 없습니다');
+    }
+
+    if (!user.birthday) {
+      return {
+        success: false,
+        message: '생일 정보가 없어서 이벤트를 생성할 수 없습니다.'
+      };
+    }
+
+    try {
+      await this.checkAndCreateImmediateBirthdayEvent(user);
+      return {
+        success: true,
+        message: `${user.name}님의 생일 이벤트 생성을 시도했습니다.`
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: '생일 이벤트 생성 중 오류가 발생했습니다.',
+        error: error.message
+      };
     }
   }
 
