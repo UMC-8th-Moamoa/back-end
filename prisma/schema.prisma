@@ -64,7 +64,6 @@ model User {
   birthday          DateTime?
   cash              Int       @default(0)
   passwordResetTickets PasswordResetTicket[]
-  passwordResetTickets PasswordResetTicket[]
   phone             String?   @db.VarChar(20)
   photo             String?   @db.VarChar(255)
   createdAt         DateTime  @default(now())
