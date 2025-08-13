@@ -14,8 +14,7 @@ router.post('/find-id', userController.findUserId);
 // 비밀번호 찾기 (재설정 요청)
 router.post('/find-password', userController.requestPasswordReset);
 
-// 비밀번호 재설정
-router.post('/reset-password', userController.resetPassword);
+
 
 // 이메일 중복 확인
 router.post('/email/check', userController.checkEmail);
@@ -26,8 +25,7 @@ router.post('/email/verify-email', userController.sendEmailVerification);
 // 이메일 인증 코드 확인
 router.post('/email/send-code', userController.verifyEmailCode);
 
-// 비밀번호 변경 (로그인 필요)
-router.put('/password', authenticateJWT, userController.changePassword);
+
 
 // 프로필 수정 (로그인 필요)
 router.put('/profile', authenticateJWT, userController.updateProfile);

@@ -112,26 +112,58 @@ class UserController {
 
   res.success(result);
 });
-
+  
   verifyEmailCode = catchAsync(async (req, res) => {
-    const emailVerificationCodeDto = new EmailVerificationCodeDto(req.body); // email + code + purpose
-    const result = await userService.verifyEmailCode(emailVerificationCodeDto);
-    res.success(result);
+  const emailVerificationCodeDto = new EmailVerificationCodeDto(req.body);
+  const result = await userService.verifyEmailCode(emailVerificationCodeDto);
+
+  res.status(200).json({
+    resultType: "SUCCESS",
+    error: null,
+    success: {
+      message: result.message,
+      ...result.data  // resetTicket, expiresIn 포함
+    }
+  });
+});
+
+
+  // 이메일로 비번 찾기: 인증코드 발송 (purpose=reset 고정)
+  findPassword = catchAsync(async (req, res) => {
+    const { email } = req.body;
+    const emailVerificationDto = new EmailVerificationDto({ email, purpose: 'reset' });
+    const result = await userService.sendEmailVerification(emailVerificationDto);
+    res.success(result); // dev 모드면 토큰/expiresIn 내려옴(네 서비스 로직 그대로)
   });
 
-  
 
 
   /**
    * 비밀번호 변경
-   * PUT /api/users/password
+   * PUT /api/auth/change-password
    */
-  changePassword = catchAsync(async (req, res) => {
-    const changePasswordDto = new ChangePasswordDto(req.body);
-    const result = await userService.changePassword(req.user.id, changePasswordDto);
-    
-    res.success(result);
-  });
+  // 로그인 상태에서 현재비번 없이 변경
+resetPasswordWithTicket = catchAsync(async (req, res) => {
+  const ticket = req.get('X-Reset-Ticket') || req.body.resetTicket;
+  if (!ticket) {
+    return res.status(400).json({
+      resultType: "FAIL",
+      error: { errorCode: "NO_TICKET", reason: "인증 절차가 만료되었습니다. 다시 시도해주세요.", data: null },
+      success: null
+    });
+  }
+  const { newPassword, confirmPassword } = req.body;
+  if (newPassword !== confirmPassword) {
+    return res.status(400).json({
+      resultType: "FAIL",
+      error: { errorCode: "PWD_MISMATCH", reason: "비밀번호 확인이 일치하지 않습니다", data: null },
+      success: null
+    });
+  }
+  const result = await userService.resetPasswordWithTicket(ticket, newPassword);
+  res.success(result);
+});
+
 
   /**
    * 아이디 찾기
@@ -155,16 +187,7 @@ class UserController {
     res.success(result);
   });
 
-  /**
-   * 비밀번호 재설정
-   * POST /api/users/reset-password
-   */
-  resetPassword = catchAsync(async (req, res) => {
-    const passwordResetDto = new PasswordResetDto(req.body);
-    const result = await userService.resetPassword(passwordResetDto);
-    
-    res.success(result);
-  });
+  
 
   /**
    * 사용자 정보 수정

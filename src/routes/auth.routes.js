@@ -1,5 +1,6 @@
 import express from 'express';
 import { PrismaClient } from '@prisma/client';
+import { validateFindPassword } from '../middlewares/validation.middleware.js';
 import passport from 'passport';
 import { 
   authenticateLocal, 
@@ -7,15 +8,17 @@ import {
   refreshToken,
   handleSocialCallback
 } from '../middlewares/auth.middleware.js';
+import { body } from 'express-validator';
+import { handleValidationErrors } from '../middlewares/validation.middleware.js'; // 이거도 쓰면 import
+import { validateEmailVerificationCode } from '../middlewares/validation.middleware.js';
 
 import { 
   validateUserRegistration, 
   validateUserLogin,
   validateEmailVerification,
-  validateEmailVerificationCode,
-  validatePasswordResetRequest,
-  validatePasswordReset,
-  validateNicknameCheck,
+  
+  validateNewPasswordOnly,
+  
   validateRefreshToken
 } from '../middlewares/validation.middleware.js';
 
@@ -147,6 +150,8 @@ router.post('/login', validateUserLogin, userController.login);
  */
 router.post('/refresh', validateRefreshToken, userController.refreshToken);
 
+
+router.post('/email/verify-code', validateEmailVerificationCode, userController.verifyEmailCode);
 /**
  * @swagger
  * /api/auth/me:
@@ -283,81 +288,47 @@ router.post('/email/send-code', validateEmailVerificationCode, userController.ve
  */
 router.post('/find-id', userController.findUserId);
 
-/**
- * @swagger
- * /api/auth/find-password:
- *   post:
- *     summary: 비밀번호 찾기 (재설정 요청)
- *     tags: [Auth]
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             required:
- *               - email
- *             properties:
- *               email:
- *                 type: string
- *                 format: email
- *                 description: 이메일
- *     responses:
- *       200:
- *         description: 비밀번호 재설정 이메일 발송 성공
- */
-router.post('/find-password', validatePasswordResetRequest, userController.requestPasswordReset);
 
-/**
- * @swagger
- * /api/auth/reset-password:
- *   post:
- *     summary: 비밀번호 재설정
- *     tags: [Auth]
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             required:
- *               - token
- *               - newPassword
- *               - confirmPassword
- *             properties:
- *               token:
- *                 type: string
- *                 description: 재설정 토큰
- *               newPassword:
- *                 type: string
- *                 description: 새 비밀번호
- *               confirmPassword:
- *                 type: string
- *                 description: 새 비밀번호 확인
- *     responses:
- *       200:
- *         description: 비밀번호 재설정 성공
- */
-router.post('/reset-password', validatePasswordReset, userController.resetPassword);
+router.post('/find-password', validateFindPassword, userController.findPassword);
 
-/**
- * @swagger
- * /api/auth/nickname/{nickname}/check:
- *   get:
- *     summary: 닉네임 중복 확인
- *     tags: [Auth]
- *     parameters:
- *       - in: path
- *         name: nickname
- *         required: true
- *         schema:
- *           type: string
- *         description: 확인할 닉네임
- *     responses:
- *       200:
- *         description: 닉네임 중복 여부 확인 성공
- */
-router.get('/nickname/:nickname/check', validateNicknameCheck, userController.checkNickname);
+
++ /**
++  * @swagger
++  * /api/auth/change-password:
++  *   put:
++  *     summary: 비밀번호 변경 (로그인 필요)
++  *     tags: [Auth]
++  *     security:
++  *       - bearerAuth: []
++  *     requestBody:
++  *       required: true
++  *       content:
++  *         application/json:
++  *           schema:
++  *             type: object
++  *             required:
++  *              
++  *               - newPassword
++  *               - confirmPassword
++  *             properties:
+
++  *               newPassword:
++  *                 type: string
++  *                 description: 새 비밀번호
++  *               confirmPassword:
++  *                 type: string
++  *                 description: 새 비밀번호 확인
++  *     responses:
++  *       200:
++  *         description: 비밀번호 변경 성공
++  */
+ router.put(
+  '/change-password',
+  validateNewPasswordOnly,
+  userController.resetPasswordWithTicket
+);
+
+
 
 // 카카오 로그인 라우트들 (조건부 등록)
 if (isKakaoEnabled()) {
