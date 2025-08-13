@@ -425,7 +425,28 @@ const validateLetterUpdate = [
   handleValidationErrors
 ];
 
-
+// 비밀번호 변경 유효성 검사
+const validatePasswordChange = [
+  body('currentPassword')
+    .notEmpty()
+    .withMessage('현재 비밀번호를 입력해주세요'),
+  
+  body('newPassword')
+    .isLength({ min: 8 })
+    .withMessage('새 비밀번호는 최소 8자 이상이어야 합니다')
+    .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/)
+    .withMessage('새 비밀번호는 대소문자와 숫자를 포함해야 합니다'),
+  
+  body('confirmPassword')
+    .custom((value, { req }) => {
+      if (value !== req.body.newPassword) {
+        throw new Error('비밀번호 확인이 일치하지 않습니다');
+      }
+      return true;
+    }),
+  
+  handleValidationErrors
+];
 
 // 이메일 인증 요청 유효성 검사
 const validateEmailVerification = [
@@ -434,12 +455,6 @@ const validateEmailVerification = [
     .withMessage('올바른 이메일 형식을 입력해주세요')
     .normalizeEmail(),
   
-  handleValidationErrors
-];
-const validateFindPassword = [
-  body('email').isEmail().withMessage('올바른 이메일 형식입니다'),
-  // name은 화면에 있을 수 있으니 옵션으로만 받되 사용은 안 함
-  body('name').optional().isLength({ min: 1 }).withMessage('이름을 입력해주세요'),
   handleValidationErrors
 ];
 
@@ -459,19 +474,49 @@ const validateEmailVerificationCode = [
   handleValidationErrors
 ];
 
-const validateNewPasswordOnly = [
-  body('newPassword').isLength({ min: 8 })
-    .withMessage('새 비밀번호는 최소 8자')
-    .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/).withMessage('대소문자+숫자 포함'),
-  body('confirmPassword').custom((v, { req }) => {
-    if (v !== req.body.newPassword) throw new Error('비밀번호 확인이 일치하지 않습니다');
-    return true;
-  }),
+// 비밀번호 재설정 요청 유효성 검사
+const validatePasswordResetRequest = [
+  body('email')
+    .isEmail()
+    .withMessage('올바른 이메일 형식을 입력해주세요')
+    .normalizeEmail(),
+  
   handleValidationErrors
 ];
 
+// 비밀번호 재설정 유효성 검사
+const validatePasswordReset = [
+  body('token')
+    .notEmpty()
+    .withMessage('재설정 토큰이 필요합니다'),
+  
+  body('newPassword')
+    .isLength({ min: 8 })
+    .withMessage('새 비밀번호는 최소 8자 이상이어야 합니다')
+    .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/)
+    .withMessage('새 비밀번호는 대소문자와 숫자를 포함해야 합니다'),
+  
+  body('confirmPassword')
+    .custom((value, { req }) => {
+      if (value !== req.body.newPassword) {
+        throw new Error('비밀번호 확인이 일치하지 않습니다');
+      }
+      return true;
+    }),
+  
+  handleValidationErrors
+];
 
-
+// 닉네임 확인 유효성 검사
+const validateNicknameCheck = [
+  param('nickname')
+    .isLength({ min: 2, max: 20 })
+    .withMessage('닉네임은 2자 이상 20자 이하여야 합니다')
+    .matches(/^[가-힣a-zA-Z0-9_]+$/)
+    .withMessage('닉네임은 한글, 영문, 숫자, 언더스코어만 입력 가능합니다'),
+  
+  handleValidationErrors
+];
 
 // 리프레시 토큰 유효성 검사
 const validateRefreshToken = [
@@ -480,6 +525,46 @@ const validateRefreshToken = [
     .withMessage('리프레시 토큰이 필요합니다')
     .isJWT()
     .withMessage('올바른 토큰 형식이 아닙니다'),
+  
+  handleValidationErrors
+];
+
+// 데모 편지 작성 유효성 검사
+const validateDemoLetter = [
+  body('shareLink')
+    .notEmpty()
+    .withMessage('공유 링크가 필요합니다')
+    .isLength({ min: 10, max: 10 })
+    .withMessage('올바른 공유 링크 형식이 아닙니다'),
+  
+  body('writerName')
+    .isLength({ min: 1, max: 50 })
+    .withMessage('작성자 이름은 1자 이상 50자 이하여야 합니다')
+    .trim(),
+  
+  body('content')
+    .isLength({ min: 1, max: 5000 })
+    .withMessage('편지 내용은 1자 이상 5000자 이하여야 합니다')
+    .trim(),
+  
+  handleValidationErrors
+];
+
+// 공유 링크 유효성 검사
+const validateShareLink = [
+  (req, res, next) => {
+    console.log('🔍 validateShareLink 미들웨어 실행');
+    console.log('req.params:', req.params);
+    console.log('req.params.shareLink:', req.params.shareLink);
+    next();
+  },
+  param('shareLink')
+    .exists({ checkFalsy: true })
+    .withMessage('공유 링크가 필요합니다')
+    .isLength({ min: 5, max: 20 })
+    .withMessage('올바른 공유 링크 형식이 아닙니다')
+    .matches(/^[A-Za-z0-9_-]+$/)
+    .withMessage('공유 링크는 영문자, 숫자, 하이픈, 밑줄만 포함할 수 있습니다'),
   
   handleValidationErrors
 ];
@@ -499,13 +584,14 @@ export {
   validatePagination,
   validateSearch,
   validateFriendRequest,
-  
+  validatePasswordChange,
   validateEmailVerification,
   validateEmailVerificationCode,
-  
-  validateFindPassword,
-  validateNewPasswordOnly,
+  validatePasswordResetRequest,
+  validatePasswordReset,
+  validateNicknameCheck,
   validateRefreshToken,
+  validateDemoLetter,
+  validateShareLink,
   handleValidationErrors
-
 };

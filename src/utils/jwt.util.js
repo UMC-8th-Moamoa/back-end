@@ -212,7 +212,53 @@ export const verifyEmailVerificationToken = (token) => {
   }
 };
 
+/**
+ * 비밀번호 재설정 토큰 생성
+ * @param {string} email - 사용자 이메일
+ * @param {number} userId - 사용자 ID
+ * @returns {string} - 비밀번호 재설정 토큰
+ */
+export const generatePasswordResetToken = (email, userId) => {
+  const payload = {
+    email,
+    userId,
+    type: 'password_reset'
+  };
 
+  return jwt.sign(payload, JWT_SECRET, {
+    expiresIn: '30m', // 30분
+    issuer: 'moamoa-platform',
+    audience: 'moamoa-users'
+  });
+};
+
+/**
+ * 비밀번호 재설정 토큰 검증
+ * @param {string} token - 검증할 토큰
+ * @returns {Object} - 디코딩된 페이로드
+ */
+export const verifyPasswordResetToken = (token) => {
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET, {
+      issuer: 'moamoa-platform',
+      audience: 'moamoa-users'
+    });
+
+    if (decoded.type !== 'password_reset') {
+      throw new UnauthorizedError('유효하지 않은 비밀번호 재설정 토큰입니다');
+    }
+
+    return decoded;
+  } catch (error) {
+    if (error.name === 'TokenExpiredError') {
+      throw new TokenExpiredError('만료된 비밀번호 재설정 토큰입니다');
+    }
+    if (error.name === 'JsonWebTokenError') {
+      throw new UnauthorizedError('유효하지 않은 비밀번호 재설정 토큰입니다');
+    }
+    throw error;
+  }
+};
 
 
 
@@ -227,7 +273,7 @@ export default {
   getTokenExpirationDate,
   isTokenExpired,
   generateEmailVerificationToken,
-  verifyEmailVerificationToken
-  
- 
+  verifyEmailVerificationToken,
+  generatePasswordResetToken,
+  verifyPasswordResetToken
 };

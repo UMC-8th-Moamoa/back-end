@@ -19,6 +19,9 @@ import { globalErrorHandler, notFoundHandler } from './src/middlewares/errorHand
 // WebSocket 초기화 import
 import { initializeSocket } from './src/utils/websocket/notificationSocket.js';
 
+// 자동 이벤트 서비스 import
+import './src/services/autoEvent.service.js';
+
 // Express 앱 생성
 const app = express();
 
@@ -31,11 +34,20 @@ initializeSocket(httpServer);
 // 미들웨어 설정
 
 // 로깅 미들웨어
-app.use(morgan(process.env.NODE_ENV === 'production' ? 'dev' : 'combined'));
+app.use(morgan(process.env.NODE_ENV === 'development' ? 'dev' : 'combined'));
 
-
-
-
+// 보안 미들웨어
+// helmet 설정을 수정하세요
+// app.use(helmet({
+//   contentSecurityPolicy: {
+//     directives: {
+//       defaultSrc: ["'self'"],
+//       styleSrc: ["'self'", "'unsafe-inline'"],
+//       scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
+//       imgSrc: ["'self'", "data:", "https:"],
+//     },
+//   },
+// }));
 // Express 앱에 헬스체크 엔드포인트 추가
 app.get('/health', (req, res) => {
   // 데이터베이스 연결 상태 확인
@@ -78,31 +90,16 @@ if (process.env.NODE_ENV === 'production') {
   process.send('ready');
 }
 
-const allowedOrigins = [
-  'http://localhost:3000',
-  'http://54.180.138.131:3000',
-  'http://localhost:5173',
-  'http://54.180.138.131', // 포트 없는 경우도 추가
-  'https://www.moamoas.com',
-  'https://moamoas.com',
-
-];
-
-
-app.set('trust proxy', 1);
-
-// CLIENT_URL이 있으면 추가
-if (process.env.CLIENT_URL && !allowedOrigins.includes(process.env.CLIENT_URL)) {
-  allowedOrigins.push(process.env.CLIENT_URL);
-}
-
+// CORS 설정
 app.use(cors({
-  origin: allowedOrigins,
+  origin: [
+    process.env.CLIENT_URL || 'http://localhost:3000',
+    'http://54.180.138.131:3000',  // 가상서버 URL 추가
+    'http://localhost:3000'
+  ],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'Cookie', 'X-Requested-With'],
-  exposedHeaders: ['Set-Cookie'],  // 클라이언트가 쿠키에 접근 가능
-  maxAge: 86400  // Preflight 캐싱 (24시간)
+  allowedHeaders: ['Content-Type', 'Authorization', 'Cookie']
 }));
 
 // 기본 미들웨어
@@ -121,11 +118,6 @@ app.use(session({
     maxAge: 24 * 60 * 60 * 1000 // 24시간
   }
 }));
-
-
-
-
-
 
 // Passport 초기화
 app.use(passport.initialize());
@@ -159,7 +151,7 @@ const swaggerOptions = {
     },
     servers: [
       {
-        url: `${process.env.API_BASE_URL || 'http://localhost:3000'}`,
+        url: `${process.env.API_BASE_URL || 'http://localhost:3000'}/api`,
         description: '개발 서버'
       }
     ],
@@ -216,6 +208,7 @@ app.get('/health', (req, res) => {
 // API 라우트들 - 존재하는 파일들만 import
 import authRoutes from './src/routes/auth.routes.js';
 import userRoutes from './src/routes/user.routes.js';
+import uploadRoutes from './src/routes/upload.route.js';
 
 import wishlistRoutes from './src/routes/wishlist.routes.js';
 import letterRoutes from './src/routes/letter.routes.js';
@@ -227,21 +220,31 @@ import letterHomeRoutes from './src/routes/letterHome.routes.js';
 import upcomingBirthdayRoutes from './src/routes/upcomingBirthday.routes.js';
 import birthdayRoutes from './src/routes/birthday.routes.js';
 import calendarRoutes from './src/routes/calendar.routes.js';
+
+import userSearchRoutes from './src/routes/userSearch.routes.js';
+
+import myBirthdayRoutes from './src/routes/myBirthday.routes.js';
 import birthdayEventRoutes from './src/routes/birthdayEvent.routes.js';
 import eventParticipationRoutes from './src/routes/eventParticipation.routes.js';
+import wishlistVoteRoutes from './src/routes/wishlistVote.routes.js';
+
 import eventShareRoutes from './src/routes/eventShare.routes.js';
+
 import purchaseProofRoutes from './src/routes/purchaseProof.routes.js';
 
 import shoppingRoutes from './src/routes/shopping.routes.js';
 import mypageRoutes from './src/routes/mypage.routes.js';
+import demoRoutes from './src/routes/demo.routes.js';
 
 
 // 라우트 등록
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
+app.use('/api/upload', uploadRoutes);
 
 app.use('/api/wishlists', wishlistRoutes);
 app.use('/api/letters', letterRoutes);
+app.use('/api/demo', demoRoutes);
 
 app.use('/api/notifications', notificationRoutes);
 
@@ -250,9 +253,16 @@ app.use('/api/home', letterHomeRoutes);
 app.use('/api/birthdays', upcomingBirthdayRoutes)
 app.use('/api/users', birthdayRoutes);
 app.use('/api/calendar', calendarRoutes);
+
+app.use('/api/users', userSearchRoutes);
+
+app.use('/api/birthdays', myBirthdayRoutes);
 app.use('/api/birthdays', birthdayEventRoutes);
 app.use('/api/birthdays', eventParticipationRoutes);
+app.use('/api/birthdays', wishlistVoteRoutes);
+
 app.use('/api/birthdays', eventShareRoutes);
+
 app.use('/api/birthdays', purchaseProofRoutes);
 
 app.use('/api/shopping', shoppingRoutes);
@@ -263,6 +273,8 @@ app.use('/api/mypage', mypageRoutes);
 
 
 
+
+// 에러 처리
 app.use(notFoundHandler);
 app.use(globalErrorHandler);
 
@@ -321,3 +333,4 @@ process.on('unhandledRejection', (reason, promise) => {
   console.error('Promise:', promise);
   process.exit(1);
 });
+
