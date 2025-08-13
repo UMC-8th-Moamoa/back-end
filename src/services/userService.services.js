@@ -1,6 +1,7 @@
 import userRepository from '../repositories/userRepository.repositories.js';
-import prisma from '../config/prismaClient.js'; // 경로는 실제 구조에 맞게 수정
 import { autoEventService } from './autoEvent.service.js';
+import prisma from '../config/prismaClient.js'; 
+import { demoService } from './demo.service.js';
 
 import { 
   hashPassword, 
@@ -87,6 +88,14 @@ class UserService {
     // 생일이 일주일 이내라면 즉시 이벤트 생성
     if (birthday) {
       await this.checkAndCreateImmediateBirthdayEvent(user);
+    }
+    // 회원가입 성공 후 데모 이벤트 자동 생성
+    try {
+      await demoService.createDemoEvent(user.id);
+      console.log(`사용자 ${user.id}의 데모 이벤트가 자동 생성되었습니다.`);
+    } catch (error) {
+      console.warn(`사용자 ${user.id}의 데모 이벤트 생성 실패:`, error.message);
+      // 데모 이벤트 생성 실패해도 회원가입은 계속 진행
     }
 
     // JWT 토큰 생성

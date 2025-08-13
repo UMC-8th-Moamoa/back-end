@@ -97,6 +97,7 @@ model User {
   donations               Donation[]
   coinConversions         CoinConversion[]
   remainingProcesses      RemainingAmountProcess[]
+  demoEvent              DemoEvent?            // 데모데이용 이벤트 (1:1 관계)
 
   @@map("users")
 }
@@ -508,4 +509,36 @@ model BirthdayEventSelectedItem {
 
   @@unique([eventId, wishlistId])
   @@map("birthday_event_selected_items")
+
+// 데모데이용 이벤트 테이블
+model DemoEvent {
+  id        Int      @id @default(autoincrement())
+  userId    Int      @unique // 한 사용자당 하나의 데모 이벤트
+  shareLink String   @unique @db.VarChar(255) // 공유용 고유 링크
+  title     String   @default("나에게 편지를 써주세요!") @db.VarChar(100)
+  isActive  Boolean  @default(true) // 활성화 여부
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // 관계 설정
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  demoLetters DemoLetter[]
+
+  @@map("demo_events")
+}
+
+// 데모데이용 편지 테이블
+model DemoLetter {
+  id          Int      @id @default(autoincrement())
+  demoEventId Int      // 데모 이벤트 ID
+  writerName  String   @db.VarChar(50) // 편지 작성자 이름 (비회원)
+  content     String   @db.Text // 편지 내용
+  isRead      Boolean  @default(false) // 읽음 여부
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // 관계 설정
+  demoEvent DemoEvent @relation(fields: [demoEventId], references: [id], onDelete: Cascade)
+
+  @@map("demo_letters")
 }
