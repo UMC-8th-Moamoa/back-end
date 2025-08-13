@@ -1,6 +1,6 @@
 import userRepository from '../repositories/userRepository.repositories.js';
 import prisma from '../config/prismaClient.js'; 
-import { hashPassword, comparePassword, validatePasswordStrength } from '../utils/password.util.js'; // ✅ compare/validatePasswordChange 제거
+import { hashPassword, validatePasswordStrength } from '../utils/password.util.js'; // ✅ compare/validatePasswordChange 제거
 import * as passwordResetRepository from '../repositories/passwordReset.repositories.js';
 
 
@@ -80,15 +80,6 @@ class UserService {
     };
 
     const user = await userRepository.create(userData);
-
-    // // 회원가입 성공 후 데모 이벤트 자동 생성
-    // try {
-    //   await demoService.createDemoEvent(user.id);
-    //   console.log(`사용자 ${user.id}의 데모 이벤트가 자동 생성되었습니다.`);
-    // } catch (error) {
-    //   console.warn(`사용자 ${user.id}의 데모 이벤트 생성 실패:`, error.message);
-    //   // 데모 이벤트 생성 실패해도 회원가입은 계속 진행
-    // }
 
     // JWT 토큰 생성
     const tokens = generateTokenPair(user.id, user.email);
