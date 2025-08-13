@@ -1,6 +1,6 @@
 import userRepository from '../repositories/userRepository.repositories.js';
 import prisma from '../config/prismaClient.js'; 
-import { hashPassword, validatePasswordStrength } from '../utils/password.util.js'; // ✅ compare/validatePasswordChange 제거
+import { hashPassword, comparePassword, validatePasswordStrength } from '../utils/password.util.js'; // ✅ compare/validatePasswordChange 제거
 import * as passwordResetRepository from '../repositories/passwordReset.repositories.js';
 
 
