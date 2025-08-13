@@ -64,6 +64,7 @@ model User {
   birthday          DateTime?
   cash              Int       @default(0)
   passwordResetTickets PasswordResetTicket[]
+  passwordResetTickets PasswordResetTicket[]
   phone             String?   @db.VarChar(20)
   photo             String?   @db.VarChar(255)
   createdAt         DateTime  @default(now())
@@ -439,6 +440,19 @@ model BirthdayEventSelectedItem {
 
   @@unique([eventId, wishlistId])
   @@map("birthday_event_selected_items")
+}
+
+model PasswordResetTicket {
+  id        String   @id @default(uuid())
+  userId    Int
+  used      Boolean  @default(false)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, used, expiresAt])
+  @@map("password_reset_tickets")
 }
 
 // 데모데이용 이벤트 테이블
