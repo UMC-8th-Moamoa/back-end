@@ -484,6 +484,46 @@ const validateRefreshToken = [
   handleValidationErrors
 ];
 
+// 데모 편지 작성 유효성 검사
+const validateDemoLetter = [
+  body('shareLink')
+    .notEmpty()
+    .withMessage('공유 링크가 필요합니다')
+    .isLength({ min: 10, max: 10 })
+    .withMessage('올바른 공유 링크 형식이 아닙니다'),
+  
+  body('writerName')
+    .isLength({ min: 1, max: 50 })
+    .withMessage('작성자 이름은 1자 이상 50자 이하여야 합니다')
+    .trim(),
+  
+  body('content')
+    .isLength({ min: 1, max: 5000 })
+    .withMessage('편지 내용은 1자 이상 5000자 이하여야 합니다')
+    .trim(),
+  
+  handleValidationErrors
+];
+
+// 공유 링크 유효성 검사
+const validateShareLink = [
+  (req, res, next) => {
+    console.log('🔍 validateShareLink 미들웨어 실행');
+    console.log('req.params:', req.params);
+    console.log('req.params.shareLink:', req.params.shareLink);
+    next();
+  },
+  param('shareLink')
+    .exists({ checkFalsy: true })
+    .withMessage('공유 링크가 필요합니다')
+    .isLength({ min: 5, max: 20 })
+    .withMessage('올바른 공유 링크 형식이 아닙니다')
+    .matches(/^[A-Za-z0-9_-]+$/)
+    .withMessage('공유 링크는 영문자, 숫자, 하이픈, 밑줄만 포함할 수 있습니다'),
+  
+  handleValidationErrors
+];
+
 export {
   validateUserRegistration,
   validateUserLogin,
@@ -506,6 +546,8 @@ export {
   validateFindPassword,
   validateNewPasswordOnly,
   validateRefreshToken,
+  validateDemoLetter,
+  validateShareLink,
   handleValidationErrors
 
 };
