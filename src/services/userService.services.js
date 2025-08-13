@@ -115,7 +115,7 @@ class UserService {
       throw new UnauthorizedError('소셜 로그인으로 가입된 계정입니다');
     }
     // 비밀번호 검증
-    const isValidPassword = await password(password, user.password);
+    const isValidPassword = await comparepassword(password, user.password);
     if (!isValidPassword) {
       throw new UnauthorizedError('아이디 또는 비밀번호가 잘못되었습니다');
     }
