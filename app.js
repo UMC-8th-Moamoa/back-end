@@ -234,6 +234,8 @@ import purchaseProofRoutes from './src/routes/purchaseProof.routes.js';
 
 import shoppingRoutes from './src/routes/shopping.routes.js';
 import mypageRoutes from './src/routes/mypage.routes.js';
+import testRoutes from './src/routes/test.routes.js';
+
 import demoRoutes from './src/routes/demo.routes.js';
 
 import eventCompletionRoutes from './src/routes/eventCompletion.routes.js';
