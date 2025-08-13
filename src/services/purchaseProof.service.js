@@ -1,5 +1,6 @@
 import { purchaseProofRepository } from '../repositories/purchaseProof.repository.js';
 import { NotFoundError, ForbiddenError, ValidationError } from '../middlewares/errorHandler.js';
+import { getCurrentKSTISOString, toKSTISOString } from '../utils/datetime.util.js';
 
 class PurchaseProofService {
   // 선물 구매 인증 등록 및 감사 메시지 발송
@@ -64,7 +65,7 @@ class PurchaseProofService {
       thankYouMessage: {
         totalSent: recipients.length,
         message: message,
-        sentAt: new Date().toISOString(),
+        sentAt: getCurrentKSTISOString(),
         recipients: recipients
       }
     };
@@ -107,7 +108,7 @@ class PurchaseProofService {
       thankYouMessage: {
         totalSent: thankYouRecipients.length,
         message: purchaseProofDetail.message,
-        sentAt: purchaseProofDetail.createdAt.toISOString(),
+        sentAt: toKSTISOString(purchaseProofDetail.createdAt),
         recipients: thankYouRecipients.map(recipient => ({
           id: recipient.recipient.id,
           name: recipient.recipient.name,

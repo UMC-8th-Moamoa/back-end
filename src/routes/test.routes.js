@@ -9,12 +9,12 @@ router.post('/auto-events/force', async (req, res) => {
   try {
     console.log('강제 자동 이벤트 생성 시작...');
     
-    // autoEvent.service.js의 메서드를 직접 호출
+    // autoEvent.service.js의 수정된 메서드를 직접 호출
     await autoEventService.createAutoEventsForUpcomingBirthdays();
 
     res.json({
       success: true,
-      message: '자동 이벤트 생성 완료 (autoEvent.service.js 사용)'
+      message: '자동 이벤트 생성 완료 (오늘부터 7일 이내 생일인 사용자 대상)'
     });
 
   } catch (error) {

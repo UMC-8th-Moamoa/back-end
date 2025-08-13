@@ -2,6 +2,7 @@ import { catchAsync } from '../middlewares/errorHandler.js';
 import { wishlistService } from '../services/wishlist.service.js';
 import { naverShoppingService } from '../services/naverShopping.service.js';
 import { naverBestProductsService } from '../services/naverBestProducts.service.js';
+import { getCurrentKSTISOString } from '../utils/datetime.util.js';
 
 /**
  * @swagger
@@ -808,7 +809,7 @@ const getPopularProducts = catchAsync(async (req, res) => {
       total: responseProducts.length,
       source: 'naver_api',
       categories: [...new Set(responseProducts.map(p => p.category))],
-      crawledAt: new Date().toISOString()
+      crawledAt: getCurrentKSTISOString()
     });
     
   } catch (error) {
@@ -1083,7 +1084,7 @@ const analyzeImage = catchAsync(async (req, res) => {
           caption_ko,
           extractedKeywords,
           searchKeyword,
-          analyzedAt: new Date().toISOString()
+          analyzedAt: getCurrentKSTISOString()
         }
       });
     }
@@ -1138,7 +1139,7 @@ const analyzeImage = catchAsync(async (req, res) => {
           caption_ko,
           extractedKeywords,
           searchKeyword,
-          analyzedAt: new Date().toISOString()
+          analyzedAt: getCurrentKSTISOString()
         }
       });
 
@@ -1154,7 +1155,7 @@ const analyzeImage = catchAsync(async (req, res) => {
           caption_ko,
           extractedKeywords,
           searchKeyword,
-          analyzedAt: new Date().toISOString()
+          analyzedAt: getCurrentKSTISOString()
         },
         productData: {
           title: productName,

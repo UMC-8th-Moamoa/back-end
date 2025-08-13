@@ -4,7 +4,9 @@ import prisma from '../config/prismaClient.js';
 import { 
     MyInfoRequestDTO,
     CreateCustomerServiceRequestDTO,
-    FollowRequestDTO
+    FollowRequestDTO,
+    ChangeUserIdRequestDTO,
+    ChangeUserIdResponseDTO
 } from '../dtos/mypage.dto.js';
 
 class mypageController {
@@ -254,6 +256,40 @@ class mypageController {
                 target_id: followResult.following_user_id,
                 isFollowing: followResult.isFollowing
             }
+        });
+    });
+
+    // 사용자 ID 변경
+    static changeUserId = catchAsync(async (req, res) => {
+        console.log('=== DEBUG: Controller changeUserId ===');
+        console.log('req.body:', req.body);
+        console.log('req.user:', req.user);
+
+        // DTO 검증
+        const changeUserIdRequestDTO = new ChangeUserIdRequestDTO(req.body);
+        const { newUserId } = changeUserIdRequestDTO;
+
+        const currentUserId = req.user?.user_id;
+        if (!currentUserId) {
+            return res.status(401).json({
+                success: false,
+                message: '로그인이 필요합니다.'
+            });
+        }
+
+        console.log('Current User ID:', currentUserId);
+        console.log('New User ID:', newUserId);
+
+        // 서비스 호출
+        const updatedUserData = await mypageService.changeUserId(currentUserId, newUserId);
+        
+        // DTO로 응답 포맷
+        const responseData = new ChangeUserIdResponseDTO(updatedUserData);
+
+        res.status(200).json({
+            success: true,
+            message: '사용자 ID가 성공적으로 변경되었습니다.',
+            data: responseData
         });
     });
 }

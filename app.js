@@ -235,6 +235,9 @@ import shoppingRoutes from './src/routes/shopping.routes.js';
 import mypageRoutes from './src/routes/mypage.routes.js';
 import testRoutes from './src/routes/test.routes.js';
 
+import eventCompletionRoutes from './src/routes/eventCompletion.routes.js';
+import donationRoutes from './src/routes/donation.routes.js';
+
 
 // 라우트 등록
 app.use('/api/auth', authRoutes);
@@ -264,6 +267,10 @@ app.use('/api/birthdays', purchaseProofRoutes);
 
 app.use('/api/shopping', shoppingRoutes);
 app.use('/api/mypage', mypageRoutes);
+
+// 이벤트 완료 처리 라우트
+app.use('/api/birthdays/me/event', eventCompletionRoutes);
+app.use('/api/donations', donationRoutes);
 
 // 테스트 라우트 (이벤트 강제 생성)
 app.use('/api/test', testRoutes);

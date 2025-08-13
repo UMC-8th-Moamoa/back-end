@@ -142,6 +142,60 @@ class MypageService {
         };
     }
 
+    async changeUserId(currentUserId, newUserId) {
+        console.log('🔍 Service: changeUserId called with currentUserId:', currentUserId, 'newUserId:', newUserId);
+        
+        if (!currentUserId) {
+            console.error('❌ Service: currentUserId is undefined/null');
+            const error = new Error('현재 사용자 ID가 제공되지 않았습니다.');
+            error.statusCode = 400;
+            throw error;
+        }
+
+        if (!newUserId) {
+            console.error('❌ Service: newUserId is undefined/null');
+            const error = new Error('새로운 사용자 ID가 제공되지 않았습니다.');
+            error.statusCode = 400;
+            throw error;
+        }
+
+        // 현재 사용자 정보 조회
+        const currentUser = await mypageRepository.findUserByUserId(currentUserId, false);
+        if (!currentUser) {
+            const error = new Error('현재 사용자 정보를 찾을 수 없습니다.');
+            error.statusCode = 404;
+            throw error;
+        }
+
+        // 새로운 ID가 현재 ID와 동일한지 확인
+        if (currentUserId === newUserId) {
+            const error = new Error('현재 사용자 ID와 동일합니다.');
+            error.statusCode = 400;
+            throw error;
+        }
+
+        // 새로운 ID 중복 확인
+        const existingUser = await mypageRepository.findUserByUserId(newUserId, false);
+        if (existingUser) {
+            const error = new Error('이미 사용 중인 사용자 ID입니다.');
+            error.statusCode = 409;
+            throw error;
+        }
+
+        // 사용자 ID 업데이트
+        const updatedUser = await mypageRepository.updateUserId(currentUser.id, newUserId);
+        
+        console.log('✅ Service: User ID successfully updated from', currentUserId, 'to', newUserId);
+
+        return {
+            user_id: updatedUser.user_id,
+            name: updatedUser.name,
+            email: updatedUser.email,
+            phone: updatedUser.phone,
+            photo: updatedUser.photo
+        };
+    }
+
     async requestFollow(followerUserId, followingUserId) {
         if (!followerUserId || !followingUserId) {
             const error = new Error('팔로워 및 팔로잉 사용자 ID가 모두 필요합니다.');

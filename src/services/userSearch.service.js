@@ -1,5 +1,6 @@
 import { userSearchRepository } from '../repositories/userSearch.repository.js';
 import { NotFoundError, ValidationError } from '../middlewares/errorHandler.js';
+import { toKSTISOString } from '../utils/datetime.util.js';
 
 class UserSearchService {
   /**
@@ -52,7 +53,7 @@ class UserSearchService {
       searchHistory: searchHistory.map(history => ({
         id: history.id,
         searchTerm: history.searchTerm,
-        searchedAt: history.searchedAt.toISOString()
+        searchedAt: toKSTISOString(history.searchedAt)
       }))
     };
   }

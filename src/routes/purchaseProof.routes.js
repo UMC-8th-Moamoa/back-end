@@ -92,7 +92,7 @@ const router = express.Router();
 
 /**
  * @swagger
- * /api/birthdays/{eventId}/proof:
+ * /api/birthdays/events/{eventId}/proof:
  *   post:
  *     summary: 선물 구매 인증 등록 (생일 주인공만)
  *     tags: [PurchaseProof]
@@ -171,7 +171,7 @@ router.post('/:eventId/proof',
 
 /**
  * @swagger
- * /api/birthdays/{eventId}/proof:
+ * /api/birthdays/events/{eventId}/proof:
  *   get:
  *     summary: 구매 인증 조회 (이벤트 참여자 및 생일 주인공)
  *     tags: [PurchaseProof]
@@ -284,7 +284,7 @@ router.post('/:eventId/proof',
  *         description: 서버 내부 오류
  */
 // 구매 인증 조회 (이벤트 참여자 및 생일 주인공만)
-router.get('/:eventId/proof', 
+router.get('/events/:eventId/proof', 
   authenticateJWT,
   PurchaseProofController.getPurchaseProof
 );

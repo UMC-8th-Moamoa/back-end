@@ -1,5 +1,6 @@
 // notification.dto.js
 import { param, query } from 'express-validator';
+import { toKSTISOString } from '../utils/datetime.util.js';
 
 /**
  * 알림 목록 조회 요청 DTO
@@ -59,7 +60,7 @@ export class NotificationResponseDTO {
       id: notification.id,
       message: notification.message,
       isRead: notification.isRead,
-      createdAt: notification.createdAt.toISOString()
+      createdAt: toKSTISOString(notification.createdAt)
     }));
     this.pagination = pagination;
     this.hasUnreadNotifications = hasUnreadNotifications;

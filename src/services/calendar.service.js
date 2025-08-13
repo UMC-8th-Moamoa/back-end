@@ -1,5 +1,6 @@
 import { calendarRepository } from '../repositories/calendar.repository.js';
 import { ValidationError } from '../middlewares/errorHandler.js';
+import { formatDateToKST } from '../utils/datetime.util.js';
 
 class CalendarService {
   // 특정 월의 팔로우한 사용자들의 생일 달력 조회
@@ -93,7 +94,7 @@ class CalendarService {
     followedUsersBirthdays.forEach(user => {
       // 생일의 월/일만 사용하여 해당 연도의 날짜 생성
       const birthdayThisYear = new Date(year, user.birthday.getMonth(), user.birthday.getDate());
-      const dateKey = birthdayThisYear.toISOString().split('T')[0]; // YYYY-MM-DD 형식
+      const dateKey = formatDateToKST(birthdayThisYear);
 
       if (!birthdayMap.has(dateKey)) {
         birthdayMap.set(dateKey, {

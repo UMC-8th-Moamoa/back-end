@@ -53,6 +53,11 @@ enum ItemCategory {
   envelope     // 편지봉투
 }
 
+enum ProcessType {
+  DONATE
+  CONVERT_TO_COIN
+}
+
 // 사용자 테이블
 model User {
   id                Int       @id @default(autoincrement())
@@ -62,7 +67,7 @@ model User {
   emailVerified     Boolean   @default(false)
   password          String    @db.VarChar(255)
   birthday          DateTime?
-  cash              Int       @default(0)
+  cash              Int       @default(0)  // 몽코인 잔액
   phone             String?   @db.VarChar(20)
   photo             String?   @db.VarChar(255)
   createdAt         DateTime  @default(now())
@@ -89,6 +94,9 @@ model User {
   wishlistVotes           WishlistVote[]
   contributions           Contribution[]
   searchHistories         SearchHistory[]
+  donations               Donation[]
+  coinConversions         CoinConversion[]
+  remainingProcesses      RemainingAmountProcess[]
 
   @@map("users")
 }
@@ -154,22 +162,21 @@ model Notification {
 
 // 위시리스트 테이블
 model Wishlist {
-  id              Int        @id @default(autoincrement())
+  id              Int      @id @default(autoincrement())
   userId          Int
-  productImageUrl String     @db.VarChar(255)
-  productName     String     @db.VarChar(100)
+  productImageUrl String   @db.VarChar(255)
+  productName     String   @db.VarChar(100)
   price           Int
-  insertType      InsertType @default(URL)
-  fundingActive   Boolean    @default(false)
-  isPublic        Boolean    @default(true)
-  createdAt       DateTime   @default(now())
-  updatedAt       DateTime   @updatedAt
+  fundingActive   Boolean  @default(false)
+  isPublic        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 
   user           User                     @relation(fields: [userId], references: [id], onDelete: Cascade)
   analysisRequests WishlistAnalysisRequest[]
-  selectedInEvents BirthdayEventSelectedItem[]
   
   votes          WishlistVote[]
+  selectedInEvents BirthdayEventSelectedItem[]
 
   @@map("wishlists")
 }
@@ -222,10 +229,13 @@ model BirthdayEvent {
   letters         Letter[]
   purchaseProof   PurchaseProof?
   shareTokens     EventShareToken[]
-  selectedItems   BirthdayEventSelectedItem[]
   
   contributions      Contribution[]
   wishlistVotes      WishlistVote[]
+  donations          Donation[]
+  coinConversions    CoinConversion[]
+  remainingProcess   RemainingAmountProcess?
+  selectedItems      BirthdayEventSelectedItem[]
 
   @@map("birthday_events")
 }
@@ -312,7 +322,7 @@ model Advertisement {
   @@map("advertisements")
 }
 
-// 아이템 테이블 (뭉코인 상점 아이템)
+// 아이템 테이블 (몽코인 상점 아이템)
 model Item {
   id           Int          @id @default(autoincrement())
   category     ItemCategory
@@ -344,7 +354,6 @@ model UserItem {
   // Letter와의 관계 추가
   lettersAsLetterPaper Letter[] @relation("LetterPaper")
   lettersAsEnvelope    Letter[] @relation("LetterEnvelope")
-  lettersAsFont        Letter[] @relation("LetterFont")
 
   @@unique([userId, itemId])
   @@map("user_items")
@@ -379,7 +388,6 @@ model Letter {
   content         String    @db.Text
   letterPaperId   Int?      // 사용된 편지지 ID
   envelopeId      Int?      // 사용된 편지봉투 ID
-  fontId          Int?      // 사용된 폰트 ID
   envelopeImageUrl String?  @db.VarChar(500) // 편지봉투 이미지 URL
   sentAt          DateTime  @default(now())
   readAt          DateTime?
@@ -391,7 +399,6 @@ model Letter {
   receiver      User           @relation("LetterReceiver", fields: [receiverId], references: [id])
   letterPaper   UserItem?      @relation("LetterPaper", fields: [letterPaperId], references: [id])
   envelope      UserItem?      @relation("LetterEnvelope", fields: [envelopeId], references: [id])
-  font          UserItem?      @relation("LetterFont", fields: [fontId], references: [id])
 
   @@map("letters")
 }
@@ -425,6 +432,69 @@ event BirthdayEvent @relation(fields: [eventId], references: [id], onDelete: Cas
 @@map("event_share_tokens")
 }
 
+// 검색 기록 테이블
+model SearchHistory {
+  id         Int      @id @default(autoincrement())
+  userId     Int
+  searchTerm String   @db.VarChar(100)
+  searchedAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, searchedAt(sort: Desc)])
+  @@map("search_histories")
+}
+
+// 기부 테이블
+model Donation {
+  id               Int      @id @default(autoincrement())
+  eventId          Int      // 어떤 이벤트의 남은 금액을 기부했는지
+  userId           Int      // 생일자 (기부한 사람)
+  organizationId   Int      // 기부 단체 ID (1: 굿네이버스, 2: 세이브더칠드런, 3: 유니세프)
+  organizationName String   @db.VarChar(100) // 기부 단체명
+  amount           Int      // 기부 금액
+  donatedAt        DateTime @default(now())
+  createdAt        DateTime @default(now())
+
+  event BirthdayEvent @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  user  User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("donations")
+}
+
+// 몽코인 전환 테이블
+model CoinConversion {
+  id            Int      @id @default(autoincrement())
+  eventId       Int      // 어떤 이벤트의 남은 금액을 전환했는지
+  userId        Int      // 생일자 (전환한 사람)
+  originalAmount Int     // 원본 금액
+  convertedCoins Int     // 전환된 몽코인
+  conversionRate Float   // 전환율 (예: 1.2)
+  convertedAt    DateTime @default(now())
+  createdAt      DateTime @default(now())
+
+  event BirthdayEvent @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  user  User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("coin_conversions")
+}
+
+// 남은 금액 처리 상태 테이블
+model RemainingAmountProcess {
+  id          Int         @id @default(autoincrement())
+  eventId     Int         @unique // 이벤트당 한 번만 처리
+  userId      Int         // 생일자
+  processType ProcessType // DONATE 또는 CONVERT_TO_COIN
+  amount      Int         // 처리된 금액
+  processedAt DateTime    @default(now())
+  createdAt   DateTime    @default(now())
+
+  event BirthdayEvent @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  user  User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("remaining_amount_processes")
+}
+
 // 생일자가 선택한 위시리스트 상품 테이블
 model BirthdayEventSelectedItem {
   id          Int      @id @default(autoincrement())
@@ -438,17 +508,4 @@ model BirthdayEventSelectedItem {
 
   @@unique([eventId, wishlistId])
   @@map("birthday_event_selected_items")
-}
-
-// 검색 기록 테이블
-model SearchHistory {
-  id         Int      @id @default(autoincrement())
-  userId     Int
-  searchTerm String   @db.VarChar(100)
-  searchedAt DateTime @default(now())
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([userId, searchedAt(sort: Desc)])
-  @@map("search_histories")
 }
