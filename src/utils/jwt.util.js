@@ -8,14 +8,16 @@ const JWT_REFRESH_EXPIRES_IN = process.env.JWT_REFRESH_EXPIRES_IN || '14d';
 
 /**
  * 액세스 토큰 생성
- * @param {number} userId - 사용자 ID
+ * @param {number} userId - 사용자 ID (user_pk)
  * @param {string} email - 사용자 이메일
+ * @param {string} userIdAlias - 사용자 별칭 (user_id)
  * @returns {string} - JWT 액세스 토큰
  */
-export const generateAccessToken = (userId, email) => {
+export const generateAccessToken = (userId, email, userIdAlias = null) => {
   const payload = {
     userId,
     email,
+    userIdAlias,
     type: 'access'
   };
 
@@ -28,14 +30,16 @@ export const generateAccessToken = (userId, email) => {
 
 /**
  * 리프레시 토큰 생성
- * @param {number} userId - 사용자 ID
+ * @param {number} userId - 사용자 ID (user_pk)
  * @param {string} email - 사용자 이메일
+ * @param {string} userIdAlias - 사용자 별칭 (user_id)
  * @returns {string} - JWT 리프레시 토큰
  */
-export const generateRefreshToken = (userId, email) => {
+export const generateRefreshToken = (userId, email, userIdAlias = null) => {
   const payload = {
     userId,
     email,
+    userIdAlias,
     type: 'refresh'
   };
 
@@ -48,13 +52,14 @@ export const generateRefreshToken = (userId, email) => {
 
 /**
  * 토큰 쌍 생성 (액세스 토큰 + 리프레시 토큰)
- * @param {number} userId - 사용자 ID
+ * @param {number} userId - 사용자 ID (user_pk)
  * @param {string} email - 사용자 이메일
+ * @param {string} userIdAlias - 사용자 별칭 (user_id)
  * @returns {Object} - 토큰 쌍 객체
  */
-export const generateTokenPair = (userId, email) => {
-  const accessToken = generateAccessToken(userId, email);
-  const refreshToken = generateRefreshToken(userId, email);
+export const generateTokenPair = (userId, email, userIdAlias = null) => {
+  const accessToken = generateAccessToken(userId, email, userIdAlias);
+  const refreshToken = generateRefreshToken(userId, email, userIdAlias);
 
   return {
     accessToken,

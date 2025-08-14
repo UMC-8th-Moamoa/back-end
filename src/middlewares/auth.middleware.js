@@ -96,7 +96,7 @@ export const refreshToken = async (req, res, next) => {
     }
     
     // 새 토큰 쌍 생성
-    const tokens = generateTokenPair(user.id, user.email);
+    const tokens = generateTokenPair(user.id, user.email, user.user_id);
     
     req.tokens = tokens;
     req.user = user;
