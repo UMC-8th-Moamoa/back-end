@@ -5,7 +5,7 @@ import { demoService } from './demo.service.js';
 
 import { 
   hashPassword, 
-  // comparePassword, 
+  comparePassword, 
   validatePasswordChange as validatePasswordChangeUtil
 } from '../utils/password.util.js';
 import { 

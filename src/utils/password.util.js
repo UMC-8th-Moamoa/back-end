@@ -7,7 +7,7 @@ export const hashPassword = async (password) => {
 };
 
 // 비밀번호 검증
-export const assword = async (plainPassword, hashedPassword) => {
+export const comparePassword = async (plainPassword, hashedPassword) => {
   return await bcrypt.compare(plainPassword, hashedPassword);
 };
 
@@ -28,23 +28,23 @@ export const validatePasswordStrength = (password) => {
   };
 };
 
-// // 비밀번호 변경 검증
-// export const validatePasswordChange = async (currentPassword, newPassword, hashedCurrentPassword) => {
-//   // 현재 비밀번호 확인
-//   const isCurrentPasswordValid = await comparePassword(currentPassword, hashedCurrentPassword);
-//   if (!isCurrentPasswordValid) {
-//     throw new Error('현재 비밀번호가 올바르지 않습니다');
-//   }
+// 비밀번호 변경 검증
+export const validatePasswordChange = async (currentPassword, newPassword, hashedCurrentPassword) => {
+  // 현재 비밀번호 확인
+  const isCurrentPasswordValid = await comparePassword(currentPassword, hashedCurrentPassword);
+  if (!isCurrentPasswordValid) {
+    throw new Error('현재 비밀번호가 올바르지 않습니다');
+  }
 
-//   // 새 비밀번호 강도 검증
-//   const strengthValidation = validatePasswordStrength(newPassword);
-//   if (!strengthValidation.isValid) {
-//     throw new Error(strengthValidation.errors.join(', '));
-//   }
+  // 새 비밀번호 강도 검증
+  const strengthValidation = validatePasswordStrength(newPassword);
+  if (!strengthValidation.isValid) {
+    throw new Error(strengthValidation.errors.join(', '));
+  }
 
-//   // 현재 비밀번호와 새 비밀번호가 같은지 확인
-//   const isSamePassword = await comparePassword(newPassword, hashedCurrentPassword);
-//   if (isSamePassword) {
-//     throw new Error('새 비밀번호는 현재 비밀번호와 달라야 합니다');
-//   }
-// };
+  // 현재 비밀번호와 새 비밀번호가 같은지 확인
+  const isSamePassword = await comparePassword(newPassword, hashedCurrentPassword);
+  if (isSamePassword) {
+    throw new Error('새 비밀번호는 현재 비밀번호와 달라야 합니다');
+  }
+};

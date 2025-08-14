@@ -7,7 +7,7 @@ import pkg from '@prisma/client';
 const { PrismaClient } = pkg;
 
 import { UnauthorizedError, UserNotFoundError } from '../middlewares/errorHandler.js';
-// import { comparePassword } from '../utils/password.util.js';
+import { comparePassword } from '../utils/password.util.js';
 
 const prisma = new PrismaClient();
 
