@@ -4,9 +4,10 @@ import prisma from '../config/prismaClient.js';
 import { 
     MyInfoRequestDTO,
     CreateCustomerServiceRequestDTO,
-    FollowRequestDTO,
+    GetCustomerServiceListRequestDTO,
     ChangeUserIdRequestDTO,
-    ChangeUserIdResponseDTO
+    ChangeUserIdResponseDTO,
+    FollowRequestDTO
 } from '../dtos/mypage.dto.js';
 
 class mypageController {
@@ -168,11 +169,11 @@ class mypageController {
     
     static postCustomerService = catchAsync(async (req, res) => {
         const customerServiceRequest = new CreateCustomerServiceRequestDTO(req.body);
-        const { user_id: requestedUserId, title, content, private: isPrivate } = customerServiceRequest;
+        const { title, content, privacyAgreed } = customerServiceRequest;
 
         const currentUser = req.user;
 
-        // currentUser.user_id가 없는 경우 데이터베이스에서 조회
+        // 현재 사용자 정보 조회
         let currentUserInfo = currentUser;
         if (!currentUser.user_id) {
             currentUserInfo = await prisma.user.findUnique({
@@ -186,29 +187,124 @@ class mypageController {
             });
         }
 
-        if (!currentUserInfo || currentUserInfo.user_id !== requestedUserId) {
-            return res.status(403).json({
-                success: false,
-                message: '접근 권한이 없습니다. 본인의 고객센터 글만 등록할 수 있습니다.'
+        if (!currentUserInfo) {
+            return res.status(404).json({
+                resultType: "ERROR",
+                error: {
+                    errorCode: "USER_NOT_FOUND",
+                    reason: "사용자 정보를 찾을 수 없습니다"
+                },
+                success: null
             });
         }
 
         const newPost = await mypageService.createCustomerServicePost(
+            currentUserInfo.id,
             currentUserInfo.user_id,
             title,
-            content,
-            isPrivate
+            content
         );
 
         res.status(201).json({
-            success: true,
-            message: '고객센터 글이 성공적으로 등록되었습니다.',
-            service: {
-                user_id: newPost.user_id,
-                title: newPost.title,
-                content: newPost.content,
-                private: newPost.private,
+            resultType: "SUCCESS",
+            error: null,
+            success: {
+                inquiry: {
+                    id: newPost.id,
+                    title: newPost.title,
+                    content: newPost.content,
+                    userId: newPost.userId,
+                    createdAt: newPost.createdAt
+                },
+                message: "고객센터 문의가 성공적으로 등록되었습니다."
             }
+        });
+    });
+
+    static getCustomerServiceList = catchAsync(async (req, res) => {
+        const listRequest = new GetCustomerServiceListRequestDTO(req.query);
+        const currentUser = req.user;
+
+        // 현재 사용자 정보 조회
+        let currentUserInfo = currentUser;
+        if (!currentUser.user_id) {
+            currentUserInfo = await prisma.user.findUnique({
+                where: { id: currentUser.id },
+                select: {
+                    id: true,
+                    user_id: true,
+                    email: true,
+                    name: true
+                }
+            });
+        }
+
+        if (!currentUserInfo) {
+            return res.status(404).json({
+                resultType: "ERROR",
+                error: {
+                    errorCode: "USER_NOT_FOUND",
+                    reason: "사용자 정보를 찾을 수 없습니다"
+                },
+                success: null
+            });
+        }
+
+        const result = await mypageService.getCustomerServiceList(currentUserInfo.id, listRequest);
+
+        res.status(200).json({
+            resultType: "SUCCESS",
+            error: null,
+            success: result
+        });
+    });
+
+    static getCustomerServiceDetail = catchAsync(async (req, res) => {
+        const inquiryId = parseInt(req.params.inquiryId);
+        const currentUser = req.user;
+
+        if (!inquiryId || inquiryId < 1) {
+            return res.status(400).json({
+                resultType: "ERROR",
+                error: {
+                    errorCode: "VALIDATION_ERROR",
+                    reason: "유효하지 않은 문의 ID입니다"
+                },
+                success: null
+            });
+        }
+
+        // 현재 사용자 정보 조회
+        let currentUserInfo = currentUser;
+        if (!currentUser.user_id) {
+            currentUserInfo = await prisma.user.findUnique({
+                where: { id: currentUser.id },
+                select: {
+                    id: true,
+                    user_id: true,
+                    email: true,
+                    name: true
+                }
+            });
+        }
+
+        if (!currentUserInfo) {
+            return res.status(404).json({
+                resultType: "ERROR",
+                error: {
+                    errorCode: "USER_NOT_FOUND",
+                    reason: "사용자 정보를 찾을 수 없습니다"
+                },
+                success: null
+            });
+        }
+
+        const result = await mypageService.getCustomerServiceDetail(currentUserInfo.id, inquiryId);
+
+        res.status(200).json({
+            resultType: "SUCCESS",
+            error: null,
+            success: result
         });
     });
 
@@ -259,37 +355,48 @@ class mypageController {
         });
     });
 
-    // 사용자 ID 변경
     static changeUserId = catchAsync(async (req, res) => {
-        console.log('=== DEBUG: Controller changeUserId ===');
-        console.log('req.body:', req.body);
-        console.log('req.user:', req.user);
+        const changeUserIdRequest = new ChangeUserIdRequestDTO(req.body);
+        const { newUserId } = changeUserIdRequest;
 
-        // DTO 검증
-        const changeUserIdRequestDTO = new ChangeUserIdRequestDTO(req.body);
-        const { newUserId } = changeUserIdRequestDTO;
+        const currentUser = req.user;
 
-        const currentUserId = req.user?.user_id;
-        if (!currentUserId) {
-            return res.status(401).json({
-                success: false,
-                message: '로그인이 필요합니다.'
+        // 현재 사용자 정보 조회
+        let currentUserInfo = currentUser;
+        if (!currentUser.user_id) {
+            currentUserInfo = await prisma.user.findUnique({
+                where: { id: currentUser.id },
+                select: {
+                    id: true,
+                    user_id: true,
+                    email: true,
+                    name: true
+                }
             });
         }
 
-        console.log('Current User ID:', currentUserId);
-        console.log('New User ID:', newUserId);
+        if (!currentUserInfo) {
+            return res.status(404).json({
+                resultType: "FAIL",
+                error: {
+                    errorCode: "U004",
+                    reason: "사용자 정보를 찾을 수 없습니다",
+                    data: null
+                },
+                success: null
+            });
+        }
 
-        // 서비스 호출
-        const updatedUserData = await mypageService.changeUserId(currentUserId, newUserId);
-        
-        // DTO로 응답 포맷
-        const responseData = new ChangeUserIdResponseDTO(updatedUserData);
+        const updatedUser = await mypageService.changeUserId(currentUserInfo.user_id, newUserId);
+        const responseData = new ChangeUserIdResponseDTO(updatedUser);
 
         res.status(200).json({
-            success: true,
-            message: '사용자 ID가 성공적으로 변경되었습니다.',
-            data: responseData
+            resultType: "SUCCESS",
+            error: null,
+            success: {
+                user: responseData,
+                message: "사용자 ID가 성공적으로 변경되었습니다."
+            }
         });
     });
 }

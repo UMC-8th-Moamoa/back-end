@@ -164,7 +164,7 @@ class MypageRepository {
         return result;
     }
 
-    async createCustomerServicePost(userId, title, content, isPrivate) {
+    async createCustomerServicePost(userId, title, content) {
         if (!userId) {
             console.error('❌ createCustomerServicePost called with undefined userId');
             throw new Error('userId is required');
@@ -175,8 +175,61 @@ class MypageRepository {
                 user_id: userId,
                 title: title,
                 content: content,
-                private: isPrivate,
+                private: false, // 기본값으로 설정
             },
+        });
+    }
+
+    async getCustomerServiceList(userId, listRequest) {
+        if (!userId) {
+            throw new Error('userId is required');
+        }
+
+        const [inquiries, totalCount] = await Promise.all([
+            prisma.customerServicePost.findMany({
+                where: { user_id: userId },
+                include: {
+                    responses: true
+                },
+                orderBy: { created_at: 'desc' },
+                skip: listRequest.offset,
+                take: listRequest.limit,
+            }),
+            prisma.customerServicePost.count({
+                where: { user_id: userId }
+            })
+        ]);
+
+        return { inquiries, totalCount };
+    }
+
+    async getCustomerServiceDetail(userId, inquiryId) {
+        if (!userId || !inquiryId) {
+            throw new Error('userId and inquiryId are required');
+        }
+
+        return await prisma.customerServicePost.findFirst({
+            where: {
+                id: inquiryId,
+                user_id: userId
+            },
+            include: {
+                responses: {
+                    orderBy: { created_at: 'asc' }
+                }
+            }
+        });
+    }
+
+    async findUserById(userId) {
+        return await prisma.user.findUnique({
+            where: { id: userId },
+            select: {
+                id: true,
+                user_id: true,
+                email: true,
+                name: true
+            }
         });
     }
 

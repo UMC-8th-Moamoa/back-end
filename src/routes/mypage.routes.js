@@ -221,8 +221,10 @@ router.get('/otherpage_info',
  * @swagger
  * /api/mypage/customer_service:
  *   post:
- *     summary: 고객센터 글 등록
+ *     summary: 고객센터 문의 작성
  *     tags: [Mypage]
+ *     security:
+ *       - bearerAuth: []
  *     requestBody:
  *       required: true
  *       content:
@@ -230,61 +232,83 @@ router.get('/otherpage_info',
  *           schema:
  *             type: object
  *             required:
- *               - user_id
  *               - title
  *               - content
- *               - private
+ *               - privacyAgreed
  *             properties:
- *               user_id:
- *                 type: string
- *                 description: 작성자 ID
  *               title:
  *                 type: string
- *                 description: 고객센터 제목
+ *                 description: 문의 제목
+ *                 example: "결제 내역이 확인되지 않습니다"
  *               content:
  *                 type: string
- *                 description: 고객센터 내용
- *               private:
+ *                 description: 문의 내용
+ *                 example: "어제 카카오페이로 결제했는데 내역이 표시되지 않아요. 확인 부탁드립니다."
+ *               privacyAgreed:
  *                 type: boolean
- *                 description: 비공개 여부
+ *                 description: 개인정보 수집 동의 여부
+ *                 example: true
  *     responses:
  *       201:
- *         description: 고객센터 글 등록 성공
+ *         description: 고객센터 문의 작성 성공
  *         content:
  *           application/json:
  *             schema:
  *               type: object
  *               properties:
- *                 success:
- *                   type: boolean
- *                   example: true
- *                 message:
+ *                 resultType:
  *                   type: string
- *                   example: "고객센터 글이 성공적으로 등록되었습니다."
- *                 service:
- *                   type: array
- *                   items:
- *                     type: object
- *                     properties:
- *                       user_id:
- *                         type: string
- *                         example: "lesly"
- *                       title:
- *                         type: string
- *                         example: "결제 내역이 확인되지 않습니다"
- *                       content:
- *                         type: string
- *                         example: "어제 결제했는데 내역이 표시되지 않아요."
- *                       category:
- *                         type: string
- *                         example: "결제"
- *                       private:
- *                         type: boolean
- *                         example: true
+ *                   example: "SUCCESS"
+ *                 error:
+ *                   type: null
+ *                 success:
+ *                   type: object
+ *                   properties:
+ *                     inquiry:
+ *                       type: object
+ *                       properties:
+ *                         id:
+ *                           type: integer
+ *                           example: 1
+ *                         title:
+ *                           type: string
+ *                           example: "결제 내역이 확인되지 않습니다"
+ *                         content:
+ *                           type: string
+ *                           example: "어제 카카오페이로 결제했는데 내역이 표시되지 않아요. 확인 부탁드립니다."
+ *                         userId:
+ *                           type: string
+ *                           example: "lesly_kim"
+ *                         createdAt:
+ *                           type: string
+ *                           format: date-time
+ *                           example: "2025-08-15T10:30:00+09:00"
+ *                     message:
+ *                       type: string
+ *                       example: "고객센터 문의가 성공적으로 등록되었습니다."
  *       400:
  *         description: 잘못된 요청
- *       403:
- *         description: 접근 권한 없음
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 resultType:
+ *                   type: string
+ *                   example: "ERROR"
+ *                 error:
+ *                   type: object
+ *                   properties:
+ *                     errorCode:
+ *                       type: string
+ *                       example: "VALIDATION_ERROR"
+ *                     reason:
+ *                       type: string
+ *                       example: "title, content, privacyAgreed는 필수 파라미터입니다."
+ *                 success:
+ *                   type: null
+ *       401:
+ *         description: 인증 필요
  *       404:
  *         description: 사용자 정보를 찾을 수 없음
  *       500:
@@ -293,6 +317,72 @@ router.get('/otherpage_info',
 router.post('/customer_service',
   authenticateJWT,
   mypageController.postCustomerService
+);
+
+/**
+ * @swagger
+ * /api/mypage/customer_service:
+ *   get:
+ *     summary: 고객센터 문의 목록 조회
+ *     tags: [Mypage]
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *         description: 페이지 번호
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 10
+ *         description: 페이지당 항목 수 (1-50)
+ *     responses:
+ *       200:
+ *         description: 문의 목록 조회 성공
+ *       400:
+ *         description: 잘못된 요청
+ *       401:
+ *         description: 인증 필요
+ *       500:
+ *         description: 서버 내부 오류
+ */
+router.get('/customer_service',
+  authenticateJWT,
+  mypageController.getCustomerServiceList
+);
+
+/**
+ * @swagger
+ * /api/mypage/customer_service/{inquiryId}:
+ *   get:
+ *     summary: 고객센터 문의 상세 조회
+ *     tags: [Mypage]
+ *     parameters:
+ *       - in: path
+ *         name: inquiryId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: 조회할 문의 ID
+ *     responses:
+ *       200:
+ *         description: 문의 상세 조회 성공
+ *       400:
+ *         description: 잘못된 요청
+ *       401:
+ *         description: 인증 필요
+ *       403:
+ *         description: 권한 없음
+ *       404:
+ *         description: 문의 없음
+ *       500:
+ *         description: 서버 내부 오류
+ */
+router.get('/customer_service/:inquiryId',
+  authenticateJWT,
+  mypageController.getCustomerServiceDetail
 );
 
 /**
@@ -537,9 +627,6 @@ router.post('/follow/request',
  *                   type: object
  *                   properties:
  *                     errorCode:
- *                       type: string
- *                       example: "S001"
- *                     reason:
  *                       type: string
  *                       example: "서버 내부 오류가 발생했습니다"
  *                     data:
