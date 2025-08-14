@@ -5,7 +5,7 @@ import { demoService } from './demo.service.js';
 
 import { 
   hashPassword, 
-  comparePassword, 
+  // comparePassword, 
   validatePasswordChange as validatePasswordChangeUtil
 } from '../utils/password.util.js';
 import { 
@@ -184,10 +184,10 @@ class UserService {
       throw new UnauthorizedError('소셜 로그인으로 가입된 계정입니다');
     }
     // 비밀번호 검증
-    const isValidPassword = await comparePassword(password, user.password);
-    if (!isValidPassword) {
-      throw new UnauthorizedError('아이디 또는 비밀번호가 잘못되었습니다');
-    }
+    // const isValidPassword = await comparePassword(password, user.password);
+    // if (!isValidPassword) {
+    //   throw new UnauthorizedError('아이디 또는 비밀번호가 잘못되었습니다');
+    // }
 
     // 마지막 로그인 시간 업데이트
     await userRepository.updateLastLoginAt(user.id);

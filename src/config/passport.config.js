@@ -7,7 +7,7 @@ import pkg from '@prisma/client';
 const { PrismaClient } = pkg;
 
 import { UnauthorizedError, UserNotFoundError } from '../middlewares/errorHandler.js';
-import { comparePassword } from '../utils/password.util.js';
+// import { comparePassword } from '../utils/password.util.js';
 
 const prisma = new PrismaClient();
 
@@ -72,52 +72,52 @@ passport.deserializeUser(async (id, done) => {
   }
 });
 
-// 1. Local Strategy (이메일/비밀번호 로그인)
-passport.use(new LocalStrategy(
-  {
-    usernameField: 'email',
-    passwordField: 'password'
-  },
-  async (email, password, done) => {
-    try {
-      // 사용자 조회
-      const user = await prisma.user.findUnique({
-        where: { email },
-        include: {
-          socialLogins: true
-        }
-      });
+// // 1. Local Strategy (이메일/비밀번호 로그인)
+// passport.use(new LocalStrategy(
+//   {
+//     usernameField: 'email',
+//     passwordField: 'password'
+//   },
+//   async (email, password, done) => {
+//     try {
+//       // 사용자 조회
+//       const user = await prisma.user.findUnique({
+//         where: { email },
+//         include: {
+//           socialLogins: true
+//         }
+//       });
 
-      if (!user) {
-        return done(new UnauthorizedError('이메일 또는 비밀번호가 잘못되었습니다'), false);
-      }
+//       if (!user) {
+//         return done(new UnauthorizedError('이메일 또는 비밀번호가 잘못되었습니다'), false);
+//       }
 
-      // 소셜 로그인 전용 계정인지 확인
-      if (!user.password && user.socialLogins.length > 0) {
-        return done(new UnauthorizedError('소셜 로그인으로 가입된 계정입니다'), false);
-      }
+//       // 소셜 로그인 전용 계정인지 확인
+//       if (!user.password && user.socialLogins.length > 0) {
+//         return done(new UnauthorizedError('소셜 로그인으로 가입된 계정입니다'), false);
+//       }
 
-      // 비밀번호 검증
-      const isValidPassword = await comparePassword(password, user.password);
-      if (!isValidPassword) {
-        return done(new UnauthorizedError('이메일 또는 비밀번호가 잘못되었습니다'), false);
-      }
+//       // 비밀번호 검증
+//       const isValidPassword = await comparePassword(password, user.password);
+//       if (!isValidPassword) {
+//         return done(new UnauthorizedError('이메일 또는 비밀번호가 잘못되었습니다'), false);
+//       }
 
-      // 마지막 로그인 시간 업데이트
-      await prisma.user.update({
-        where: { id: user.id },
-        data: { lastLoginAt: new Date() }
-      });
+//       // 마지막 로그인 시간 업데이트
+//       await prisma.user.update({
+//         where: { id: user.id },
+//         data: { lastLoginAt: new Date() }
+//       });
 
-      // 비밀번호 제거 후 반환
-      const { password: _, ...userWithoutPassword } = user;
-      return done(null, userWithoutPassword);
+//       // 비밀번호 제거 후 반환
+//       const { password: _, ...userWithoutPassword } = user;
+//       return done(null, userWithoutPassword);
 
-    } catch (error) {
-      return done(error, false);
-    }
-  }
-));
+//     } catch (error) {
+//       return done(error, false);
+//     }
+//   }
+// ));
 
 // 2. JWT Strategy (토큰 검증)
 passport.use(new JwtStrategy(

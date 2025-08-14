@@ -1,6 +1,6 @@
 import userService from '../services/userService.services.js';
 import { autoEventService } from '../services/autoEvent.service.js';
-import { hashPassword, comparePassword } from '../utils/password.util.js';
+// import { hashPassword, comparePassword } from '../utils/password.util.js';
 import { generateTokenPair, verifyRefreshToken } from '../utils/jwt.util.js';
 import { catchAsync } from '../middlewares/errorHandler.js';
 import {
