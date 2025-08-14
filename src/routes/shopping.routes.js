@@ -141,8 +141,8 @@ const router = express.Router();
  *         enum:
  *           - font
  *           - paper
- *           - envelope
- *       description: "조회할 아이템 카테고리 (font, paper, envelope 중 하나)"
+ *           - seal
+ *       description: "조회할 아이템 카테고리 (font, paper, seal 중 하나)"
  *     - in: query
  *       name: num
  *       schema:
@@ -244,7 +244,7 @@ router.get('/item_detail',
  *             properties:
  *               category:
  *                 type: string
- *                 description: 카테고리(font,paper,envelope)
+ *                 description: 카테고리(font,paper,seal)
  *               user_id:
  *                 type: string
  *                 description: 사용자 ID

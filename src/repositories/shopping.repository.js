@@ -12,7 +12,7 @@ class shoppingRepository {
     };
 
     /**
-     * @desc ID로 아이템 상세 정보 조회 (간소화된 버전)
+     * @desc IDë¡œ ì•„ì´í…œ ìƒì„¸ ì •ë³´ ì¡°íšŒ (ê°„ì†Œí™"ëœ ë²„ì „)
      */
     static findItemDetailById = async (id) => {
         const item = await prisma.item.findUnique({
@@ -68,7 +68,7 @@ class shoppingRepository {
             });
             
             if (!user) {
-                throw new Error('사용자를 찾을 수 없습니다.');
+                throw new Error('ì‚¬ìš©ìžë¥¼ ì°¾ì„ ìˆ˜ ì—†ìŠµë‹ˆë‹¤.');
             }
 
             const item = await tx.item.findUnique({
@@ -76,15 +76,15 @@ class shoppingRepository {
             });
             
             if (!item) {
-                throw new Error('아이템을 찾을 수 없습니다.');
+                throw new Error('ì•„ì´í…œì„ ì°¾ì„ ìˆ˜ ì—†ìŠµë‹ˆë‹¤.');
             }
 
             if (item.category !== category) {
-                throw new Error('아이템 카테고리가 일치하지 않습니다.');
+                throw new Error('ì•„ì´í…œ ì¹´í…Œê³ ë¦¬ê°€ ì¼ì¹˜í•˜ì§€ ì•ŠìŠµë‹ˆë‹¤.');
             }
 
             if (user.cash < price) {
-                throw new Error('캐시가 부족합니다.');
+                throw new Error('ìºì‹œê°€ ë¶€ì¡±í•©ë‹ˆë‹¤.');
             }
 
             const newCash = user.cash - price;
@@ -99,7 +99,7 @@ class shoppingRepository {
                     userId: user.id,
                     pointType: 'ITEM_PURCHASE',
                     pointChange: -price,
-                    description: `${item.name} 구매`,
+                    description: `${item.name} êµ¬ë§¤`,
                     totalPoints: newCash
                 }
             });
@@ -123,7 +123,7 @@ class shoppingRepository {
         });
     };
 
-    // 기존: user_id 문자열로 조회
+    // ê¸°ì¡´: user_id ë¬¸ìžì—´ë¡œ ì¡°íšŒ
     static findUserItemsByUserId = async (user_id, num) => {
         const user = await prisma.user.findUnique({
             where: { user_id: user_id }
@@ -162,7 +162,7 @@ class shoppingRepository {
         });
     };
 
-    // 추가: 숫자 ID로 직접 조회
+    // ì¶"ê°€: ìˆ«ìž IDë¡œ ì§ì ' ì¡°íšŒ
     static findUserItemsByUserIdNumber = async (userId, num) => {
         const user = await prisma.user.findUnique({
             where: { id: userId },

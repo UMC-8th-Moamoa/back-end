@@ -30,10 +30,10 @@ export class ShoppingRequestDTO {
   }
 
   validate() {
-    const validCategories = ['font', 'paper', 'envelope'];
+    const validCategories = ['font', 'paper', 'seal'];
 
     if (!this.category || !validCategories.includes(this.category)) {
-      throw new Error('Category is required and must be one of: font, paper, envelope.');
+      throw new Error('Category is required and must be one of: font, paper, seal.');
     }
 
     if (this.num !== undefined && (isNaN(this.num) || this.num <= 0)) {
@@ -94,26 +94,26 @@ export class ItemDetailResponseDTO {
 }
 
 /**
- * @desc 아이템 구매 요청 데이터 전송 객체 (DTO)
- * POST /api/shopping/item_buy 요청의 본문 데이터를 처리합니다.
+ * @desc ì•„ì´í…œ êµ¬ë§¤ ìš"ì²­ ë°ì´í„° ì „ì†¡ ê°ì²´ (DTO)
+ * POST /api/shopping/item_buy ìš"ì²­ì˜ ë³¸ë¬¸ ë°ì´í„°ë¥¼ ì²˜ë¦¬í•©ë‹ˆë‹¤.
  */
 export class ItemBuyRequestDTO {
   constructor(body) {
     this.category = body.category;
     this.user_id = body.user_id;
-    this.item_no = body.item_no; // ✅ 수정: body.id → body.item_no
+    this.item_no = body.item_no; // âœ… ìˆ˜ì •: body.id â†' body.item_no
     this.price = body.price;
     this.event = body.event;
   }
 
   /**
-   * @desc 요청 데이터의 유효성을 검사합니다.
-   * @throws {Error} - 유효성 검사 실패 시
+   * @desc ìš"ì²­ ë°ì´í„°ì˜ ìœ íš¨ì„±ì„ ê²€ì‚¬í•©ë‹ˆë‹¤.
+   * @throws {Error} - ìœ íš¨ì„± ê²€ì‚¬ ì‹¤íŒ¨ ì‹œ
    */
   validate() {
-    const validCategories = ['font', 'paper', 'envelope'];
+    const validCategories = ['font', 'paper', 'seal'];
     if (!this.category || !validCategories.includes(this.category)) {
-      throw new Error('Category is required and must be one of: font, paper, envelope.');
+      throw new Error('Category is required and must be one of: font, paper, seal.');
     }
     if (!this.user_id) {
       throw new Error('User ID is required.');

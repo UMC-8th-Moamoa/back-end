@@ -45,15 +45,6 @@ class shoppingController {
     })
 
     static getUserItemList = catchAsync(async (req, res) => {
-        // 디버깅: req.user 내용 확인
-        console.log('=== DEBUG: req.user ===');
-        console.log('req.user:', req.user);
-        console.log('typeof req.user:', typeof req.user);
-        if (req.user) {
-            console.log('Object.keys(req.user):', Object.keys(req.user));
-        }
-        console.log('=====================');
-
         const userItemRequest = new UserItemRequestDTO(req.query);
         const { num } = userItemRequest.getValidatedData();
 
@@ -62,7 +53,6 @@ class shoppingController {
         
         // 만약 문자열 user_id가 없고 숫자 id만 있다면, DB에서 user_id 조회
         if (!user_id && req.user?.id) {
-            console.log('숫자 ID로 user_id 문자열 조회 중...', req.user.id);
             user_id = await shoppingService.getUserIdStringById(req.user.id);
             if (!user_id) {
                 return res.status(404).json({
@@ -70,7 +60,6 @@ class shoppingController {
                     message: '사용자를 찾을 수 없습니다.'
                 });
             }
-            console.log('조회된 user_id:', user_id);
         }
         
         if (!user_id) {
@@ -83,8 +72,6 @@ class shoppingController {
                 }
             });
         }
-
-        console.log('사용할 user_id:', user_id);
 
         const userItems = await shoppingService.getUserItemList({ user_id, num });
         const responseDTO = new UserItemResponseDTO(userItems);
