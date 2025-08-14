@@ -55,7 +55,7 @@ async findByUserId(user_id) {
    * @returns {Promise<Object|null>} 사용자 정보 또는 null
    */
   async findById(id) {
-    return await prisma.user.findUnique({
+    const user = await prisma.user.findUnique({
       where: { id },
       select: {
         id: true,
@@ -71,14 +71,30 @@ async findByUserId(user_id) {
         lastLoginAt: true,
         _count: {
           select: {
-            sentFriendRequests: true,
-            receivedFriendRequests: true,
-            wishlists: true,
-            birthdayEvents: true
+            wishlists: true
           }
         }
       }
     });
+
+    if (!user) {
+      return null;
+    }
+
+    // 팔로워/팔로잉 수 계산
+    const followersCount = await prisma.follow.count({
+      where: { followingId: user.id }  // 나를 팔로우하는 사람들
+    });
+
+    const followingCount = await prisma.follow.count({
+      where: { followerId: user.id }   // 내가 팔로우하는 사람들
+    });
+
+    // _count에 추가
+    user._count.followers = followersCount;
+    user._count.following = followingCount;
+
+    return user;
   }
 
   /**

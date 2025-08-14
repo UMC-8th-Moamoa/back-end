@@ -3,7 +3,48 @@ import { PrismaClient } from '@prisma/client';
 const prisma = new PrismaClient();
 
 class MypageRepository {
+    async findUserById(userId, includeFollowCounts = false) {
+        if (!userId) {
+            return null;
+        }
+
+        const user = await prisma.user.findUnique({
+            where: { id: userId },
+            select: {
+                id: true,
+                user_id: true,
+                name: true,
+                birthday: true,
+                photo: true,
+                email: true,
+                phone: true,
+                createdAt: true,
+                updatedAt: true,
+            }
+        });
+
+        if (!user) {
+            return null;
+        }
+
+        // includeFollowCounts가 true일 때만 팔로워/팔로잉 수 계산
+        if (includeFollowCounts) {
+            const followersCount = await prisma.follow.count({
+                where: { followingId: user.id }
+            });
+            const followingsCount = await prisma.follow.count({
+                where: { followerId: user.id }
+            });
+            
+            user.followers_num = followersCount;
+            user.following_num = followingsCount;
+        }
+
+        return user;
+    }
+
     async findUserByUserId(user_id, includeFollowCounts = false) {
+        console.log('🔍 MypageRepository.findUserByUserId called with:', { user_id, includeFollowCounts });
         // Add validation to prevent undefined user_id
         if (!user_id) {
             console.error('❌ findUserByUserId called with undefined/null user_id:', user_id);
@@ -230,6 +271,69 @@ class MypageRepository {
                 email: true,
                 name: true
             }
+        });
+    }
+
+    async changeUserIdWithTransaction(userPk, newUserId) {
+        console.log('🔍 Repository: changeUserIdWithTransaction called with userPk:', userPk, 'newUserId:', newUserId);
+        
+        if (!userPk || !newUserId) {
+            console.error('❌ changeUserIdWithTransaction called with undefined parameters:', { userPk, newUserId });
+            throw new Error('userPk and newUserId are required');
+        }
+
+        return await prisma.$transaction(async (tx) => {
+            // 1. 현재 사용자 존재 확인
+            const currentUser = await tx.user.findUnique({
+                where: { id: userPk },
+                select: {
+                    id: true,
+                    user_id: true,
+                    email: true,
+                    name: true
+                }
+            });
+
+            if (!currentUser) {
+                const error = new Error('사용자를 찾을 수 없습니다.');
+                error.statusCode = 404;
+                throw error;
+            }
+
+            // 2. 새로운 ID가 현재 ID와 동일한지 확인
+            if (currentUser.user_id === newUserId) {
+                const error = new Error('현재 사용자 ID와 동일합니다.');
+                error.statusCode = 400;
+                throw error;
+            }
+
+            // 3. 새로운 ID 중복 확인
+            const existingUser = await tx.user.findUnique({
+                where: { user_id: newUserId }
+            });
+
+            if (existingUser) {
+                const error = new Error('이미 사용 중인 사용자 ID입니다.');
+                error.statusCode = 409;
+                throw error;
+            }
+
+            // 4. 사용자 ID 업데이트
+            const updatedUser = await tx.user.update({
+                where: { id: userPk },
+                data: { user_id: newUserId },
+                select: {
+                    id: true,
+                    user_id: true,
+                    name: true,
+                    email: true,
+                    phone: true,
+                    photo: true
+                }
+            });
+
+            console.log('✅ Repository: User ID successfully updated from', currentUser.user_id, 'to', newUserId);
+            return updatedUser;
         });
     }
 

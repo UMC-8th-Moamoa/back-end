@@ -3,6 +3,8 @@
  * 클라이언트와 서버 간 데이터 전송 형식을 정의
  */
 
+import { toKSTISOString } from '../utils/datetime.util.js';
+
 // 회원가입 요청 DTO
 export class CreateUserDto {
   constructor({ user_id, email, password, name, phone, birthday }) {
@@ -31,12 +33,17 @@ export class UserResponseDto {
     this.email = user.email;
     this.name = user.name;
     this.phone = user.phone;
-    this.birthday = user.birthday;
+    this.birthday = user.birthday ? toKSTISOString(user.birthday) : null;
     this.photo = user.photo;
     this.cash = user.cash;
     this.emailVerified = user.emailVerified;
-    this.createdAt = user.createdAt;
-    this.lastLoginAt = user.lastLoginAt;
+    this.createdAt = user.createdAt ? toKSTISOString(user.createdAt) : null;
+    this.lastLoginAt = user.lastLoginAt ? toKSTISOString(user.lastLoginAt) : null;
+    
+    // 팔로워/팔로잉 수 추가
+    this.followersCount = user._count?.followers || 0;
+    this.followingCount = user._count?.following || 0;
+    this.wishlistsCount = user._count?.wishlists || 0;
   }
 }
 

@@ -1,5 +1,8 @@
 import mypageRepository from '../repositories/mypage.repository.js';
+import { PrismaClient } from '@prisma/client';
 import { toKSTISOString } from '../utils/datetime.util.js';
+
+const prisma = new PrismaClient();
 import { 
     MyInfoListDTO,
     MyInfoChangeDTO,
@@ -7,61 +10,98 @@ import {
 } from '../dtos/mypage.dto.js';
 
 class MypageService {
-    async getMyInfo(userIdFromToken) {
-        console.log('🔍 Service: getMyInfo called with userIdFromToken:', userIdFromToken);
-        
-        if (!userIdFromToken) {
-            console.error('❌ Service: userIdFromToken is undefined/null');
-            const error = new Error('사용자 ID가 제공되지 않았습니다.');
+    constructor() {
+        this.mypageRepository = mypageRepository;
+    }
+
+    async getMyInfo(userPk) {
+        if (!userPk) {
+            const error = new Error('사용자 PK가 제공되지 않았습니다.');
             error.statusCode = 400;
             throw error;
         }
 
-        const userInfo = await mypageRepository.findUserByUserId(userIdFromToken, true);
+        // 직접 Prisma 쿼리 실행 (Repository 이슈로 인한 임시 해결책)
+        const user = await prisma.user.findUnique({
+            where: { id: userPk },
+            select: {
+                id: true,
+                user_id: true,
+                name: true,
+                birthday: true,
+                photo: true,
+                email: true,
+                phone: true,
+                createdAt: true,
+                updatedAt: true,
+            }
+        });
 
-        if (!userInfo) {
+        if (!user) {
             const error = new Error('사용자 정보를 찾을 수 없습니다.');
             error.statusCode = 404;
             throw error;
         }
 
+        // 팔로워/팔로잉 수 계산
+        const followersCount = await prisma.follow.count({
+            where: { followingId: user.id }
+        });
+        const followingsCount = await prisma.follow.count({
+            where: { followerId: user.id }
+        });
+
+        user.followers_num = followersCount;
+        user.following_num = followingsCount;
+
         const formattedMyInfo = new MyInfoListDTO({
-            user_id: userInfo.user_id,
-            name: userInfo.name,
-            birthday: userInfo.birthday,
-            followers_num: userInfo.followers_num,
-            following_num: userInfo.following_num,
-            photo: userInfo.photo
+            user_id: user.user_id,
+            name: user.name,
+            birthday: user.birthday,
+            followers_num: user.followers_num,
+            following_num: user.following_num,
+            photo: user.photo
         });
 
         return formattedMyInfo;
     }
 
-    async getMyInfoChange(userIdFromToken) {
-        console.log('🔍 Service: getMyInfoChange called with userIdFromToken:', userIdFromToken);
-        
-        if (!userIdFromToken) {
-            console.error('❌ Service: userIdFromToken is undefined/null');
-            const error = new Error('사용자 ID가 제공되지 않았습니다.');
+    async getMyInfoChange(userPk) {
+        if (!userPk) {
+            const error = new Error('사용자 PK가 제공되지 않았습니다.');
             error.statusCode = 400;
             throw error;
         }
 
-        const userInfo = await mypageRepository.findUserByUserId(userIdFromToken, false);
+        // 직접 Prisma 쿼리 실행 (Repository 이슈로 인한 임시 해결책)
+        const user = await prisma.user.findUnique({
+            where: { id: userPk },
+            select: {
+                id: true,
+                user_id: true,
+                name: true,
+                birthday: true,
+                photo: true,
+                email: true,
+                phone: true,
+                createdAt: true,
+                updatedAt: true,
+            }
+        });
 
-        if (!userInfo) {
+        if (!user) {
             const error = new Error('수정할 사용자 정보를 찾을 수 없습니다.');
             error.statusCode = 404;
             throw error;
         }
 
         const formattedMyInfoChange = new MyInfoChangeDTO({
-            user_id: userInfo.user_id,
-            name: userInfo.name,
-            birthday: userInfo.birthday,
-            email: userInfo.email,
-            phone: userInfo.phone,
-            photo: userInfo.photo
+            user_id: user.user_id,
+            name: user.name,
+            birthday: user.birthday,
+            email: user.email,
+            phone: user.phone,
+            photo: user.photo
         });
 
         return formattedMyInfoChange;
@@ -223,12 +263,12 @@ class MypageService {
         };
     }
 
-    async changeUserId(currentUserId, newUserId) {
-        console.log('🔍 Service: changeUserId called with currentUserId:', currentUserId, 'newUserId:', newUserId);
+    async changeUserId(userPk, newUserId) {
+        console.log('🔍 Service: changeUserId called with userPk:', userPk, 'newUserId:', newUserId);
         
-        if (!currentUserId) {
-            console.error('❌ Service: currentUserId is undefined/null');
-            const error = new Error('현재 사용자 ID가 제공되지 않았습니다.');
+        if (!userPk) {
+            console.error('❌ Service: userPk is undefined/null');
+            const error = new Error('사용자 PK가 제공되지 않았습니다.');
             error.statusCode = 400;
             throw error;
         }
@@ -240,40 +280,20 @@ class MypageService {
             throw error;
         }
 
-        // 현재 사용자 정보 조회
-        const currentUser = await mypageRepository.findUserByUserId(currentUserId, false);
-        if (!currentUser) {
-            const error = new Error('현재 사용자 정보를 찾을 수 없습니다.');
-            error.statusCode = 404;
-            throw error;
-        }
-
-        // 새로운 ID가 현재 ID와 동일한지 확인
-        if (currentUserId === newUserId) {
-            const error = new Error('현재 사용자 ID와 동일합니다.');
-            error.statusCode = 400;
-            throw error;
-        }
-
-        // 새로운 ID 중복 확인
-        const existingUser = await mypageRepository.findUserByUserId(newUserId, false);
-        if (existingUser) {
-            const error = new Error('이미 사용 중인 사용자 ID입니다.');
-            error.statusCode = 409;
-            throw error;
-        }
-
-        // 사용자 ID 업데이트
-        const updatedUser = await mypageRepository.updateUserId(currentUser.id, newUserId);
+        // 트랜잭션으로 ID 변경 처리
+        const result = await mypageRepository.changeUserIdWithTransaction(userPk, newUserId);
         
-        console.log('✅ Service: User ID successfully updated from', currentUserId, 'to', newUserId);
+        console.log('✅ Service: User ID successfully updated to', newUserId);
 
         return {
-            user_id: updatedUser.user_id,
-            name: updatedUser.name,
-            email: updatedUser.email,
-            phone: updatedUser.phone,
-            photo: updatedUser.photo
+            user: {
+                id: result.id,
+                user_id: result.user_id,
+                name: result.name,
+                email: result.email,
+                phone: result.phone,
+                photo: result.photo
+            }
         };
     }
 

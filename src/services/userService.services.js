@@ -15,6 +15,7 @@ import {
   generatePasswordResetToken,
   verifyPasswordResetToken
 } from '../utils/jwt.util.js';
+import { getCurrentKSTTime } from '../utils/datetime.util.js';
 import {
   DuplicateEmailError,
   NotFoundError,
@@ -80,7 +81,9 @@ class UserService {
       name,
       user_id: user_id,  // DB 필드명과 일치
       phone: phone || null,
-      birthday: birthday ? new Date(birthday) : null
+      birthday: birthday ? new Date(birthday) : null,
+      createdAt: getCurrentKSTTime(), // 한국 시간으로 설정
+      updatedAt: getCurrentKSTTime()
     };
 
     const user = await userRepository.create(userData);
@@ -99,7 +102,7 @@ class UserService {
     }
 
     // JWT 토큰 생성
-    const tokens = generateTokenPair(user.id, user.email);
+    const tokens = generateTokenPair(user.id, user.email, user.user_id);
 
     return new AuthResponseDto(user, tokens);
   }
@@ -193,7 +196,7 @@ class UserService {
     await userRepository.updateLastLoginAt(user.id);
 
     // ✅ JWT 토큰 생성: 두 번째 인수는 반드시 이메일이어야 함
-    const tokens = generateTokenPair(user.id, user.email);
+    const tokens = generateTokenPair(user.id, user.email, user.user_id);
 
     // 민감한 정보 제거
     const { password: _, socialLogins, ...userWithoutPassword } = user;
@@ -563,7 +566,9 @@ class UserService {
       email: email || `${provider}_${profile.id}@${provider}.temp`,
       password: '', // 소셜 로그인은 비밀번호 없음
       emailVerified: !!email,
-      lastLoginAt: new Date()
+      lastLoginAt: getCurrentKSTTime(),
+      createdAt: getCurrentKSTTime(), // 한국 시간으로 설정
+      updatedAt: getCurrentKSTTime()
     };
 
     if (provider === 'google') {

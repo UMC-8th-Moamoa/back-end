@@ -1,6 +1,7 @@
 import { catchAsync } from '../middlewares/errorHandler.js';
 import mypageService from '../services/mypage.service.js';
 import prisma from '../config/prismaClient.js';
+import { generateTokenPair } from '../utils/jwt.util.js';
 import { 
     MyInfoRequestDTO,
     CreateCustomerServiceRequestDTO,
@@ -12,30 +13,10 @@ import {
 
 class mypageController {
     static getMyInfoList = catchAsync(async (req, res) => {
-        const myInfoRequest = new MyInfoRequestDTO(req.query);
-        const { user_id: requestedUserId } = myInfoRequest;
-
         const currentUser = req.user; 
 
-        // 현재 사용자의 완전한 정보를 데이터베이스에서 조회
-        const fullUserInfo = await prisma.user.findUnique({
-            where: { id: currentUser.id },
-            select: {
-                id: true,
-                user_id: true,
-                email: true,
-                name: true
-            }
-        });
-
-        if (!fullUserInfo || fullUserInfo.user_id !== requestedUserId) {
-            return res.status(403).json({
-                success: false,
-                message: '접근 권한이 없습니다. 본인의 정보만 조회할 수 있습니다.'
-            });
-        }
-
-        const myInfo = await mypageService.getMyInfo(fullUserInfo.user_id);
+        // 토큰의 sub(user_pk)로만 내 정보 조회 - user_id 파라미터 무시
+        const myInfo = await mypageService.getMyInfo(currentUser.id);
 
         res.status(200).json({
             success: true,
@@ -44,33 +25,10 @@ class mypageController {
     });
 
     static getMyInfoChangeList = catchAsync(async (req, res) => {
-        const myInfoChangeRequest = new MyInfoRequestDTO(req.query);
-        const { user_id: requestedUserId } = myInfoChangeRequest;
-
         const currentUser = req.user;
 
-        // currentUser.user_id가 없는 경우 데이터베이스에서 조회
-        let currentUserInfo = currentUser;
-        if (!currentUser.user_id) {
-            currentUserInfo = await prisma.user.findUnique({
-                where: { id: currentUser.id },
-                select: {
-                    id: true,
-                    user_id: true,
-                    email: true,
-                    name: true
-                }
-            });
-        }
-
-        if (!currentUserInfo || currentUserInfo.user_id !== requestedUserId) {
-            return res.status(403).json({
-                success: false,
-                message: '접근 권한이 없습니다. 본인의 수정 정보만 조회할 수 있습니다.'
-            });
-        }
-
-        const myInfoChange = await mypageService.getMyInfoChange(currentUserInfo.user_id);
+        // 토큰의 sub(user_pk)로만 내 수정정보 조회 - user_id 파라미터 무시
+        const myInfoChange = await mypageService.getMyInfoChange(currentUser.id);
 
         if (!myInfoChange) {
             return res.status(404).json({
@@ -361,43 +319,39 @@ class mypageController {
 
         const currentUser = req.user;
 
-        // 현재 사용자 정보 조회
-        let currentUserInfo = currentUser;
-        if (!currentUser.user_id) {
-            currentUserInfo = await prisma.user.findUnique({
-                where: { id: currentUser.id },
-                select: {
-                    id: true,
-                    user_id: true,
-                    email: true,
-                    name: true
+        try {
+            // 트랜잭션으로 ID 변경 및 토큰 생성
+            const result = await mypageService.changeUserId(currentUser.id, newUserId);
+            
+            // 새로운 토큰 생성 (변경된 user_id 포함)
+            const newTokens = generateTokenPair(result.user.id, result.user.email, result.user.user_id);
+            
+            const responseData = new ChangeUserIdResponseDTO(result.user);
+
+            res.status(200).json({
+                resultType: "SUCCESS",
+                error: null,
+                success: {
+                    user: responseData,
+                    tokens: newTokens, // 새로운 토큰 포함
+                    message: "사용자 ID가 성공적으로 변경되었습니다."
                 }
             });
-        }
-
-        if (!currentUserInfo) {
-            return res.status(404).json({
-                resultType: "FAIL",
-                error: {
-                    errorCode: "U004",
-                    reason: "사용자 정보를 찾을 수 없습니다",
-                    data: null
-                },
-                success: null
-            });
-        }
-
-        const updatedUser = await mypageService.changeUserId(currentUserInfo.user_id, newUserId);
-        const responseData = new ChangeUserIdResponseDTO(updatedUser);
-
-        res.status(200).json({
-            resultType: "SUCCESS",
-            error: null,
-            success: {
-                user: responseData,
-                message: "사용자 ID가 성공적으로 변경되었습니다."
+        } catch (error) {
+            // 중복 ID 오류 처리
+            if (error.statusCode === 409) {
+                return res.status(409).json({
+                    resultType: "FAIL",
+                    error: {
+                        errorCode: "U001",
+                        reason: error.message,
+                        data: null
+                    },
+                    success: null
+                });
             }
-        });
+            throw error;
+        }
     });
 }
 
