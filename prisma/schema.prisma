@@ -11,12 +11,6 @@ datasource db {
 }
 
 // Enum 정의
-enum FriendStatus {
-  PENDING  // 대기
-  ACCEPTED // 수락
-  BLOCKED  // 차단
-}
-
 enum NotificationType {
   FOLLOW_REQUEST    // 팔로우 요청
   BIRTHDAY_REMINDER // 생일 알림
@@ -76,8 +70,6 @@ model User {
 
   // 관계
   socialLogins         SocialLogin[]
-  sentFriendRequests   Friend[]              @relation("FriendRequester")
-  receivedFriendRequests Friend[]            @relation("FriendReceiver")
   notifications        Notification[]
   wishlists           Wishlist[]
   birthdayEvents      BirthdayEvent[]       @relation("BirthdayPerson")
@@ -92,11 +84,11 @@ model User {
   userItems           UserItem[]
   
   wishlistVotes           WishlistVote[]
-  contributions           Contribution[]
   searchHistories         SearchHistory[]
   donations               Donation[]
   coinConversions         CoinConversion[]
   remainingProcesses      RemainingAmountProcess[]
+  customerServicePosts    CustomerServicePost[]
   demoEvent              DemoEvent?            // 데모데이용 이벤트 (1:1 관계)
 
   @@map("users")
@@ -114,22 +106,6 @@ model SocialLogin {
   user User @relation(fields: [user_id], references: [user_id], onDelete: Cascade)  // User.user_id 참조로 변경
 
   @@map("social_logins")
-}
-
-// 친구 테이블
-model Friend {
-  id          Int          @id @default(autoincrement())
-  requesterId Int
-  receiverId  Int
-  status      FriendStatus @default(PENDING)
-  createdAt   DateTime     @default(now())
-  acceptedAt  DateTime?
-
-  requester User @relation("FriendRequester", fields: [requesterId], references: [id], onDelete: Cascade)
-  receiver  User @relation("FriendReceiver", fields: [receiverId], references: [id], onDelete: Cascade)
-
-  @@unique([requesterId, receiverId])
-  @@map("friends")
 }
 
 // 팔로우 관계 테이블
@@ -199,21 +175,6 @@ model WishlistVote {
   @@map("wishlist_votes")
 }
 
-// 개별 기부/송금 테이블
-model Contribution {
-  id        Int      @id @default(autoincrement())
-  eventId   Int
-  userId    Int
-  amount    Int
-  message   String?  @db.Text
-  createdAt DateTime @default(now())
-
-  event BirthdayEvent @relation(fields: [eventId], references: [id], onDelete: Cascade)
-  user  User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@map("contributions")
-}
-
 // 생일이벤트 테이블
 model BirthdayEvent {
   id               Int      @id @default(autoincrement())
@@ -231,7 +192,6 @@ model BirthdayEvent {
   purchaseProof   PurchaseProof?
   shareTokens     EventShareToken[]
   
-  contributions      Contribution[]
   wishlistVotes      WishlistVote[]
   donations          Donation[]
   coinConversions    CoinConversion[]
@@ -542,4 +502,36 @@ model DemoLetter {
   demoEvent DemoEvent @relation(fields: [demoEventId], references: [id], onDelete: Cascade)
 
   @@map("demo_letters")
+}
+
+// 고객센터 문의 테이블
+model CustomerServicePost {
+  id         Int      @id @default(autoincrement())
+  user_id    Int
+  title      String   @db.VarChar(255)
+  content    String   @db.Text
+  private    Boolean  @default(false)
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  // 관계 설정
+  user      User                     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  responses CustomerServiceResponse[]
+
+  @@map("customer_service_posts")
+}
+
+// 고객센터 응답 테이블
+model CustomerServiceResponse {
+  id                Int      @id @default(autoincrement())
+  inquiry_id        Int
+  content           String   @db.Text
+  is_admin_response Boolean  @default(true)
+  admin_name        String?  @db.VarChar(100)
+  created_at        DateTime @default(now())
+
+  // 관계 설정
+  inquiry CustomerServicePost @relation(fields: [inquiry_id], references: [id], onDelete: Cascade)
+
+  @@map("customer_service_responses")
 }

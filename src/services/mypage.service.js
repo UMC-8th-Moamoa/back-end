@@ -1,4 +1,5 @@
 import mypageRepository from '../repositories/mypage.repository.js';
+import { toKSTISOString } from '../utils/datetime.util.js';
 import { 
     MyInfoListDTO,
     MyInfoChangeDTO,
@@ -118,27 +119,107 @@ class MypageService {
         return formattedOtherInfo;
     }
     
-    async createCustomerServicePost(userId, title, content, isPrivate) {
+    async createCustomerServicePost(userId, userIdString, title, content) {
         if (!userId) {
             const error = new Error('사용자 ID가 제공되지 않았습니다.');
             error.statusCode = 400;
             throw error;
         }
 
-        const user = await mypageRepository.findUserByUserId(userId, false);
+        const user = await mypageRepository.findUserById(userId);
         if (!user) {
             const error = new Error('사용자 정보를 찾을 수 없습니다.');
             error.statusCode = 404;
             throw error;
         }
 
-        const newPost = await mypageRepository.createCustomerServicePost(user.id, title, content, isPrivate);
+        const newPost = await mypageRepository.createCustomerServicePost(userId, title, content);
 
         return {
-            user_id: userId,
+            id: newPost.id,
             title: newPost.title,
             content: newPost.content,
-            private: newPost.private,
+            userId: userIdString,
+            createdAt: toKSTISOString(newPost.created_at)
+        };
+    }
+
+    async getCustomerServiceList(userId, listRequest) {
+        if (!userId) {
+            const error = new Error('사용자 ID가 제공되지 않았습니다.');
+            error.statusCode = 400;
+            throw error;
+        }
+
+        const user = await mypageRepository.findUserById(userId);
+        if (!user) {
+            const error = new Error('사용자 정보를 찾을 수 없습니다.');
+            error.statusCode = 404;
+            throw error;
+        }
+
+        const { inquiries, totalCount } = await mypageRepository.getCustomerServiceList(userId, listRequest);
+
+        const totalPages = Math.ceil(totalCount / listRequest.limit);
+
+        return {
+            inquiries: inquiries.map(inquiry => ({
+                id: inquiry.id,
+                title: inquiry.title,
+                content: inquiry.content,
+                userId: user.user_id,
+                createdAt: toKSTISOString(inquiry.created_at),
+                hasResponse: inquiry.responses && inquiry.responses.length > 0,
+                responseStatus: inquiry.responses && inquiry.responses.length > 0 ? "답변 보기" : "답변 대기"
+            })),
+            pagination: {
+                currentPage: listRequest.page,
+                totalPages,
+                totalCount,
+                hasNext: listRequest.page < totalPages,
+                hasPrev: listRequest.page > 1,
+                limit: listRequest.limit
+            }
+        };
+    }
+
+    async getCustomerServiceDetail(userId, inquiryId) {
+        if (!userId) {
+            const error = new Error('사용자 ID가 제공되지 않았습니다.');
+            error.statusCode = 400;
+            throw error;
+        }
+
+        const user = await mypageRepository.findUserById(userId);
+        if (!user) {
+            const error = new Error('사용자 정보를 찾을 수 없습니다.');
+            error.statusCode = 404;
+            throw error;
+        }
+
+        const inquiry = await mypageRepository.getCustomerServiceDetail(userId, inquiryId);
+        if (!inquiry) {
+            const error = new Error('문의를 찾을 수 없습니다.');
+            error.statusCode = 404;
+            throw error;
+        }
+
+        return {
+            inquiry: {
+                id: inquiry.id,
+                title: inquiry.title,
+                content: inquiry.content,
+                userId: user.user_id,
+                createdAt: toKSTISOString(inquiry.created_at),
+                hasResponse: inquiry.responses && inquiry.responses.length > 0
+            },
+            responses: inquiry.responses ? inquiry.responses.map(response => ({
+                id: response.id,
+                content: response.content,
+                isAdminResponse: response.is_admin_response,
+                adminName: response.admin_name || "고객지원팀",
+                createdAt: toKSTISOString(response.created_at)
+            })) : []
         };
     }
 

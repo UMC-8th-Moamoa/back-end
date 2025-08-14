@@ -169,7 +169,7 @@ router.get('/remaining', authenticateJWT, eventCompletionController.getRemaining
  *                       example: "전환되는 몽코인은 100원 단위까지 전환되며 나머지 금액은 올림 되어 적용됩니다"
  *                     description:
  *                       type: string
- *                       example: "15,000원 = 18MC"
+ *                       example: "10,000원 = 12MC"
  *                     minimumUnit:
  *                       type: integer
  *                       example: 100
@@ -179,7 +179,7 @@ router.get('/remaining', authenticateJWT, eventCompletionController.getRemaining
  *               success:
  *                 conversionRate: 1.2
  *                 message: "전환되는 몽코인은 100원 단위까지 전환되며 나머지 금액은 올림 되어 적용됩니다"
- *                 description: "15,000원 = 18MC"
+ *                 description: "10,000원 = 12MC"
  *                 minimumUnit: 100
  */
 router.get('/preview', authenticateJWT, eventCompletionController.getConversionPreview);

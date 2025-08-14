@@ -56,14 +56,8 @@ export class OtherInfoDTO {
 
 export class CreateCustomerServiceRequestDTO {
     constructor(body) {
-        if (!body || !body.user_id || !body.title || !body.content || typeof body.private === 'undefined') {
-            throw new Error('user_id, title, content, private는 필수 파라미터입니다.');
-        }
-        if (typeof body.user_id !== 'string' || body.user_id.length < 4 || body.user_id.length > 20) {
-            throw new Error('user_id는 4자 이상 20자 이하의 문자열이어야 합니다.');
-        }
-        if (!/^[a-zA-Z0-9_]+$/.test(body.user_id)) {
-            throw new Error('user_id는 영문, 숫자, 언더스코어만 포함할 수 있습니다.');
+        if (!body || !body.title || !body.content || typeof body.privacyAgreed === 'undefined') {
+            throw new Error('title, content, privacyAgreed는 필수 파라미터입니다.');
         }
         if (typeof body.title !== 'string' || body.title.trim() === '') {
             throw new Error('title은 비어있지 않은 문자열이어야 합니다.');
@@ -71,14 +65,31 @@ export class CreateCustomerServiceRequestDTO {
         if (typeof body.content !== 'string' || body.content.trim() === '') {
             throw new Error('content는 비어있지 않은 문자열이어야 합니다.');
         }
-        if (typeof body.private !== 'boolean') {
-            throw new Error('private는 boolean 타입이어야 합니다.');
+        if (typeof body.privacyAgreed !== 'boolean' || !body.privacyAgreed) {
+            throw new Error('개인정보 수집에 동의해야 합니다.');
         }
 
-        this.user_id = body.user_id;
         this.title = body.title.trim();
         this.content = body.content.trim();
-        this.private = body.private;
+        this.privacyAgreed = body.privacyAgreed;
+    }
+}
+
+export class GetCustomerServiceListRequestDTO {
+    constructor(query) {
+        const page = parseInt(query.page) || 1;
+        const limit = parseInt(query.limit) || 10;
+
+        if (page < 1) {
+            throw new Error('페이지 번호는 1 이상이어야 합니다.');
+        }
+        if (limit < 1 || limit > 50) {
+            throw new Error('페이지당 항목 수는 1-50 사이여야 합니다.');
+        }
+
+        this.page = page;
+        this.limit = limit;
+        this.offset = (page - 1) * limit;
     }
 }
 
