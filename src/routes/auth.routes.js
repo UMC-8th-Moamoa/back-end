@@ -400,7 +400,7 @@ if (isKakaoEnabled()) {
     (req, res) => {
       try {
         // JWT 토큰 생성
-        const tokens = generateTokenPair(req.user.id, req.user.email);
+        const tokens = generateTokenPair(req.user.id, req.user.email, req.user.user_id);
         
         // 클라이언트 URL 설정
         const clientUrl = process.env.CLIENT_URL || 'http://localhost:3000';

@@ -1,4 +1,4 @@
-import { formatDateToKST } from '../utils/datetime.util.js';
+import { formatDateToKST, toKSTISOString } from '../utils/datetime.util.js';
 
 export class MyInfoRequestDTO {
     constructor(query) {
@@ -35,8 +35,8 @@ export class MyInfoChangeDTO {
         this.user_id = user_id;
         this.name = name;
         this.birthday = formatDateToKST(birthday);
-        this.email = email || null; // 이메일이 없을 경우를 대비
-        this.phone = phone || null; // 전화번호가 없을 경우를 대비
+        this.email = email || null;
+        this.phone = phone || null;
         this.photo = photo || null;
     }
 }

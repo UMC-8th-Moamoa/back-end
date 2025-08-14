@@ -8,6 +8,7 @@ const { PrismaClient } = pkg;
 
 import { UnauthorizedError, UserNotFoundError } from '../middlewares/errorHandler.js';
 import { comparePassword } from '../utils/password.util.js';
+import { getCurrentKSTTime } from '../utils/datetime.util.js';
 
 const prisma = new PrismaClient();
 
@@ -193,7 +194,7 @@ if (process.env.KAKAO_CLIENT_ID && process.env.KAKAO_CLIENT_SECRET) {
           // 기존 사용자 로그인 - 마지막 로그인 시간 업데이트
           await prisma.user.update({
             where: { id: existingSocialLogin.user.id },
-            data: { lastLoginAt: new Date() }
+            data: { lastLoginAt: getCurrentKSTTime() }
           });
           
           return done(null, existingSocialLogin.user);
@@ -228,7 +229,7 @@ if (process.env.KAKAO_CLIENT_ID && process.env.KAKAO_CLIENT_SECRET) {
           // 마지막 로그인 시간 업데이트
           await prisma.user.update({
             where: { id: existingUser.id },
-            data: { lastLoginAt: new Date() }
+            data: { lastLoginAt: getCurrentKSTTime() }
           });
           
           // password 필드 제거
@@ -243,7 +244,9 @@ if (process.env.KAKAO_CLIENT_ID && process.env.KAKAO_CLIENT_SECRET) {
           photo: kakaoProfileImage || null,
           emailVerified: !!kakaoEmail, // 카카오에서 이메일을 제공하면 인증된 것으로 간주
           password: '', // 소셜 로그인 사용자는 비밀번호 없음
-          lastLoginAt: new Date(),
+          lastLoginAt: getCurrentKSTTime(),
+          createdAt: getCurrentKSTTime(), // 한국 시간으로 설정
+          updatedAt: getCurrentKSTTime(),
           socialLogins: {
             create: {
               provider: 'kakao',
