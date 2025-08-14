@@ -7,7 +7,7 @@ import pkg from '@prisma/client';
 const { PrismaClient } = pkg;
 
 import { UnauthorizedError, UserNotFoundError } from '../middlewares/errorHandler.js';
-import { comparePassword } from '../utils/password.util.js';
+// import { comparePassword } from '../utils/password.util.js';
 
 const prisma = new PrismaClient();
 
@@ -98,10 +98,10 @@ passport.deserializeUser(async (id, done) => {
 //       }
 
       // 비밀번호 검증
-      const isValidPassword = await comparePassword(password, user.password);
-      if (!isValidPassword) {
-        return done(new UnauthorizedError('이메일 또는 비밀번호가 잘못되었습니다'), false);
-      }
+      // const isValidPassword = await comparePassword(password, user.password);
+      // if (!isValidPassword) {
+      //   return done(new UnauthorizedError('이메일 또는 비밀번호가 잘못되었습니다'), false);
+      // }
 
 //       // 마지막 로그인 시간 업데이트
 //       await prisma.user.update({
