@@ -509,6 +509,7 @@ model BirthdayEventSelectedItem {
 
   @@unique([eventId, wishlistId])
   @@map("birthday_event_selected_items")
+}  
 
 // 데모데이용 이벤트 테이블
 model DemoEvent {
