@@ -191,7 +191,7 @@ CREATE TABLE `advertisements` (
 -- CreateTable
 CREATE TABLE `items` (
     `id` INTEGER NOT NULL AUTO_INCREMENT,
-    `category` ENUM('font', 'paper', 'envelope') NOT NULL,
+    `category` ENUM('font', 'paper', 'seal') NOT NULL,
     `name` VARCHAR(100) NOT NULL,
     `price` INTEGER NOT NULL,
     `imageUrl` VARCHAR(255) NOT NULL,
@@ -240,8 +240,8 @@ CREATE TABLE `letters` (
     `title` VARCHAR(100) NOT NULL,
     `content` TEXT NOT NULL,
     `letterPaperId` INTEGER NULL,
-    `envelopeId` INTEGER NULL,
-    `envelopeImageUrl` VARCHAR(500) NULL,
+    `sealId` INTEGER NULL,
+    `sealImageUrl` VARCHAR(500) NULL,
     `sentAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
     `readAt` DATETIME(3) NULL,
     `createdAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
@@ -457,7 +457,7 @@ ALTER TABLE `letters` ADD CONSTRAINT `letters_receiverId_fkey` FOREIGN KEY (`rec
 ALTER TABLE `letters` ADD CONSTRAINT `letters_letterPaperId_fkey` FOREIGN KEY (`letterPaperId`) REFERENCES `user_items`(`id`) ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE `letters` ADD CONSTRAINT `letters_envelopeId_fkey` FOREIGN KEY (`envelopeId`) REFERENCES `user_items`(`id`) ON DELETE SET NULL ON UPDATE CASCADE;
+ALTER TABLE `letters` ADD CONSTRAINT `letters_sealId_fkey` FOREIGN KEY (`sealId`) REFERENCES `user_items`(`id`) ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE `purchase_proofs` ADD CONSTRAINT `purchase_proofs_birthdayEventId_fkey` FOREIGN KEY (`birthdayEventId`) REFERENCES `birthday_events`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;
