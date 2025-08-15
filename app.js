@@ -252,7 +252,9 @@ app.use('/api/upload', uploadRoutes);
 app.use('/api/wishlists', wishlistRoutes);
 app.use('/api/letters', letterRoutes);
 app.use('/api/demo', demoRoutes);
-app.use('/api/ai', aiRoutes);
+app.use('/ai', aiRoutes);
+app.use('/ai/wishlists', wishlistRoutes);
+
 app.use('/api/notifications', notificationRoutes);
 
 app.use('/api/moas', moaRoutes);

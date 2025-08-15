@@ -1,11 +1,12 @@
 // aiRoutes.js
 import express from 'express';
 import axios from 'axios';
+import { authenticateJWT } from '../middlewares/auth.middleware.js';
 
 const router = express.Router();
 
-// 예: AI 서버에 POST 요청 보내기
-router.post('/analyze', async (req, res) => {
+// /ai/wishlists/analyze
+router.post('/wishlists/analyze', authenticateJWT, async (req, res) => {
   try {
     const aiResponse = await axios.post('http://127.0.0.1:5000/analyze', req.body);
     res.json(aiResponse.data);
