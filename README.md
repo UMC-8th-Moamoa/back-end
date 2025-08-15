@@ -1,4 +1,4 @@
-# 🎁 Moamoa back-end 팀 협업 가이드
+<img width="649" height="785" alt="image" src="https://github.com/user-attachments/assets/1b4ecdcf-7fee-4130-bc56-07c13d132467" /># 🎁 Moamoa back-end 팀 협업 가이드
 
 > 생일 선물 공동 구매 플랫폼
 > 
@@ -182,4 +182,5 @@ git push origin 브랜치명
 ```
 
 ### 서버 아키텍쳐
-![image.png](attachment:7dbfc7ed-f10a-4e55-9ea2-93ef6934dfad:image.png)
+<img width="649" height="785" alt="image" src="https://github.com/user-attachments/assets/6d66242c-3ed6-401e-ae3c-8b2b09243fd2" />
+
