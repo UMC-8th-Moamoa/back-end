@@ -94,21 +94,21 @@ export class ItemDetailResponseDTO {
 }
 
 /**
- * @desc ì•„ì´í…œ êµ¬ë§¤ ìš"ì²­ ë°ì´í„° ì „ì†¡ ê°ì²´ (DTO)
- * POST /api/shopping/item_buy ìš"ì²­ì˜ ë³¸ë¬¸ ë°ì´í„°ë¥¼ ì²˜ë¦¬í•©ë‹ˆë‹¤.
+ * @desc 아이템 구매 요청 데이터 전송 객체 (DTO)
+ * POST /api/shopping/item_buy 요청의 본문 데이터를 처리합니다.
  */
 export class ItemBuyRequestDTO {
   constructor(body) {
     this.category = body.category;
     this.user_id = body.user_id;
-    this.item_no = body.item_no; // âœ… ìˆ˜ì •: body.id â†' body.item_no
+    this.item_no = body.item_no;
     this.price = body.price;
     this.event = body.event;
   }
 
   /**
-   * @desc ìš"ì²­ ë°ì´í„°ì˜ ìœ íš¨ì„±ì„ ê²€ì‚¬í•©ë‹ˆë‹¤.
-   * @throws {Error} - ìœ íš¨ì„± ê²€ì‚¬ ì‹¤íŒ¨ ì‹œ
+   * @desc 요청 데이터의 유효성을 검사합니다.
+   * @throws {Error} - 유효성 검사 실패 시
    */
   validate() {
     const validCategories = ['font', 'paper', 'seal'];
@@ -155,7 +155,7 @@ export class ItemBuyResponseDTO {
    * @param {string} data.message - 구매 성공 메시지
    */
   constructor(data) {
-    this.message = data.message || "아이템 구매 성공"; // 기본 메시지 제공
+    this.message = data.message || "아이템 구매 성공";
   }
 
   /**
