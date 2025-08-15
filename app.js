@@ -242,7 +242,7 @@ import demoRoutes from './src/routes/demo.routes.js';
 
 import eventCompletionRoutes from './src/routes/eventCompletion.routes.js';
 import donationRoutes from './src/routes/donation.routes.js';
-
+import aiRoutes from './src/routes/aiRoutes.js';
 
 // 라우트 등록
 app.use('/api/auth', authRoutes);
@@ -252,7 +252,7 @@ app.use('/api/upload', uploadRoutes);
 app.use('/api/wishlists', wishlistRoutes);
 app.use('/api/letters', letterRoutes);
 app.use('/api/demo', demoRoutes);
-
+app.use('/api/ai', aiRoutes);
 app.use('/api/notifications', notificationRoutes);
 
 app.use('/api/moas', moaRoutes);
