@@ -54,6 +54,31 @@ const router = express.Router();
  *         participationCount:
  *           type: integer
  *           description: 총 참여자 수
+ *         hasWrittenLetter:
+ *           type: boolean
+ *           description: 편지 작성 여부
+ *     
+ *     ButtonStatus:
+ *       type: object
+ *       properties:
+ *         type:
+ *           type: string
+ *           enum: [NOT_PARTICIPATED, PARTICIPATED_NO_LETTER, PARTICIPATED_WITH_LETTER, EXPIRED, CLOSED, COMPLETED, CANCELLED, UNKNOWN]
+ *           description: 버튼 상태 타입
+ *         message:
+ *           type: string
+ *           description: 상태 메시지
+ *         buttonText:
+ *           type: string
+ *           nullable: true
+ *           description: 버튼 텍스트
+ *         buttonAction:
+ *           type: string
+ *           enum: [PARTICIPATE, WRITE_LETTER, EDIT_LETTER, NONE]
+ *           description: 버튼 액션
+ *         isEnabled:
+ *           type: boolean
+ *           description: 버튼 활성화 여부
  *     
  *     ParticipationData:
  *       type: object
@@ -98,6 +123,8 @@ const router = express.Router();
  *           $ref: '#/components/schemas/CountdownInfo'
  *         participation:
  *           $ref: '#/components/schemas/ParticipationInfo'
+ *         buttonStatus:
+ *           $ref: '#/components/schemas/ButtonStatus'
  *     
  *     ParticipationResponse:
  *       type: object
@@ -155,6 +182,86 @@ const router = express.Router();
  *                 participation:
  *                   currentUserParticipated: false
  *                   participationCount: 5
+ *                   hasWrittenLetter: false
+ *                 buttonStatus:
+ *                   type: "NOT_PARTICIPATED"
+ *                   message: "이벤트에 참여해보세요"
+ *                   buttonText: "모아 참여하기"
+ *                   buttonAction: "PARTICIPATE"
+ *                   isEnabled: true
+ *             examples:
+ *               not_participated:
+ *                 summary: 참여하지 않은 상태
+ *                 value:
+ *                   resultType: "SUCCESS"
+ *                   error: null
+ *                   success:
+ *                     event:
+ *                       id: 1
+ *                       birthdayPersonName: "김민수"
+ *                       deadline: "2025-08-23T23:59:59Z"
+ *                       status: "active"
+ *                     countdown:
+ *                       timeRemaining: "48:14:30"
+ *                       deadlineFormatted: "8월 23일 23:59"
+ *                     participation:
+ *                       currentUserParticipated: false
+ *                       participationCount: 5
+ *                       hasWrittenLetter: false
+ *                     buttonStatus:
+ *                       type: "NOT_PARTICIPATED"
+ *                       message: "이벤트에 참여해보세요"
+ *                       buttonText: "모아 참여하기"
+ *                       buttonAction: "PARTICIPATE"
+ *                       isEnabled: true
+ *               participated_no_letter:
+ *                 summary: 참여했지만 편지 미작성
+ *                 value:
+ *                   resultType: "SUCCESS"
+ *                   error: null
+ *                   success:
+ *                     event:
+ *                       id: 1
+ *                       birthdayPersonName: "김민수"
+ *                       deadline: "2025-08-23T23:59:59Z"
+ *                       status: "active"
+ *                     countdown:
+ *                       timeRemaining: "48:14:30"
+ *                       deadlineFormatted: "8월 23일 23:59"
+ *                     participation:
+ *                       currentUserParticipated: true
+ *                       participationCount: 6
+ *                       hasWrittenLetter: false
+ *                     buttonStatus:
+ *                       type: "PARTICIPATED_NO_LETTER"
+ *                       message: "편지를 작성해주세요"
+ *                       buttonText: "편지 작성하러 가기"
+ *                       buttonAction: "WRITE_LETTER"
+ *                       isEnabled: true
+ *               participated_with_letter:
+ *                 summary: 참여 및 편지 작성 완료
+ *                 value:
+ *                   resultType: "SUCCESS"
+ *                   error: null
+ *                   success:
+ *                     event:
+ *                       id: 1
+ *                       birthdayPersonName: "김민수"
+ *                       deadline: "2025-08-23T23:59:59Z"
+ *                       status: "active"
+ *                     countdown:
+ *                       timeRemaining: "48:14:30"
+ *                       deadlineFormatted: "8월 23일 23:59"
+ *                     participation:
+ *                       currentUserParticipated: true
+ *                       participationCount: 6
+ *                       hasWrittenLetter: true
+ *                     buttonStatus:
+ *                       type: "PARTICIPATED_WITH_LETTER"
+ *                       message: "편지 작성 완료"
+ *                       buttonText: "편지 수정하기"
+ *                       buttonAction: "EDIT_LETTER"
+ *                       isEnabled: true
  *       401:
  *         description: 인증 실패
  *       403:

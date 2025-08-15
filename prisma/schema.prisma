@@ -52,6 +52,11 @@ enum ProcessType {
   CONVERT_TO_COIN
 }
 
+enum ParticipationType {
+  WITH_MONEY
+  WITHOUT_MONEY
+}
+
 // 사용자 테이블
 model User {
   id                Int       @id @default(autoincrement())
@@ -203,12 +208,13 @@ model BirthdayEvent {
 
 // 생일이벤트 참여자 테이블
 model BirthdayEventParticipant {
-  id       Int      @id @default(autoincrement())
-  eventId  Int
-  userId   Int
-  amount   Int
-  message  String?  @db.Text
-  createdAt DateTime @default(now())
+  id               Int               @id @default(autoincrement())
+  eventId          Int
+  userId           Int
+  amount           Int
+  participationType ParticipationType @default(WITH_MONEY)
+  message          String?           @db.Text
+  createdAt        DateTime          @default(now())
 
   event BirthdayEvent @relation(fields: [eventId], references: [id], onDelete: Cascade)
   user  User         @relation(fields: [userId], references: [id])
