@@ -1,4 +1,4 @@
-<img width="649" height="785" alt="image" src="https://github.com/user-attachments/assets/1b4ecdcf-7fee-4130-bc56-07c13d132467" /># 🎁 Moamoa back-end 팀 협업 가이드
+# 🎁 Moamoa back-end 팀 협업 가이드
 
 > 생일 선물 공동 구매 플랫폼
 > 
