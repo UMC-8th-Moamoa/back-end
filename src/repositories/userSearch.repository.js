@@ -10,7 +10,10 @@ class UserSearchRepository {
    * @returns {Promise<Object>} 검색 결과와 총 개수
    */
   async searchUsers(currentUserId, searchTerm, limit, page) {
-    const offset = (page - 1) * limit;
+    // 파라미터 안전성 검사
+    const safeLimit = Math.max(1, Math.min(parseInt(limit) || 10, 20));
+    const safePage = Math.max(1, parseInt(page) || 1);
+    const offset = (safePage - 1) * safeLimit;
     
     const whereCondition = {
       AND: [
@@ -78,7 +81,7 @@ class UserSearchRepository {
         }
       ],
       skip: offset,
-      take: limit
+      take: safeLimit
     });
 
     // 총 검색 결과 수 조회
@@ -98,7 +101,15 @@ class UserSearchRepository {
 
     return {
       users: usersWithFollowInfo,
-      totalCount
+      totalCount,
+      // 디버깅 정보 추가
+      debug: {
+        originalLimit: limit,
+        originalPage: page,
+        safeLimit: safeLimit,
+        safePage: safePage,
+        offset: offset
+      }
     };
   }
 

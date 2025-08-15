@@ -35,8 +35,12 @@ class UserSearchController {
       });
     }
 
+    // 추가 안전성 검사: NaN 값 방지
+    const safeLimit = isNaN(requestDto.limit) || requestDto.limit < 1 ? 10 : Math.min(requestDto.limit, 20);
+    const safePage = isNaN(requestDto.page) || requestDto.page < 1 ? 1 : requestDto.page;
+
     // 사용자 검색 실행
-    const result = await userSearchService.searchUsers(currentUserId, requestDto.q, requestDto.limit, requestDto.page);
+    const result = await userSearchService.searchUsers(currentUserId, requestDto.q, safeLimit, safePage);
     
     // DTO를 사용한 응답 생성
     const responseDto = new SearchUsersResponseDto(result.users, result.pagination);

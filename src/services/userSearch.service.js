@@ -31,12 +31,14 @@ class UserSearchService {
         followingCount: user._count?.following || 0
       })),
       pagination: {
-        currentPage: page,
-        totalPages: Math.ceil(result.totalCount / limit),
+        currentPage: result.debug?.safePage || page,
+        totalPages: Math.ceil(result.totalCount / (result.debug?.safeLimit || limit)),
         totalCount: result.totalCount,
-        hasNext: page < Math.ceil(result.totalCount / limit),
-        hasPrev: page > 1
-      }
+        hasNext: (result.debug?.safePage || page) < Math.ceil(result.totalCount / (result.debug?.safeLimit || limit)),
+        hasPrev: (result.debug?.safePage || page) > 1
+      },
+      // 임시 디버깅 정보
+      debug: result.debug
     };
   }
 

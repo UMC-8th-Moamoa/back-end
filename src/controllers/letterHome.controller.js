@@ -11,6 +11,14 @@ class LetterHomeController {
    * GET /api/home/letters
    */
   static getLetters = catchAsync(async (req, res) => {
+    // req.user 안전성 검사 추가
+    if (!req.user || !req.user.id) {
+      return res.status(401).error({
+        errorCode: 'UNAUTHORIZED',
+        reason: '사용자 인증 정보가 없습니다'
+      });
+    }
+    
     const userId = req.user.id;
     
     // 요청 데이터를 DTO로 변환 및 검증

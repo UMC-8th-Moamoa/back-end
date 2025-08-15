@@ -7,8 +7,12 @@
 export class SearchUsersRequestDto {
   constructor({ q, limit = 10, page = 1 }) {
     this.q = q;
-    this.limit = parseInt(limit);
-    this.page = parseInt(page);
+    // parseInt 안전성 검사 추가
+    const parsedLimit = parseInt(limit);
+    const parsedPage = parseInt(page);
+    
+    this.limit = isNaN(parsedLimit) || parsedLimit < 1 ? 10 : parsedLimit;
+    this.page = isNaN(parsedPage) || parsedPage < 1 ? 1 : parsedPage;
   }
 
   validate() {
@@ -71,7 +75,9 @@ export class PaginationDto {
 // 검색 기록 조회 요청 DTO
 export class GetSearchHistoryRequestDto {
   constructor({ limit = 10 }) {
-    this.limit = parseInt(limit);
+    // parseInt 안전성 검사 추가
+    const parsedLimit = parseInt(limit);
+    this.limit = isNaN(parsedLimit) || parsedLimit < 1 ? 10 : parsedLimit;
   }
 
   validate() {
@@ -106,7 +112,9 @@ export class GetSearchHistoryResponseDto {
 // 검색 기록 삭제 요청 DTO
 export class DeleteSearchHistoryRequestDto {
   constructor({ historyId }) {
-    this.historyId = parseInt(historyId);
+    // parseInt 안전성 검사 추가
+    const parsedHistoryId = parseInt(historyId);
+    this.historyId = isNaN(parsedHistoryId) ? null : parsedHistoryId;
   }
 
   validate() {
