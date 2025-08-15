@@ -7,6 +7,57 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+<<<<<<< HEAD
+=======
+// Enum 정의
+enum NotificationType {
+  FOLLOW_REQUEST    // 팔로우 요청
+  BIRTHDAY_REMINDER // 생일 알림
+  PRIVATE_EVENT     // 나를 팔로우한 사람만 모아 참여
+}
+
+enum PointType {
+  CHARGE        // 충전
+  USE           // 사용
+  ADVERTISEMENT // 광고
+  ITEM_PURCHASE // 아이템 구매
+}
+
+enum PaymentMethod {
+  BANK_TRANSFER // 무통장입금
+  KAKAO_PAY     // 카카오페이
+}
+
+enum PaymentStatus {
+  PENDING   // 대기
+  COMPLETED // 완료
+  FAILED    // 실패
+  CANCELLED // 취소
+}
+
+enum InsertType {
+  URL   // URL 입력
+  IMAGE // 이미지 업로드
+}
+
+enum ItemCategory {
+  font        // 폰트
+  paper // 편지지
+  envelope     // 편지봉투
+}
+
+enum ProcessType {
+  DONATE
+  CONVERT_TO_COIN
+}
+
+enum ParticipationType {
+  WITH_MONEY
+  WITHOUT_MONEY
+}
+
+// 사용자 테이블
+>>>>>>> 7697acdb887e9fabd09598d7c6d0dd77ed6dd4e5
 model User {
   id                                               Int                        @id @default(autoincrement())
   user_id                                          String                     @unique @db.VarChar(50)
@@ -127,6 +178,7 @@ model BirthdayEvent {
 }
 
 model BirthdayEventParticipant {
+<<<<<<< HEAD
   id        Int           @id @default(autoincrement())
   eventId   Int
   userId    Int
@@ -135,6 +187,18 @@ model BirthdayEventParticipant {
   createdAt DateTime      @default(now())
   event     BirthdayEvent @relation(fields: [eventId], references: [id], onDelete: Cascade)
   user      User          @relation(fields: [userId], references: [id])
+=======
+  id               Int               @id @default(autoincrement())
+  eventId          Int
+  userId           Int
+  amount           Int
+  participationType ParticipationType @default(WITH_MONEY)
+  message          String?           @db.Text
+  createdAt        DateTime          @default(now())
+
+  event BirthdayEvent @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  user  User         @relation(fields: [userId], references: [id])
+>>>>>>> 7697acdb887e9fabd09598d7c6d0dd77ed6dd4e5
 
   @@unique([eventId, userId])
   @@index([userId], map: "birthday_event_participants_userId_fkey")

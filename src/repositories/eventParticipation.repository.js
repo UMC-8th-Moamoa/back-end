@@ -63,13 +63,14 @@ class EventParticipationRepository {
   /**
    * 이벤트 참여 추가
    */
-  async addParticipation(eventId, userId, amount) {
+  async addParticipation(eventId, userId, amount, participationType) {
     try {
       return await prisma.birthdayEventParticipant.create({
         data: {
           eventId: eventId,
           userId: userId,
-          amount: amount
+          amount: amount,
+          participationType: participationType
         }
       });
     } catch (error) {
@@ -163,6 +164,25 @@ class EventParticipationRepository {
       return event.status === 'active' && deadline > now;
     } catch (error) {
       console.error('이벤트 활성 상태 확인 실패:', error);
+      return false;
+    }
+  }
+
+  /**
+   * 사용자가 해당 이벤트에 편지를 작성했는지 확인
+   */
+  async hasUserWrittenLetter(eventId, userId) {
+    try {
+      const letter = await prisma.letter.findFirst({
+        where: {
+          eventId: eventId,
+          writerId: userId
+        }
+      });
+
+      return letter !== null;
+    } catch (error) {
+      console.error('편지 작성 여부 확인 실패:', error);
       return false;
     }
   }

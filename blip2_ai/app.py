@@ -35,16 +35,15 @@ def translate_to_korean(text):
     result = translate_client.translate(text, target_language="ko")
     return result["translatedText"]
 
+# 기존 caption 엔드포인트
 @app.route("/caption", methods=["POST"])
 def caption_image():
     image_path = None
 
-    # 1. form-data 이미지 파일 (image) 우선
     if "image" in request.files:
         image_file = request.files["image"]
         image_path = save_temp_image(image_file)
 
-    # 2. JSON에 image_url 있는 경우
     elif request.is_json:
         data = request.get_json()
         image_url = data.get("image_url")
@@ -54,12 +53,9 @@ def caption_image():
             image_path = save_image_from_url(image_url)
         except Exception as e:
             return jsonify({"error": str(e)}), 400
-
-    # 3. 아무것도 없는 경우
     else:
         return jsonify({"error": "이미지 파일 또는 image_url이 필요합니다."}), 400
 
-    # 이미지 분석 + 번역
     try:
         english_caption = caption_model.generate_caption(image_path)
         korean_caption = translate_to_korean(english_caption)
@@ -71,6 +67,25 @@ def caption_image():
         "caption_en": english_caption,
         "caption_ko": korean_caption
     })
+
+# AI wishlist 분석 프록시 엔드포인트
+@app.route("/ai/wishlists/analyze", methods=["POST"])
+def analyze_wishlist():
+    try:
+        NODE_API_URL = "http://localhost:3000/api/wishlists/analyze"
+
+        # Authorization 등 모든 헤더 전달 (Host 제외)
+        headers = {k: v for k, v in request.headers if k.lower() != "host"}
+
+        resp = requests.post(
+            NODE_API_URL,
+            headers=headers,
+            data=request.get_data()
+        )
+
+        return (resp.content, resp.status_code, resp.headers.items())
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000)

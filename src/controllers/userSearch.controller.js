@@ -14,7 +14,7 @@ class UserSearchController {
    * 사용자 검색
    * GET /api/users/search
    */
-  searchUsers = catchAsync(async (req, res) => {
+  async searchUsers(req, res) {
     const currentUserId = req.user?.id;
     
     if (!currentUserId) {
@@ -36,19 +36,24 @@ class UserSearchController {
     }
 
     // 사용자 검색 실행
-    const result = await userSearchService.searchUsers(currentUserId, requestDto.q, requestDto.limit, requestDto.page);
+    const result = await userSearchService.searchUsers(
+      currentUserId, 
+      requestDto.q.trim(), 
+      requestDto.limit, 
+      requestDto.page
+    );
     
     // DTO를 사용한 응답 생성
     const responseDto = new SearchUsersResponseDto(result.users, result.pagination);
     
     res.success(responseDto);
-  });
+  }
 
   /**
    * 검색 기록 조회
    * GET /api/users/search/history
    */
-  getSearchHistory = catchAsync(async (req, res) => {
+  async getSearchHistory(req, res) {
     const currentUserId = req.user.id;
     
     // DTO를 사용한 요청 데이터 검증
@@ -69,13 +74,13 @@ class UserSearchController {
     const responseDto = new GetSearchHistoryResponseDto(result.searchHistory);
     
     res.success(responseDto);
-  });
+  }
 
   /**
    * 검색 기록 삭제
    * DELETE /api/users/search/history/{historyId}
    */
-  deleteSearchHistory = catchAsync(async (req, res) => {
+  async deleteSearchHistory(req, res) {
     const currentUserId = req.user.id;
     
     // DTO를 사용한 요청 데이터 검증
@@ -96,7 +101,14 @@ class UserSearchController {
     const responseDto = new DeleteSearchHistoryResponseDto();
     
     res.success(responseDto);
-  });
+  }
 }
 
-export default new UserSearchController();
+// 인스턴스 생성 및 catchAsync 래핑
+const userSearchController = new UserSearchController();
+
+export default {
+  searchUsers: catchAsync(userSearchController.searchUsers),
+  getSearchHistory: catchAsync(userSearchController.getSearchHistory),
+  deleteSearchHistory: catchAsync(userSearchController.deleteSearchHistory)
+};

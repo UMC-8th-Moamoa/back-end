@@ -97,7 +97,9 @@ app.use(cors({
   origin: [
     process.env.CLIENT_URL || 'http://localhost:3000',
     'http://54.180.138.131:3000',  // 가상서버 URL 추가
-    'http://localhost:3000'
+    'http://localhost:3000',
+    'https://www.moamoas.com',
+    'https://moamoa-front-45ga96k6u-hyejun-koos-projects.vercel.app',
   ],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
@@ -242,7 +244,7 @@ import demoRoutes from './src/routes/demo.routes.js';
 
 import eventCompletionRoutes from './src/routes/eventCompletion.routes.js';
 import donationRoutes from './src/routes/donation.routes.js';
-
+import aiRoutes from './src/routes/aiRoutes.js';
 
 // 라우트 등록
 app.use('/api/auth', authRoutes);
@@ -252,6 +254,8 @@ app.use('/api/upload', uploadRoutes);
 app.use('/api/wishlists', wishlistRoutes);
 app.use('/api/letters', letterRoutes);
 app.use('/api/demo', demoRoutes);
+app.use('/ai', aiRoutes);
+app.use('/ai/wishlists', wishlistRoutes);
 
 app.use('/api/notifications', notificationRoutes);
 
