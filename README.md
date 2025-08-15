@@ -180,3 +180,6 @@ git pull origin 브랜치명
 # 로컬 변경사항을 원격에 푸시
 git push origin 브랜치명
 ```
+
+### 서버 아키텍쳐
+![image.png](attachment:7dbfc7ed-f10a-4e55-9ea2-93ef6934dfad:image.png)
