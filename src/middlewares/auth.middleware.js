@@ -5,7 +5,8 @@ import {
   UnauthorizedError, 
   TokenExpiredError,
   UserNotFoundError,
-  ForbiddenError
+  ForbiddenError,
+  BadRequestError
 } from './errorHandler.js';
 
 const prisma = new PrismaClient();
@@ -183,6 +184,11 @@ export const requireOwnership = (userIdParam = 'userId') => {
       }
       
       const resourceUserId = parseInt(req.params[userIdParam]);
+      
+      // parseInt 결과 검증 추가
+      if (isNaN(resourceUserId)) {
+        throw new BadRequestError('유효하지 않은 사용자 ID입니다');
+      }
       
       if (req.user.id !== resourceUserId) {
         throw new UnauthorizedError('본인만 접근 가능합니다');
