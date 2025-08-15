@@ -112,6 +112,19 @@ export class WishlistDTO {
 }
 
 /**
+ * 버튼 상태 정보 DTO
+ */
+export class ButtonInfoDTO {
+  constructor(buttonData) {
+    this.type = buttonData.type; // 'PARTICIPATE', 'PARTICIPATED', 'VIEW_RESULT', 'OWNER_WAITING'
+    this.text = buttonData.text; // 버튼에 표시될 텍스트
+    this.description = buttonData.description; // 버튼 설명
+    this.actionUrl = buttonData.actionUrl; // 버튼 클릭 시 호출할 API URL
+    this.disabled = buttonData.disabled; // 버튼 비활성화 여부
+  }
+}
+
+/**
  * 생일 이벤트 상세 조회 응답 DTO
  */
 export class BirthdayEventResponseDTO {
@@ -120,6 +133,7 @@ export class BirthdayEventResponseDTO {
     this.birthdayPerson = new BirthdayPersonDTO(data.birthdayPerson);
     this.countdown = new CountdownInfoDTO(data.countdown);
     this.participants = new ParticipantsDTO(data.participants, data.currentUserId);
+    this.buttonInfo = new ButtonInfoDTO(data.buttonInfo); // 버튼 정보 추가
     
     // 위시리스트가 있는 경우에만 포함
     if (data.wishlist) {
@@ -132,7 +146,8 @@ export class BirthdayEventResponseDTO {
       event: this.event,
       birthdayPerson: this.birthdayPerson,
       countdown: this.countdown,
-      participants: this.participants
+      participants: this.participants,
+      buttonInfo: this.buttonInfo // 버튼 정보 추가
     };
 
     // 위시리스트가 있는 경우에만 응답에 포함

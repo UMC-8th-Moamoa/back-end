@@ -35,7 +35,14 @@ class BirthdayEventService {
     // 5. 참여자 목록 조회
     const participants = await birthdayEventRepository.getParticipants(eventId);
 
-    // 6. 위시리스트 전체 조회 (스와이프)
+    // 6. 현재 사용자 참여 여부 확인
+    const currentUserParticipated = participants.some(p => p.userId === userId);
+
+    // 7. 버튼 상태 결정 (event에 birthdayPersonId 추가)
+    const eventWithOwner = { ...event, birthdayPersonId: event.birthdayPersonId };
+    const buttonInfo = this.determineButtonState(eventWithOwner, userId, currentUserParticipated, countdown);
+
+    // 8. 위시리스트 전체 조회 (스와이프)
     const wishlist = await this.getAllWishlist(event.birthdayPersonId);
 
     return {
@@ -55,14 +62,16 @@ class BirthdayEventService {
       countdown,
       participants: {
         totalCount: participants.length,
+        currentUserParticipated,
         list: participants
       },
+      buttonInfo, // 버튼 상태 정보 추가
       wishlist
     };
   }
 
   /**
-   * 전체 위시리스트 조회 (스와이프용 - API 명세서 형식)
+   * 전체 위시리스트 조회 (스와이프용)
    */
   async getAllWishlist(userId) {
     try {
@@ -93,6 +102,71 @@ class BirthdayEventService {
       console.error('위시리스트 조회 실패:', error);
       return null; // 에러 발생 시 null 반환 (위시리스트는 필수가 아님)
     }
+  }
+
+  /**
+   * 버튼 상태 결정
+   * @param {Object} event - 이벤트 정보
+   * @param {number} userId - 현재 사용자 ID
+   * @param {boolean} currentUserParticipated - 현재 사용자 참여 여부
+   * @param {Object} countdown - 카운트다운 정보
+   * @returns {Object} 버튼 상태 정보
+   */
+  determineButtonState(event, userId, currentUserParticipated, countdown) {
+    const isOwner = event.birthdayPersonId === userId;
+    const isExpired = new Date() > new Date(event.deadline);
+    const isCompleted = event.status === 'completed';
+
+    // 본인의 생일 이벤트인 경우
+    if (isOwner) {
+      if (isCompleted) {
+        return {
+          type: 'VIEW_RESULT',
+          text: '모아 결과보기',
+          description: '완료된 생일 이벤트 결과를 확인하세요',
+          actionUrl: `/api/birthdays/me/event`, // ✅ 내 생일 결과 조회 API (통일된 구조)
+          disabled: false
+        };
+      } else {
+        return {
+          type: 'OWNER_WAITING',
+          text: '모아 진행중',
+          description: '친구들의 참여를 기다리는 중입니다',
+          actionUrl: null,
+          disabled: true
+        };
+      }
+    }
+
+    // 다른 사람의 생일 이벤트인 경우
+    if (isCompleted || isExpired) {
+      return {
+        type: 'EVENT_ENDED',
+        text: '이벤트 종료',
+        description: '이벤트가 종료되었습니다',
+        actionUrl: null, // 다른 사람의 결과는 조회할 수 없음
+        disabled: true
+      };
+    }
+
+    if (currentUserParticipated) {
+      return {
+        type: 'PARTICIPATED',
+        text: '모아 참여 완료',
+        description: '이미 참여하셨습니다',
+        actionUrl: null,
+        disabled: true
+      };
+    }
+
+    // 아직 참여하지 않은 활성 이벤트
+    return {
+      type: 'PARTICIPATE',
+      text: '모아 참여하기',
+      description: `${countdown.formattedDaysRemaining}까지 참여 가능`,
+      actionUrl: `/api/birthdays/events/${event.id}/participation`, // ✅ 참여하기 API
+      disabled: false
+    };
   }
 
   /**
@@ -153,6 +227,45 @@ class BirthdayEventService {
     const month = date.getMonth() + 1;
     const day = date.getDate();
     return `${month}월 ${day}일`;
+  }
+
+  /**
+   * 내 생일 이벤트 결과 조회
+   * @param {number} userId - 현재 사용자 ID (생일자)
+   * @returns {Object} 내 생일 이벤트 결과 정보
+   */
+  async getMyEventResult(userId) {
+    // MyBirthdayRepository를 import해서 사용
+    const { myBirthdayRepository } = await import('../repositories/myBirthday.repository.js');
+    
+    // 완료된 이벤트 조회
+    const event = await myBirthdayRepository.getCurrentEventByUserId(userId);
+    
+    if (!event) {
+      throw new NotFoundError('완료된 생일 이벤트가 없습니다');
+    }
+
+    // 참여자 정보 조회
+    const participants = await myBirthdayRepository.getEventParticipants(event.id);
+    
+    // 총 모인 금액 계산
+    const totalAmount = await myBirthdayRepository.getTotalAmount(event.id);
+
+    return {
+      eventId: event.id,
+      totalAmount,
+      participantCount: participants.length,
+      participants: participants.map(participant => ({
+        id: participant.userId,
+        name: participant.user.name,
+        photo: participant.user.photo,
+        participatedAt: participant.createdAt
+      })),
+      deadline: event.deadline,
+      birthdayDate: event.birthdayDate,
+      status: event.status,
+      completedAt: event.updatedAt
+    };
   }
 }
 
