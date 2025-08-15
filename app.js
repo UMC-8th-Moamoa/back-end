@@ -97,7 +97,9 @@ app.use(cors({
   origin: [
     process.env.CLIENT_URL || 'http://localhost:3000',
     'http://54.180.138.131:3000',  // 가상서버 URL 추가
-    'http://localhost:3000'
+    'http://localhost:3000',
+    'https://www.moamoas.com',
+    'https://moamoa-front-45ga96k6u-hyejun-koos-projects.vercel.app',
   ],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
