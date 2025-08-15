@@ -10,107 +10,124 @@ class UserSearchRepository {
    * @returns {Promise<Object>} 검색 결과와 총 개수
    */
   async searchUsers(currentUserId, searchTerm, limit, page) {
-    // 파라미터 안전성 검사
-    const safeLimit = Math.max(1, Math.min(parseInt(limit) || 10, 20));
-    const safePage = Math.max(1, parseInt(page) || 1);
-    const offset = (safePage - 1) * safeLimit;
-    
-    const whereCondition = {
-      AND: [
-        // 현재 사용자 제외
-        {
-          id: {
-            not: currentUserId
-          }
-        },
-        // 검색어 조건 (이름 또는 사용자 ID)
-        {
-          OR: [
-            {
-              name: {
-                contains: searchTerm
-              }
-            },
-            {
-              user_id: {
-                contains: searchTerm
-              }
-            }
-          ]
-        }
-      ]
-    };
-
-    // 검색된 사용자들과 팔로우 관계 조회
-    const users = await prisma.user.findMany({
-      where: whereCondition,
-      select: {
-        id: true,
-        user_id: true,
-        name: true,
-        photo: true,
-        birthday: true,
-        _count: {
-          select: {
-            followers: true,
-            following: true
-          }
-        },
-        // 현재 사용자가 이 사용자를 팔로우하는지
-        followers: {
-          where: {
-            followerId: currentUserId
-          },
-          select: {
-            id: true
-          }
-        },
-        // 이 사용자가 현재 사용자를 팔로우하는지
-        following: {
-          where: {
-            followingId: currentUserId
-          },
-          select: {
-            id: true
-          }
-        }
-      },
-      orderBy: [
-        {
-          name: 'asc'
-        }
-      ],
-      skip: offset,
-      take: safeLimit
-    });
-
-    // 총 검색 결과 수 조회
-    const totalCount = await prisma.user.count({
-      where: whereCondition
-    });
-
-    // 팔로우 관계 정보 추가
-    const usersWithFollowInfo = users.map(user => ({
-      ...user,
-      isFollowing: user.followers.length > 0,
-      isFollower: user.following.length > 0,
-      // 불필요한 중간 데이터 제거
-      followers: undefined,
-      following: undefined
-    }));
-
-    return {
-      users: usersWithFollowInfo,
-      totalCount,
-      // 디버깅 정보 추가
-      debug: {
-        originalLimit: limit,
-        originalPage: page,
-        safeLimit: safeLimit,
-        safePage: safePage,
-        offset: offset
+    try {
+      // 파라미터 안전성 검사
+      const safeLimit = Math.max(1, Math.min(parseInt(limit) || 10, 20));
+      const safePage = Math.max(1, parseInt(page) || 1);
+      const offset = (safePage - 1) * safeLimit;
+      
+      // 검색어 안전성 검사
+      if (!searchTerm || typeof searchTerm !== 'string' || searchTerm.trim() === '') {
+        return {
+          users: [],
+          totalCount: 0,
+          debug: { safeLimit, safePage, offset, originalLimit: limit, originalPage: page }
+        };
       }
-    };
+
+      const trimmedSearchTerm = searchTerm.trim();
+      
+      const whereCondition = {
+        AND: [
+          // 현재 사용자 제외
+          {
+            id: {
+              not: currentUserId
+            }
+          },
+          // 검색어 조건 (이름 또는 사용자 ID)
+          {
+            OR: [
+              {
+                name: {
+                  contains: trimmedSearchTerm
+                }
+              },
+              {
+                user_id: {
+                  contains: trimmedSearchTerm
+                }
+              }
+            ]
+          }
+        ]
+      };
+
+      // 검색된 사용자들과 팔로우 관계 조회
+      const users = await prisma.user.findMany({
+        where: whereCondition,
+        select: {
+          id: true,
+          user_id: true,
+          name: true,
+          photo: true,
+          birthday: true,
+          _count: {
+            select: {
+              followers: true,
+              following: true
+            }
+          },
+          // 현재 사용자가 이 사용자를 팔로우하는지
+          followers: {
+            where: {
+              followerId: currentUserId
+            },
+            select: {
+              id: true
+            }
+          },
+          // 이 사용자가 현재 사용자를 팔로우하는지
+          following: {
+            where: {
+              followingId: currentUserId
+            },
+            select: {
+              id: true
+            }
+          }
+        },
+        orderBy: [
+          {
+            name: 'asc'
+          }
+        ],
+        skip: offset,
+        take: safeLimit
+      });
+
+      // 총 검색 결과 수 조회
+      const totalCount = await prisma.user.count({
+        where: whereCondition
+      });
+
+      // 팔로우 관계 정보 추가
+      const usersWithFollowInfo = users.map(user => ({
+        ...user,
+        isFollowing: user.followers && user.followers.length > 0,
+        isFollower: user.following && user.following.length > 0,
+        // 불필요한 중간 데이터 제거
+        followers: undefined,
+        following: undefined
+      }));
+
+      return {
+        users: usersWithFollowInfo,
+        totalCount,
+        // 디버깅 정보 추가
+        debug: {
+          originalLimit: limit,
+          originalPage: page,
+          safeLimit: safeLimit,
+          safePage: safePage,
+          offset: offset
+        }
+      };
+      
+    } catch (error) {
+      console.error('Error in searchUsers:', error);
+      throw new Error('사용자 검색 중 오류가 발생했습니다.');
+    }
   }
 
   /**
@@ -120,39 +137,51 @@ class UserSearchRepository {
    * @returns {Promise<void>}
    */
   async saveSearchHistory(userId, searchTerm) {
-    // 현재 시간 사용 (로컬 시간)
-    const currentTime = new Date();
-    
-    // 동일한 검색어가 이미 있는지 확인
-    const existingHistory = await prisma.searchHistory.findFirst({
-      where: {
-        userId,
-        searchTerm
+    try {
+      // 입력값 검증
+      if (!userId || !searchTerm || typeof searchTerm !== 'string' || searchTerm.trim() === '') {
+        return; // 유효하지 않은 검색어는 저장하지 않음
       }
-    });
 
-    if (existingHistory) {
-      // 기존 검색 기록의 시간을 업데이트
-      await prisma.searchHistory.update({
+      const trimmedSearchTerm = searchTerm.trim();
+      
+      // 현재 시간 사용 (로컬 시간)
+      const currentTime = new Date();
+      
+      // 동일한 검색어가 이미 있는지 확인
+      const existingHistory = await prisma.searchHistory.findFirst({
         where: {
-          id: existingHistory.id
-        },
-        data: {
-          searchedAt: currentTime
-        }
-      });
-    } else {
-      // 새로운 검색 기록 저장
-      await prisma.searchHistory.create({
-        data: {
           userId,
-          searchTerm,
-          searchedAt: currentTime
+          searchTerm: trimmedSearchTerm
         }
       });
 
-      // 최대 50개 검색 기록 유지 (초과시 오래된 것부터 삭제)
-      await this.cleanupOldSearchHistory(userId);
+      if (existingHistory) {
+        // 기존 검색 기록의 시간을 업데이트
+        await prisma.searchHistory.update({
+          where: {
+            id: existingHistory.id
+          },
+          data: {
+            searchedAt: currentTime
+          }
+        });
+      } else {
+        // 새로운 검색 기록 저장
+        await prisma.searchHistory.create({
+          data: {
+            userId,
+            searchTerm: trimmedSearchTerm,
+            searchedAt: currentTime
+          }
+        });
+
+        // 최대 50개 검색 기록 유지 (초과시 오래된 것부터 삭제)
+        await this.cleanupOldSearchHistory(userId);
+      }
+    } catch (error) {
+      console.error('Error saving search history:', error);
+      // 검색 기록 저장 실패는 전체 검색 기능을 중단시키지 않음
     }
   }
 
@@ -206,36 +235,43 @@ class UserSearchRepository {
    * @returns {Promise<void>}
    */
   async cleanupOldSearchHistory(userId) {
-    const historyCount = await prisma.searchHistory.count({
-      where: {
-        userId
-      }
-    });
-
-    if (historyCount > 50) {
-      // 가장 오래된 검색 기록들 조회
-      const oldHistories = await prisma.searchHistory.findMany({
+    try {
+      const historyCount = await prisma.searchHistory.count({
         where: {
           userId
-        },
-        orderBy: {
-          searchedAt: 'asc'
-        },
-        take: historyCount - 50,
-        select: {
-          id: true
         }
       });
 
-      // 오래된 검색 기록들 삭제
-      const oldHistoryIds = oldHistories.map(h => h.id);
-      await prisma.searchHistory.deleteMany({
-        where: {
-          id: {
-            in: oldHistoryIds
+      if (historyCount > 50) {
+        // 가장 오래된 검색 기록들 조회
+        const oldHistories = await prisma.searchHistory.findMany({
+          where: {
+            userId
+          },
+          orderBy: {
+            searchedAt: 'asc'
+          },
+          take: historyCount - 50,
+          select: {
+            id: true
           }
+        });
+
+        // 오래된 검색 기록들 삭제
+        if (oldHistories.length > 0) {
+          const oldHistoryIds = oldHistories.map(h => h.id);
+          await prisma.searchHistory.deleteMany({
+            where: {
+              id: {
+                in: oldHistoryIds
+              }
+            }
+          });
         }
-      });
+      }
+    } catch (error) {
+      console.error('Error cleaning up search history:', error);
+      // 정리 작업 실패는 무시 (메인 기능에 영향 없음)
     }
   }
 }

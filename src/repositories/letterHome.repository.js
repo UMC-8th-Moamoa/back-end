@@ -1,97 +1,76 @@
 import prisma from '../config/prismaClient.js';
 
-// 편지 홈 화면 관련 데이터베이스 접근 계층
-
 class LetterHomeRepository {
+  /**
+   * 사용자가 참여 중인 생일 이벤트와 편지 정보 조회 (스와이프)
+   */
+  async getBirthdayEventsWithLetters(userId, limit, cursor = null, direction = 'next') {
+    try {
+      let whereClause = '';
+      let orderClause = 'ORDER BY be.createdAt DESC, be.id DESC';
+      let params = [userId, userId]; // senderId와 userId 모두 필요
 
-// 사용자가 참여 중인 생일 이벤트와 편지 정보 조회
-  async getBirthdayEventsWithLetters(userId, { limit, cursor, direction }) {
-    // 커서 기반 where 조건 생성
-    let cursorCondition = {};
-    if (cursor) {
-      if (direction === 'next') {
-        cursorCondition = {
-          OR: [
-            { createdAt: { lt: new Date(cursor.createdAt) } },
-            {
-              AND: [
-                { createdAt: new Date(cursor.createdAt) },
-                { id: { lt: cursor.id } }
-              ]
-            }
-          ]
-        };
-      } else {
-        cursorCondition = {
-          OR: [
-            { createdAt: { gt: new Date(cursor.createdAt) } },
-            {
-              AND: [
-                { createdAt: new Date(cursor.createdAt) },
-                { id: { gt: cursor.id } }
-              ]
-            }
-          ]
-        };
-      }
-    }
-
-    // 사용자가 참여 중인 생일 이벤트 조회
-    const events = await prisma.birthdayEvent.findMany({
-      where: {
-        AND: [
-          // 활성 상태인 이벤트
-          { status: 'active' },
-          // 마감일이 아직 지나지 않은 이벤트
-          { deadline: { gte: new Date() } },
-          // 사용자가 참여 중인 이벤트
-          {
-            participants: {
-              some: {
-                userId: userId
-              }
-            }
-          },
-          // 커서 조건
-          cursorCondition
-        ]
-      },
-      include: {
-        // 생일 주인공 정보
-        birthdayPerson: {
-          select: {
-            id: true,
-            name: true,
-            photo: true,
-            birthday: true
-          }
-        },
-        // 현재 사용자가 작성한 편지 정보
-        letters: {
-          where: {
-            senderId: userId
-          },
-          select: {
-            id: true,
-            updatedAt: true,
-            sentAt: true
-          },
-          take: 1
+      // 커서 기반 페이지네이션
+      if (cursor && cursor.id && cursor.createdAt) {
+        const cursorDate = new Date(cursor.createdAt);
+        
+        if (direction === 'next') {
+          // 다음 페이지: 현재 커서보다 이전 데이터
+          whereClause = `AND (
+            be.createdAt < ? OR (be.createdAt = ? AND be.id < ?)
+          )`;
+          params.push(cursorDate, cursorDate, cursor.id);
+        } else if (direction === 'prev') {
+          // 이전 페이지: 현재 커서보다 이후 데이터
+          whereClause = `AND (
+            be.createdAt > ? OR (be.createdAt = ? AND be.id > ?)
+          )`;
+          params.push(cursorDate, cursorDate, cursor.id);
+          orderClause = 'ORDER BY be.createdAt ASC, be.id ASC'; // 역순 정렬
         }
-      },
-      orderBy: [
-        { createdAt: direction === 'prev' ? 'asc' : 'desc' },
-        { id: direction === 'prev' ? 'asc' : 'desc' }
-      ],
-      take: limit
-    });
+      }
 
-    // 편지 정보를 단일 객체로 변환
-    return events.map(event => ({
-      ...event,
-      userLetter: event.letters.length > 0 ? event.letters[0] : null,
-      letters: undefined // letters 배열 제거
-    }));
+      params.push(limit);
+
+      const query = `
+        SELECT 
+          be.id,
+          be.createdAt,
+          bp.name as birthdayPersonName,
+          bp.photo as birthdayPersonPhoto,
+          bp.birthday as birthdayPersonBirthday,
+          CASE WHEN l.id IS NOT NULL THEN 1 ELSE 0 END as hasLetter,
+          l.id as letterId,
+          l.updatedAt as lastModified
+        FROM birthday_events be
+        INNER JOIN users bp ON be.birthdayPersonId = bp.id
+        INNER JOIN birthday_event_participants ep ON be.id = ep.eventId
+        LEFT JOIN letters l ON be.id = l.birthdayEventId AND l.senderId = ?
+        WHERE ep.userId = ?
+          AND be.status = 'active'
+          AND be.deadline >= CURDATE()
+          ${whereClause}
+        ${orderClause}
+        LIMIT ?
+      `;
+
+      const events = await prisma.$queryRawUnsafe(query, ...params);
+      
+      return events.map(row => ({
+        id: Number(row.id),
+        createdAt: row.createdAt,
+        birthdayPersonName: row.birthdayPersonName,
+        birthdayPersonPhoto: row.birthdayPersonPhoto,
+        birthdayPersonBirthday: row.birthdayPersonBirthday,
+        hasLetter: Boolean(row.hasLetter),
+        letterId: row.letterId ? Number(row.letterId) : null,
+        lastModified: row.lastModified
+      }));
+    } catch (error) {
+      console.error('생일 이벤트 조회 실패:', error);
+      console.error('SQL 파라미터:', params);
+      throw new Error('생일 이벤트 조회 중 오류가 발생했습니다.');
+    }
   }
 }
 
