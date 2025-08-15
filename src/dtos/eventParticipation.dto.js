@@ -106,6 +106,7 @@ export class ParticipationInfoDTO {
   constructor(participationData) {
     this.currentUserParticipated = participationData.currentUserParticipated;
     this.participationCount = participationData.participationCount;
+    this.hasWrittenLetter = participationData.hasWrittenLetter;
   }
 }
 
@@ -134,6 +135,19 @@ export class EventStatusDTO {
 }
 
 /**
+ * 버튼 상태 정보 DTO
+ */
+export class ButtonStatusDTO {
+  constructor(buttonStatusData) {
+    this.type = buttonStatusData.type;
+    this.message = buttonStatusData.message;
+    this.buttonText = buttonStatusData.buttonText;
+    this.buttonAction = buttonStatusData.buttonAction;
+    this.isEnabled = buttonStatusData.isEnabled;
+  }
+}
+
+/**
  * 이벤트 참여 화면 정보 조회 응답 DTO
  */
 export class EventParticipationInfoResponseDTO {
@@ -141,13 +155,15 @@ export class EventParticipationInfoResponseDTO {
     this.event = new EventInfoDTO(data.event);
     this.countdown = new CountdownInfoDTO(data.countdown);
     this.participation = new ParticipationInfoDTO(data.participation);
+    this.buttonStatus = new ButtonStatusDTO(data.buttonStatus);
   }
 
   toResponse() {
     return {
       event: this.event,
       countdown: this.countdown,
-      participation: this.participation
+      participation: this.participation,
+      buttonStatus: this.buttonStatus
     };
   }
 }
