@@ -5,9 +5,18 @@ import path from "path";
 import { v4 as uuidv4 } from "uuid";
 
 // AWS SDK 설정
+console.log('=== AWS 환경변수 디버깅 ===');
+console.log('AWS_REGION:', process.env.AWS_REGION || 'undefined');
+console.log('AWS_ACCESS_KEY:', process.env.AWS_ACCESS_KEY ? `${process.env.AWS_ACCESS_KEY.substring(0, 10)}...` : 'undefined');
+console.log('AWS_ACCESS_KEY_ID:', process.env.AWS_ACCESS_KEY_ID ? `${process.env.AWS_ACCESS_KEY_ID.substring(0, 10)}...` : 'undefined');
+console.log('AWS_SECRET_ACCESS_KEY:', process.env.AWS_SECRET_ACCESS_KEY ? 'exists' : 'undefined');
+console.log('========================');
+
+const accessKeyId = process.env.AWS_ACCESS_KEY || process.env.AWS_ACCESS_KEY_ID;
+
 AWS.config.update({
   region: process.env.AWS_REGION,
-  accessKeyId: process.env.AWS_ACCESS_KEY,
+  accessKeyId: accessKeyId,
   secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
 });
 
