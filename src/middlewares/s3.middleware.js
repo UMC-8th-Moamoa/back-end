@@ -75,6 +75,11 @@ export const generateWishlistImageUploadUrl = async (fileName, fileType) => {
   return await generatePresignedUploadUrl("wishlists", fileName, fileType);
 };
 
+// Shopping 아이템용 Presigned URL 생성
+export const generateShoppingImageUploadUrl = async (fileName, fileType, category) => {
+  return await generatePresignedUploadUrl(`shopping/${category}`, fileName, fileType);
+};
+
 // S3 업로더 팩토리 함수 - 폴더별로 구분하여 생성
 const createS3Uploader = (folderName) => {
   return multer({

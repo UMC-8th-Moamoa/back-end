@@ -127,4 +127,20 @@ router.delete("/image", deleteImage);
 // 업로드 완료 확인 API (선택사항)
 router.post("/confirm", confirmUpload);
 
+// POST /api/upload/shopping-image-presigned
+router.post('/shopping-image-presigned', async (req, res) => {
+  try {
+    const { fileName, fileType, category } = req.body;
+    
+    if (!['font', 'paper', 'seal'].includes(category)) {
+      return res.status(400).json({ error: 'Invalid category' });
+    }
+    
+    const result = await generateShoppingImageUploadUrl(fileName, fileType, category);
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 export default router;
