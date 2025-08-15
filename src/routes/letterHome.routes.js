@@ -1,5 +1,5 @@
 import express from 'express';
-import LetterHomeController from '../controllers/letterHome.controller.js';
+import letterHomeController from '../controllers/letterHome.controller.js';
 import { authenticateJWT } from '../middlewares/auth.middleware.js';
 
 const router = express.Router();
@@ -115,7 +115,7 @@ const router = express.Router();
  */
 router.get('/letters', 
   authenticateJWT,
-  LetterHomeController.getLetters
+  letterHomeController.getLetters
 );
 
 export default router;
