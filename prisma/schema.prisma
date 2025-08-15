@@ -1,3 +1,6 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
 generator client {
   provider = "prisma-client-js"
 }
@@ -54,47 +57,49 @@ enum ParticipationType {
   WITHOUT_MONEY
 }
 
-enum FriendsStatus {
-  PENDING
-  ACCEPTED
-  BLOCKED
-}
-
 // 사용자 테이블
 model User {
-  id                                               Int                        @id @default(autoincrement())
-  user_id                                          String                     @unique @db.VarChar(50)
-  name                                             String                     @db.VarChar(50)
-  email                                            String                     @unique @db.VarChar(100)
-  emailVerified                                    Boolean                    @default(false)
-  password                                         String                     @db.VarChar(255)
-  birthday                                         DateTime?
-  cash                                             Int                        @default(0)
-  phone                                            String?                    @db.VarChar(20)
-  photo                                            String?                    @db.VarChar(255)
-  createdAt                                        DateTime                   @default(now())
-  updatedAt                                        DateTime                   @updatedAt
-  lastLoginAt                                      DateTime?
-  advertisements                                   Advertisement[]
-  eventParticipants                                BirthdayEventParticipant[]
-  birthdayEvents                                   BirthdayEvent[]            @relation("BirthdayPerson")
-  birthday_events_birthday_events_creatorIdTousers BirthdayEvent[]            @relation("birthday_events_creatorIdTousers")
-  following                                        Follow[]                   @relation("Follower")
-  followers                                        Follow[]                   @relation("Following")
-  friends_friends_receiverIdTousers                friends[]                  @relation("friends_receiverIdTousers")
-  friends_friends_requesterIdTousers               friends[]                  @relation("friends_requesterIdTousers")
-  receivedLetters                                  Letter[]                   @relation("LetterReceiver")
-  sentLetters                                      Letter[]                   @relation("LetterSender")
-  notifications                                    Notification[]
-  paymentInfos                                     PaymentInfo[]
-  pointHistories                                   PointHistory[]
-  socialLogins                                     SocialLogin[]
-  userItems                                        UserItem[]
-  wishlists                                        Wishlist[]
+  id                Int       @id @default(autoincrement())
+  user_id           String    @unique @db.VarChar(50)  // 사용자가 직접 입력하는 ID
+  name              String    @db.VarChar(50)
+  email             String    @unique @db.VarChar(100)
+  emailVerified     Boolean   @default(false)
+  password          String    @db.VarChar(255)
+  birthday          DateTime?
+  cash              Int       @default(0)  // 몽코인 잔액
+  phone             String?   @db.VarChar(20)
+  photo             String?   @db.VarChar(255)
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  lastLoginAt       DateTime?
+
+  // 관계
+  socialLogins         SocialLogin[]
+  notifications        Notification[]
+  wishlists           Wishlist[]
+  birthdayEvents      BirthdayEvent[]       @relation("BirthdayPerson")
+  eventParticipants   BirthdayEventParticipant[]
+  pointHistories      PointHistory[]
+  advertisements      Advertisement[]
+  paymentInfos        PaymentInfo[]
+  sentLetters         Letter[]              @relation("LetterSender")
+  receivedLetters     Letter[]              @relation("LetterReceiver")
+  followers           Follow[]              @relation("Following")
+  following           Follow[]              @relation("Follower")
+  userItems           UserItem[]
+  
+  wishlistVotes           WishlistVote[]
+  searchHistories         SearchHistory[]
+  donations               Donation[]
+  coinConversions         CoinConversion[]
+  remainingProcesses      RemainingAmountProcess[]
+  customerServicePosts    CustomerServicePost[]
+  demoEvent              DemoEvent?            // 데모데이용 이벤트 (1:1 관계)
 
   @@map("users")
 }
 
+// 소셜 로그인 테이블
 model SocialLogin {
   id        Int      @id @default(autoincrement())
   user_id   String   @db.VarChar(50)
@@ -102,84 +107,106 @@ model SocialLogin {
   provider  String   @db.VarChar(50)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  user      User     @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
 
-  @@index([user_id], map: "social_logins_user_id_fkey")
+  user User @relation(fields: [user_id], references: [user_id], onDelete: Cascade)  // User.user_id 참조로 변경
+
   @@map("social_logins")
 }
 
+// 팔로우 관계 테이블
 model Follow {
   id          Int      @id @default(autoincrement())
   followerId  Int
   followingId Int
   createdAt   DateTime @default(now())
-  follower    User     @relation("Follower", fields: [followerId], references: [id], onDelete: Cascade)
-  following   User     @relation("Following", fields: [followingId], references: [id], onDelete: Cascade)
+
+  follower  User @relation("Follower", fields: [followerId], references: [id], onDelete: Cascade)
+  following User @relation("Following", fields: [followingId], references: [id], onDelete: Cascade)
 
   @@unique([followerId, followingId])
-  @@index([followingId], map: "follows_followingId_fkey")
   @@map("follows")
 }
 
+// 알림 테이블
 model Notification {
-  id        Int              @id @default(autoincrement())
-  userId    Int
-  type      NotificationType
-  title     String           @db.VarChar(100)
-  message   String?            @db.Text
-  isRead    Boolean            @default(false)
-  createdAt DateTime           @default(now())
-  updatedAt DateTime           @updatedAt
-  user      User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id           Int              @id @default(autoincrement())
+  userId       Int
+  message      String          @db.Text
+  isRead       Boolean          @default(false)
+  readAt       DateTime?
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
 
-  @@index([userId], map: "notifications_userId_fkey")
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
   @@map("notifications")
 }
 
+// 위시리스트 테이블
 model Wishlist {
-  id               Int                       @id @default(autoincrement())
-  userId           Int
-  productImageUrl  String                    @db.VarChar(255)
-  productName      String                    @db.VarChar(100)
-  price            Int
-  fundingActive    Boolean                   @default(false)
-  isPublic         Boolean                   @default(true)
-  createdAt        DateTime                  @default(now())
-  updatedAt        DateTime                  @updatedAt
-  birthday_events  BirthdayEvent[]
-  analysisRequests WishlistAnalysisRequest[]
-  user             User                      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id              Int      @id @default(autoincrement())
+  userId          Int
+  productImageUrl String   @db.VarChar(255)
+  productName     String   @db.VarChar(100)
+  price           Int
+  fundingActive   Boolean  @default(false)
+  isPublic        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 
-  @@index([userId], map: "wishlists_userId_fkey")
+  user           User                     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  analysisRequests WishlistAnalysisRequest[]
+  
+  votes          WishlistVote[]
+  selectedInEvents BirthdayEventSelectedItem[]
+
   @@map("wishlists")
 }
 
-model BirthdayEvent {
-  id                                     Int                        @id @default(autoincrement())
-  wishlistId                             Int
-  birthdayPersonId                       Int
-  creatorId                              Int
-  title                                  String                     @db.VarChar(100)
-  targetAmount                           Int
-  currentAmount                          Int                        @default(0)
-  deadline                               DateTime
-  status                                 String                     @default("active") @db.VarChar(20)
-  createdAt                              DateTime                   @default(now())
-  updatedAt                              DateTime                   @updatedAt
-  participants                           BirthdayEventParticipant[]
-  birthdayPerson                         User                       @relation("BirthdayPerson", fields: [birthdayPersonId], references: [id])
-  users_birthday_events_creatorIdTousers User                       @relation("birthday_events_creatorIdTousers", fields: [creatorId], references: [id])
-  wishlists                              Wishlist                   @relation(fields: [wishlistId], references: [id])
-  shareTokens                            EventShareToken[]
-  letters                                Letter[]
-  purchaseProof                          PurchaseProof?
+// 위시리스트 투표 테이블
+model WishlistVote {
+  id          Int      @id @default(autoincrement())
+  eventId     Int      // 이벤트 ID 추가
+  wishlistId  Int      // 투표된 위시리스트
+  userId      Int      // 투표한 사용자
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt    // 다시 투표할 때 업데이트
 
-  @@index([birthdayPersonId], map: "birthday_events_birthdayPersonId_fkey")
-  @@index([creatorId], map: "birthday_events_creatorId_fkey")
-  @@index([wishlistId], map: "birthday_events_wishlistId_fkey")
+  event    BirthdayEvent @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  wishlist Wishlist      @relation(fields: [wishlistId], references: [id], onDelete: Cascade)
+  user     User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([eventId, wishlistId, userId])
+  @@map("wishlist_votes")
+}
+
+// 생일이벤트 테이블
+model BirthdayEvent {
+  id               Int      @id @default(autoincrement())
+  birthdayPersonId Int
+  title            String   @db.VarChar(100)
+  currentAmount    Int      @default(0)
+  deadline         DateTime
+  status           String   @default("active") @db.VarChar(20)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  birthdayPerson  User                       @relation("BirthdayPerson", fields: [birthdayPersonId], references: [id])
+  participants    BirthdayEventParticipant[]
+  letters         Letter[]
+  purchaseProof   PurchaseProof?
+  shareTokens     EventShareToken[]
+  
+  wishlistVotes      WishlistVote[]
+  donations          Donation[]
+  coinConversions    CoinConversion[]
+  remainingProcess   RemainingAmountProcess?
+  selectedItems      BirthdayEventSelectedItem[]
+
   @@map("birthday_events")
 }
 
+// 생일이벤트 참여자 테이블
 model BirthdayEventParticipant {
   id               Int               @id @default(autoincrement())
   eventId          Int
@@ -193,187 +220,324 @@ model BirthdayEventParticipant {
   user  User         @relation(fields: [userId], references: [id])
 
   @@unique([eventId, userId])
-  @@index([userId], map: "birthday_event_participants_userId_fkey")
   @@map("birthday_event_participants")
 }
 
+// 위시리스트 분석 요청 테이블
 model WishlistAnalysisRequest {
-  id          Int        @id @default(autoincrement())
-  wishlistId  Int
-  insertType  InsertType
-  inputData   String     @db.Text
-  createdAt   DateTime   @default(now())
+  id         Int        @id @default(autoincrement())
+  wishlistId Int
+  insertType InsertType
+  inputData  String     @db.Text
+  createdAt  DateTime   @default(now())
   completedAt DateTime?
-  wishlist    Wishlist   @relation(fields: [wishlistId], references: [id], onDelete: Cascade)
 
-  @@index([wishlistId], map: "wishlist_analysis_requests_wishlistId_fkey")
+  wishlist Wishlist @relation(fields: [wishlistId], references: [id], onDelete: Cascade)
+
   @@map("wishlist_analysis_requests")
 }
 
+// 무통장 입금 테이블
 model BankTransfer {
-  id             Int            @id @default(autoincrement())
-  bankName       String         @db.VarChar(50)
-  accountNumber  String         @db.VarChar(50)
-  depositorName  String         @db.VarChar(50)
-  createdAt      DateTime       @default(now())
-  paymentInfos   PaymentInfo[]
+  id            Int      @id @default(autoincrement())
+  bankName      String   @db.VarChar(50)
+  accountNumber String   @db.VarChar(50)
+  depositorName String   @db.VarChar(50)
+  createdAt     DateTime @default(now())
+
   pointHistories PointHistory[]
+  paymentInfos   PaymentInfo[]
 
   @@map("bank_transfers")
 }
 
+// 포인트 이력 테이블
 model PointHistory {
-  id             Int             @id @default(autoincrement())
+  id             Int           @id @default(autoincrement())
   userId         Int
   pointType      PointType
   pointChange    Int
-  description    String          @db.VarChar(255)
+  description    String        @db.VarChar(255)
   totalPoints    Int
   bankTransferId Int?
-  createdAt      DateTime        @default(now())
-  advertisements Advertisement[]
-  bankTransfer   BankTransfer?   @relation(fields: [bankTransferId], references: [id])
-  user           User            @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userItems      UserItem[]
+  createdAt      DateTime      @default(now())
 
-  @@index([bankTransferId], map: "point_histories_bankTransferId_fkey")
-  @@index([userId], map: "point_histories_userId_fkey")
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  bankTransfer BankTransfer? @relation(fields: [bankTransferId], references: [id])
+  advertisements Advertisement[]
+  userItems    UserItem[]
+
   @@map("point_histories")
 }
 
+// 광고 테이블
 model Advertisement {
-  id             Int          @id @default(autoincrement())
-  pointHistoryId Int
-  userId         Int
-  adUrl          String       @db.VarChar(255)
-  duration       Int
-  playCount      Int          @default(1)
-  costPerPlay    Int          @default(1)
-  startTime      DateTime
-  endTime        DateTime
-  createdAt      DateTime     @default(now())
-  pointHistory   PointHistory @relation(fields: [pointHistoryId], references: [id])
-  user           User         @relation(fields: [userId], references: [id])
+  id              Int      @id @default(autoincrement())
+  pointHistoryId  Int
+  userId          Int
+  adUrl           String   @db.VarChar(255)
+  duration        Int
+  playCount       Int      @default(1)
+  costPerPlay     Int      @default(1)
+  startTime       DateTime
+  endTime         DateTime
+  createdAt       DateTime @default(now())
 
-  @@index([pointHistoryId], map: "advertisements_pointHistoryId_fkey")
-  @@index([userId], map: "advertisements_userId_fkey")
+  pointHistory PointHistory @relation(fields: [pointHistoryId], references: [id])
+  user         User         @relation(fields: [userId], references: [id])
+
   @@map("advertisements")
 }
 
+// 아이템 테이블 (몽코인 상점 아이템)
 model Item {
-  id          Int          @id @default(autoincrement())
-  category    ItemCategory
-  name        String       @db.VarChar(100)
-  price       Int
-  imageUrl    String       @db.VarChar(255)
-  description String?      @db.Text
-  event       Boolean
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
-  userItems   UserItem[]
+  id           Int          @id @default(autoincrement())
+  category     ItemCategory
+  name         String       @db.VarChar(100)
+  price        Int
+  imageUrl     String       @db.VarChar(255)
+  description  String?      @db.Text
+  event        Boolean 
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+
+  userItems    UserItem[]
 
   @@map("items")
 }
 
+// 사용자 보유 아이템 테이블
 model UserItem {
-  id                   Int          @id @default(autoincrement())
-  userId               Int
-  itemId               Int
-  pointHistoryId       Int
-  purchasedAt          DateTime     @default(now())
-  lettersAsEnvelope    Letter[]     @relation("LetterEnvelope")
-  lettersAsLetterPaper Letter[]     @relation("LetterPaper")
-  item                 Item         @relation(fields: [itemId], references: [id], onDelete: Cascade)
-  pointHistory         PointHistory @relation(fields: [pointHistoryId], references: [id])
-  user                 User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id            Int      @id @default(autoincrement())
+  userId        Int
+  itemId        Int
+  pointHistoryId Int
+  purchasedAt   DateTime @default(now())
+
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  item         Item         @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  pointHistory PointHistory @relation(fields: [pointHistoryId], references: [id])
+  
+  // Letter와의 관계 추가
+  lettersAsLetterPaper Letter[] @relation("LetterPaper")
+  lettersAsEnvelope    Letter[] @relation("LetterEnvelope")
 
   @@unique([userId, itemId])
-  @@index([itemId], map: "user_items_itemId_fkey")
-  @@index([pointHistoryId], map: "user_items_pointHistoryId_fkey")
   @@map("user_items")
 }
 
+// 결제 정보 테이블
 model PaymentInfo {
-  id             Int           @id @default(autoincrement())
-  userId         Int
-  bankTransferId Int?
-  amount         Int
-  paymentMethod  PaymentMethod
-  externalKey    String?       @db.VarChar(255)
-  status         PaymentStatus @default(PENDING)
-  paidAt         DateTime?
-  createdAt      DateTime      @default(now())
-  updatedAt      DateTime      @default(now())
-  bankTransfer   BankTransfer? @relation(fields: [bankTransferId], references: [id])
-  user           User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id              Int           @id @default(autoincrement())
+  userId          Int
+  bankTransferId  Int?
+  amount          Int
+  paymentMethod   PaymentMethod
+  externalKey     String?       @db.VarChar(255)
+  status          PaymentStatus @default(PENDING)
+  paidAt          DateTime?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @default(now())
 
-  @@index([bankTransferId], map: "payment_infos_bankTransferId_fkey")
-  @@index([userId], map: "payment_infos_userId_fkey")
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  bankTransfer BankTransfer? @relation(fields: [bankTransferId], references: [id])
+
   @@map("payment_infos")
 }
 
+// 편지 테이블
 model Letter {
-  id               Int            @id @default(autoincrement())
-  birthdayEventId  Int?
-  senderId         Int
-  receiverId       Int
-  title            String         @db.VarChar(100)
-  content          String         @db.Text
-  letterPaperId    Int?
-  envelopeId       Int?
-  envelopeImageUrl String?        @db.VarChar(500)
-  sentAt           DateTime       @default(now())
-  readAt           DateTime?
-  createdAt        DateTime       @default(now())
-  birthdayEvent    BirthdayEvent? @relation(fields: [birthdayEventId], references: [id])
-  envelope         UserItem?      @relation("LetterEnvelope", fields: [envelopeId], references: [id])
-  letterPaper      UserItem?      @relation("LetterPaper", fields: [letterPaperId], references: [id])
-  receiver         User           @relation("LetterReceiver", fields: [receiverId], references: [id])
-  sender           User           @relation("LetterSender", fields: [senderId], references: [id])
+  id              Int       @id @default(autoincrement())
+  birthdayEventId Int?
+  senderId        Int
+  receiverId      Int
+  title           String    @db.VarChar(100)
+  content         String    @db.Text
+  letterPaperId   Int?      // 사용된 편지지 ID
+  envelopeId      Int?      // 사용된 편지봉투 ID
+  envelopeImageUrl String?  @db.VarChar(500) // 편지봉투 이미지 URL
+  sentAt          DateTime  @default(now())
+  readAt          DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
 
-  @@index([birthdayEventId], map: "letters_birthdayEventId_fkey")
-  @@index([envelopeId], map: "letters_envelopeId_fkey")
-  @@index([letterPaperId], map: "letters_letterPaperId_fkey")
-  @@index([receiverId], map: "letters_receiverId_fkey")
-  @@index([senderId], map: "letters_senderId_fkey")
+  birthdayEvent BirthdayEvent? @relation(fields: [birthdayEventId], references: [id])
+  sender        User           @relation("LetterSender", fields: [senderId], references: [id])
+  receiver      User           @relation("LetterReceiver", fields: [receiverId], references: [id])
+  letterPaper   UserItem?      @relation("LetterPaper", fields: [letterPaperId], references: [id])
+  envelope      UserItem?      @relation("LetterEnvelope", fields: [envelopeId], references: [id])
+
   @@map("letters")
 }
 
+// 구매 인증 테이블
 model PurchaseProof {
-  id              Int           @id @default(autoincrement())
-  birthdayEventId Int           @unique
-  proofImages     Json
-  message         String        @db.Text
-  createdAt       DateTime      @default(now())
-  updatedAt       DateTime      @updatedAt
+  id              Int      @id @default(autoincrement())
+  birthdayEventId Int      @unique
+  proofImages     Json     // 이미지 URL 배열을 JSON으로 저장
+  message         String   @db.Text // 감사 메시지
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  // 관계 설정
   birthdayEvent   BirthdayEvent @relation(fields: [birthdayEventId], references: [id], onDelete: Cascade)
 
   @@map("purchase_proofs")
 }
 
+// 이벤트 공유 테이블
 model EventShareToken {
-  id        Int           @id @default(autoincrement())
-  eventId   Int
-  token     String        @unique @db.VarChar(255)
-  expiresAt DateTime
-  isActive  Boolean       @default(true)
-  createdAt DateTime      @default(now())
-  event     BirthdayEvent @relation(fields: [eventId], references: [id], onDelete: Cascade)
+id        Int      @id @default(autoincrement())
+eventId   Int
+token     String   @unique @db.VarChar(255)
+expiresAt DateTime
+isActive  Boolean  @default(true)
+createdAt DateTime @default(now())
 
-  @@index([eventId], map: "event_share_tokens_eventId_fkey")
-  @@map("event_share_tokens")
+event BirthdayEvent @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+@@map("event_share_tokens")
 }
 
-model friends {
-  id                               Int            @id @default(autoincrement())
-  requesterId                      Int
-  receiverId                       Int
-  status                           FriendsStatus @default(PENDING)
-  createdAt                        DateTime       @default(now())
-  acceptedAt                       DateTime?
-  users_friends_receiverIdTousers  User           @relation("friends_receiverIdTousers", fields: [receiverId], references: [id], onDelete: Cascade)
-  users_friends_requesterIdTousers User           @relation("friends_requesterIdTousers", fields: [requesterId], references: [id], onDelete: Cascade)
+// 검색 기록 테이블
+model SearchHistory {
+  id         Int      @id @default(autoincrement())
+  userId     Int
+  searchTerm String   @db.VarChar(100)
+  searchedAt DateTime @default(now())
 
-  @@unique([requesterId, receiverId])
-  @@index([receiverId], map: "friends_receiverId_fkey")
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, searchedAt(sort: Desc)])
+  @@map("search_histories")
+}
+
+// 기부 테이블
+model Donation {
+  id               Int      @id @default(autoincrement())
+  eventId          Int      // 어떤 이벤트의 남은 금액을 기부했는지
+  userId           Int      // 생일자 (기부한 사람)
+  organizationId   Int      // 기부 단체 ID (1: 굿네이버스, 2: 세이브더칠드런, 3: 유니세프)
+  organizationName String   @db.VarChar(100) // 기부 단체명
+  amount           Int      // 기부 금액
+  donatedAt        DateTime @default(now())
+  createdAt        DateTime @default(now())
+
+  event BirthdayEvent @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  user  User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("donations")
+}
+
+// 몽코인 전환 테이블
+model CoinConversion {
+  id            Int      @id @default(autoincrement())
+  eventId       Int      // 어떤 이벤트의 남은 금액을 전환했는지
+  userId        Int      // 생일자 (전환한 사람)
+  originalAmount Int     // 원본 금액
+  convertedCoins Int     // 전환된 몽코인
+  conversionRate Float   // 전환율 (예: 1.2)
+  convertedAt    DateTime @default(now())
+  createdAt      DateTime @default(now())
+
+  event BirthdayEvent @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  user  User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("coin_conversions")
+}
+
+// 남은 금액 처리 상태 테이블
+model RemainingAmountProcess {
+  id          Int         @id @default(autoincrement())
+  eventId     Int         @unique // 이벤트당 한 번만 처리
+  userId      Int         // 생일자
+  processType ProcessType // DONATE 또는 CONVERT_TO_COIN
+  amount      Int         // 처리된 금액
+  processedAt DateTime    @default(now())
+  createdAt   DateTime    @default(now())
+
+  event BirthdayEvent @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  user  User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("remaining_amount_processes")
+}
+
+// 생일자가 선택한 위시리스트 상품 테이블
+model BirthdayEventSelectedItem {
+  id          Int      @id @default(autoincrement())
+  eventId     Int
+  wishlistId  Int
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  event    BirthdayEvent @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  wishlist Wishlist      @relation(fields: [wishlistId], references: [id], onDelete: Cascade)
+
+  @@unique([eventId, wishlistId])
+  @@map("birthday_event_selected_items")
+}  
+
+// 데모데이용 이벤트 테이블
+model DemoEvent {
+  id        Int      @id @default(autoincrement())
+  userId    Int      @unique // 한 사용자당 하나의 데모 이벤트
+  shareLink String   @unique @db.VarChar(255) // 공유용 고유 링크
+  title     String   @default("나에게 편지를 써주세요!") @db.VarChar(100)
+  isActive  Boolean  @default(true) // 활성화 여부
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // 관계 설정
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  demoLetters DemoLetter[]
+
+  @@map("demo_events")
+}
+
+// 데모데이용 편지 테이블
+model DemoLetter {
+  id          Int      @id @default(autoincrement())
+  demoEventId Int      // 데모 이벤트 ID
+  writerName  String   @db.VarChar(50) // 편지 작성자 이름 (비회원)
+  content     String   @db.Text // 편지 내용
+  isRead      Boolean  @default(false) // 읽음 여부
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // 관계 설정
+  demoEvent DemoEvent @relation(fields: [demoEventId], references: [id], onDelete: Cascade)
+
+  @@map("demo_letters")
+}
+
+// 고객센터 문의 테이블
+model CustomerServicePost {
+  id         Int      @id @default(autoincrement())
+  user_id    Int
+  title      String   @db.VarChar(255)
+  content    String   @db.Text
+  private    Boolean  @default(false)
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  // 관계 설정
+  user      User                     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  responses CustomerServiceResponse[]
+
+  @@map("customer_service_posts")
+}
+
+// 고객센터 응답 테이블
+model CustomerServiceResponse {
+  id                Int      @id @default(autoincrement())
+  inquiry_id        Int
+  content           String   @db.Text
+  is_admin_response Boolean  @default(true)
+  admin_name        String?  @db.VarChar(100)
+  created_at        DateTime @default(now())
+
+  // 관계 설정
+  inquiry CustomerServicePost @relation(fields: [inquiry_id], references: [id], onDelete: Cascade)
+
+  @@map("customer_service_responses")
 }
