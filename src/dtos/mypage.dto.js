@@ -141,3 +141,43 @@ export class FollowRequestDTO {
         this.target_id = body.target_id;
     }
 }
+
+export class FollowListRequestDTO {
+    constructor(query) {
+        const page = parseInt(query.page) || 1;
+        const limit = parseInt(query.limit) || 20;
+
+        if (page < 1) {
+            throw new Error('페이지 번호는 1 이상이어야 합니다.');
+        }
+        if (limit < 1 || limit > 50) {
+            throw new Error('페이지당 항목 수는 1-50 사이여야 합니다.');
+        }
+
+        this.page = page;
+        this.limit = limit;
+        this.offset = (page - 1) * limit;
+    }
+}
+
+export class FollowerDTO {
+    constructor({ user_id, name, photo, followed_at, is_following, is_mutual }) {
+        this.user_id = user_id;
+        this.name = name;
+        this.photo = photo || null;
+        this.followed_at = followed_at;
+        this.is_following = is_following || false;
+        this.is_mutual = is_mutual || false;
+    }
+}
+
+export class FollowingDTO {
+    constructor({ user_id, name, photo, followed_at, is_follower, is_mutual }) {
+        this.user_id = user_id;
+        this.name = name;
+        this.photo = photo || null;
+        this.followed_at = followed_at;
+        this.is_follower = is_follower || false;
+        this.is_mutual = is_mutual || false;
+    }
+}

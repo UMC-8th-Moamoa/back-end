@@ -330,6 +330,156 @@ class MypageService {
             isFollowing: isFollowing
         };
     }
+    async getFollowersList(userPk, page = 1, limit = 20) {
+        if (!userPk) {
+            const error = new Error('사용자 PK가 제공되지 않았습니다.');
+            error.statusCode = 400;
+            throw error;
+        }
+    
+        const user = await prisma.user.findUnique({
+            where: { id: userPk },
+            select: { id: true, user_id: true }
+        });
+    
+        if (!user) {
+            const error = new Error('사용자를 찾을 수 없습니다.');
+            error.statusCode = 404;
+            throw error;
+        }
+    
+        const offset = (page - 1) * limit;
+    
+        // 나를 팔로우하는 사람들 조회
+        const [followers, totalCount] = await Promise.all([
+            prisma.follow.findMany({
+                where: { followingId: user.id },
+                include: {
+                    follower: {
+                        select: {
+                            id: true,
+                            user_id: true,
+                            name: true,
+                            photo: true
+                        }
+                    }
+                },
+                orderBy: { createdAt: 'desc' },
+                skip: offset,
+                take: limit
+            }),
+            prisma.follow.count({
+                where: { followingId: user.id }
+            })
+        ]);
+    
+        // 각 팔로워에 대한 상호 팔로우 상태 확인
+        const followersWithStatus = await Promise.all(
+            followers.map(async (follow) => {
+                const followRelationship = await mypageRepository.getFollowRelationship(
+                    user.user_id, 
+                    follow.follower.user_id
+                );
+    
+                return {
+                    user_id: follow.follower.user_id,
+                    name: follow.follower.name,
+                    photo: follow.follower.photo,
+                    followed_at: toKSTISOString(follow.createdAt),
+                    is_following: followRelationship.is_following, // 내가 이 팔로워를 팔로우하는지
+                    is_mutual: followRelationship.is_following // 맞팔인지
+                };
+            })
+        );
+    
+        return {
+            followers: followersWithStatus,
+            pagination: {
+                currentPage: page,
+                totalPages: Math.ceil(totalCount / limit),
+                totalCount,
+                hasNext: page < Math.ceil(totalCount / limit),
+                hasPrev: page > 1,
+                limit
+            }
+        };
+    }
+    
+    async getFollowingsList(userPk, page = 1, limit = 20) {
+        if (!userPk) {
+            const error = new Error('사용자 PK가 제공되지 않았습니다.');
+            error.statusCode = 400;
+            throw error;
+        }
+    
+        const user = await prisma.user.findUnique({
+            where: { id: userPk },
+            select: { id: true, user_id: true }
+        });
+    
+        if (!user) {
+            const error = new Error('사용자를 찾을 수 없습니다.');
+            error.statusCode = 404;
+            throw error;
+        }
+    
+        const offset = (page - 1) * limit;
+    
+        // 내가 팔로우하는 사람들 조회
+        const [followings, totalCount] = await Promise.all([
+            prisma.follow.findMany({
+                where: { followerId: user.id },
+                include: {
+                    following: {
+                        select: {
+                            id: true,
+                            user_id: true,
+                            name: true,
+                            photo: true
+                        }
+                    }
+                },
+                orderBy: { createdAt: 'desc' },
+                skip: offset,
+                take: limit
+            }),
+            prisma.follow.count({
+                where: { followerId: user.id }
+            })
+        ]);
+    
+        // 각 팔로잉에 대한 상호 팔로우 상태 확인
+        const followingsWithStatus = await Promise.all(
+            followings.map(async (follow) => {
+                const followRelationship = await mypageRepository.getFollowRelationship(
+                    user.user_id, 
+                    follow.following.user_id
+                );
+    
+                return {
+                    user_id: follow.following.user_id,
+                    name: follow.following.name,
+                    photo: follow.following.photo,
+                    followed_at: toKSTISOString(follow.createdAt),
+                    is_follower: followRelationship.is_follower, // 이 사람이 나를 팔로우하는지
+                    is_mutual: followRelationship.is_follower // 맞팔인지
+                };
+            })
+        );
+    
+        return {
+            followings: followingsWithStatus,
+            pagination: {
+                currentPage: page,
+                totalPages: Math.ceil(totalCount / limit),
+                totalCount,
+                hasNext: page < Math.ceil(totalCount / limit),
+                hasPrev: page > 1,
+                limit
+            }
+        };
+    }
+    
 }
 
 export default new MypageService();

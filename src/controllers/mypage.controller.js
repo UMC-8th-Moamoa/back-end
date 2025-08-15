@@ -353,6 +353,48 @@ class mypageController {
             throw error;
         }
     });
+    static getFollowersList = catchAsync(async (req, res) => {
+        const currentUser = req.user;
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 20;
+    
+        if (page < 1 || limit < 1 || limit > 50) {
+            return res.status(400).json({
+                success: false,
+                message: '잘못된 페이지 매개변수입니다. (page >= 1, limit 1-50)'
+            });
+        }
+    
+        const result = await mypageService.getFollowersList(currentUser.id, page, limit);
+    
+        res.status(200).json({
+            success: true,
+            message: '팔로워 목록 조회 성공',
+            data: result
+        });
+    });
+    
+    static getFollowingsList = catchAsync(async (req, res) => {
+        const currentUser = req.user;
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 20;
+    
+        if (page < 1 || limit < 1 || limit > 50) {
+            return res.status(400).json({
+                success: false,
+                message: '잘못된 페이지 매개변수입니다. (page >= 1, limit 1-50)'
+            });
+        }
+    
+        const result = await mypageService.getFollowingsList(currentUser.id, page, limit);
+    
+        res.status(200).json({
+            success: true,
+            message: '팔로잉 목록 조회 성공',
+            data: result
+        });
+    });
 }
+
 
 export default mypageController;

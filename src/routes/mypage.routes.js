@@ -636,4 +636,231 @@ router.post('/follow/request',
  */
 router.put('/change_id', authenticateJWT, mypageController.changeUserId);
 
+/**
+ * @swagger
+ * /api/mypage/followers:
+ *   get:
+ *     summary: 내 팔로워 목록 조회
+ *     description: 현재 로그인한 사용자를 팔로우하는 사용자들의 목록을 조회합니다.
+ *     tags: [Mypage]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *           minimum: 1
+ *         description: 페이지 번호
+ *         example: 1
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 20
+ *           minimum: 1
+ *           maximum: 50
+ *         description: 페이지당 항목 수
+ *         example: 20
+ *     responses:
+ *       200:
+ *         description: 팔로워 목록 조회 성공
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: "팔로워 목록 조회 성공"
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     followers:
+ *                       type: array
+ *                       items:
+ *                         type: object
+ *                         properties:
+ *                           user_id:
+ *                             type: string
+ *                             description: 팔로워의 사용자 ID
+ *                             example: "gold_user"
+ *                           name:
+ *                             type: string
+ *                             description: 팔로워의 이름
+ *                             example: "골드"
+ *                           photo:
+ *                             type: string
+ *                             nullable: true
+ *                             description: 팔로워의 프로필 사진 URL
+ *                             example: "https://example.com/photo.jpg"
+ *                           followed_at:
+ *                             type: string
+ *                             format: date-time
+ *                             description: 팔로우한 날짜 (KST)
+ *                             example: "2025-06-21T10:30:00+09:00"
+ *                           is_following:
+ *                             type: boolean
+ *                             description: 내가 이 팔로워를 팔로우하는지 여부
+ *                             example: true
+ *                           is_mutual:
+ *                             type: boolean
+ *                             description: 맞팔 여부
+ *                             example: true
+ *                     pagination:
+ *                       type: object
+ *                       properties:
+ *                         currentPage:
+ *                           type: integer
+ *                           example: 1
+ *                         totalPages:
+ *                           type: integer
+ *                           example: 3
+ *                         totalCount:
+ *                           type: integer
+ *                           example: 55
+ *                         hasNext:
+ *                           type: boolean
+ *                           example: true
+ *                         hasPrev:
+ *                           type: boolean
+ *                           example: false
+ *                         limit:
+ *                           type: integer
+ *                           example: 20
+ *       400:
+ *         description: 잘못된 요청
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
+ *                 message:
+ *                   type: string
+ *                   example: "잘못된 페이지 매개변수입니다. (page >= 1, limit 1-50)"
+ *       401:
+ *         description: 인증 필요
+ *       500:
+ *         description: 서버 내부 오류
+ */
+router.get('/followers',
+  authenticateJWT,
+  mypageController.getFollowersList
+);
+
+/**
+ * @swagger
+ * /api/mypage/followings:
+ *   get:
+ *     summary: 내 팔로잉 목록 조회
+ *     description: 현재 로그인한 사용자가 팔로우하는 사용자들의 목록을 조회합니다.
+ *     tags: [Mypage]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *           minimum: 1
+ *         description: 페이지 번호
+ *         example: 1
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 20
+ *           minimum: 1
+ *           maximum: 50
+ *         description: 페이지당 항목 수
+ *         example: 20
+ *     responses:
+ *       200:
+ *         description: 팔로잉 목록 조회 성공
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: "팔로잉 목록 조회 성공"
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     followings:
+ *                       type: array
+ *                       items:
+ *                         type: object
+ *                         properties:
+ *                           user_id:
+ *                             type: string
+ *                             description: 팔로잉하는 사용자의 ID
+ *                             example: "chaoni_gold"
+ *                           name:
+ *                             type: string
+ *                             description: 팔로잉하는 사용자의 이름
+ *                             example: "금채원"
+ *                           photo:
+ *                             type: string
+ *                             nullable: true
+ *                             description: 팔로잉하는 사용자의 프로필 사진 URL
+ *                             example: "https://example.com/photo.jpg"
+ *                           followed_at:
+ *                             type: string
+ *                             format: date-time
+ *                             description: 팔로우한 날짜 (KST)
+ *                             example: "2025-06-21T10:30:00+09:00"
+ *                           is_follower:
+ *                             type: boolean
+ *                             description: 이 사람이 나를 팔로우하는지 여부
+ *                             example: true
+ *                           is_mutual:
+ *                             type: boolean
+ *                             description: 맞팔 여부
+ *                             example: true
+ *                     pagination:
+ *                       type: object
+ *                       properties:
+ *                         currentPage:
+ *                           type: integer
+ *                           example: 1
+ *                         totalPages:
+ *                           type: integer
+ *                           example: 2
+ *                         totalCount:
+ *                           type: integer
+ *                           example: 31
+ *                         hasNext:
+ *                           type: boolean
+ *                           example: true
+ *                         hasPrev:
+ *                           type: boolean
+ *                           example: false
+ *                         limit:
+ *                           type: integer
+ *                           example: 20
+ *       400:
+ *         description: 잘못된 요청
+ *       401:
+ *         description: 인증 필요
+ *       500:
+ *         description: 서버 내부 오류
+ */
+router.get('/followings',
+  authenticateJWT,
+  mypageController.getFollowingsList
+);
+
 export default router;
