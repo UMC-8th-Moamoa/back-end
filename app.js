@@ -108,10 +108,13 @@ app.use(cors({
     'http://localhost:3000',
     'https://www.moamoas.com',
     'https://moamoa-front-end.vercel.app',
+    'https://moamoa-front-45ga96k6u-hyejun-koos-projects.vercel.app', // 실제 프런트엔드 도메인 추가
+    /^https:\/\/moamoa-front.*\.vercel\.app$/, // Vercel 프리뷰 도메인 패턴
   ],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'Cookie']
+  allowedHeaders: ['Content-Type', 'Authorization', 'Cookie', 'X-Requested-With'],
+  maxAge: 86400 // 24시간 preflight 캐싱
 }));
 
 // 기본 미들웨어
