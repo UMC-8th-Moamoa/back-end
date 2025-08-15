@@ -93,6 +93,7 @@ if (process.env.NODE_ENV === 'production') {
   }
 }
 */
+
 if (process.env.NODE_ENV === 'production') {
   if (typeof process.send === 'function') {
     process.send('ready');
