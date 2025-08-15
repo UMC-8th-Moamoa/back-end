@@ -27,11 +27,25 @@ class BirthdayEventController {
 
     res.success(responseDTO.toResponse());
   }
+
+  /**
+   * 내 생일 이벤트 결과 조회
+   * GET /api/birthdays/me/event
+   */
+  async getMyEventResult(req, res) {
+    const userId = req.user.id;
+
+    // 서비스 레이어 호출 (MyBirthdayService 사용)
+    const result = await birthdayEventService.getMyEventResult(userId);
+
+    res.success(result);
+  }
 }
 
 // 인스턴스 생성 및 catchAsync 래핑
 const birthdayEventController = new BirthdayEventController();
 
 export default {
-  getEventDetail: catchAsync(birthdayEventController.getEventDetail)
+  getEventDetail: catchAsync(birthdayEventController.getEventDetail.bind(birthdayEventController)),
+  getMyEventResult: catchAsync(birthdayEventController.getMyEventResult.bind(birthdayEventController))
 };

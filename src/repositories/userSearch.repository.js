@@ -109,9 +109,8 @@ class UserSearchRepository {
    * @returns {Promise<void>}
    */
   async saveSearchHistory(userId, searchTerm) {
-    // 한국 시간으로 설정 (UTC+9)
-    const koreaTime = new Date();
-    koreaTime.setHours(koreaTime.getHours() + 9);
+    // 현재 시간 사용 (로컬 시간)
+    const currentTime = new Date();
     
     // 동일한 검색어가 이미 있는지 확인
     const existingHistory = await prisma.searchHistory.findFirst({
@@ -128,7 +127,7 @@ class UserSearchRepository {
           id: existingHistory.id
         },
         data: {
-          searchedAt: koreaTime
+          searchedAt: currentTime
         }
       });
     } else {
@@ -137,7 +136,7 @@ class UserSearchRepository {
         data: {
           userId,
           searchTerm,
-          searchedAt: koreaTime
+          searchedAt: currentTime
         }
       });
 

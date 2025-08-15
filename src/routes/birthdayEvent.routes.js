@@ -97,6 +97,31 @@ const router = express.Router();
  *           items:
  *             $ref: '#/components/schemas/Participant'
  *     
+ *     ButtonInfo:
+ *       type: object
+ *       properties:
+ *         type:
+ *           type: string
+ *           enum: [PARTICIPATE, PARTICIPATED, VIEW_RESULT, OWNER_WAITING, EVENT_ENDED]
+ *           description: 버튼 타입
+ *         text:
+ *           type: string
+ *           description: 버튼에 표시될 텍스트
+ *           example: "모아 참여하기"
+ *         description:
+ *           type: string
+ *           description: 버튼 설명
+ *           example: "D-7까지 참여 가능"
+ *         actionUrl:
+ *           type: string
+ *           nullable: true
+ *           description: 버튼 클릭 시 호출할 API URL
+ *           example: "/api/birthdays/events/1/participation"
+ *         disabled:
+ *           type: boolean
+ *           description: 버튼 비활성화 여부
+ *           example: false
+ *     
  *     WishlistItem:
  *       type: object
  *       properties:
@@ -206,6 +231,12 @@ const router = express.Router();
  *                           userName: "이영희"
  *                           userPhoto: "https://example.com/user3.jpg"
  *                           participatedAt: "2025-07-16T14:30:00Z"
+ *                     buttonInfo:
+ *                       type: "PARTICIPATED"
+ *                       text: "모아 참여 완료"
+ *                       description: "이미 참여하셨습니다"
+ *                       actionUrl: null
+ *                       disabled: true
  *                     wishlist:
  *                       totalCount: 5
  *                       items:
@@ -248,6 +279,58 @@ const router = express.Router();
  *       400:
  *         description: 유효성 검사 실패
  */
+/**
+ * @swagger
+ * /api/birthdays/me/event:
+ *   get:
+ *     summary: 내 생일 이벤트 결과 조회
+ *     description: 내 완료된 생일 이벤트의 결과를 조회합니다
+ *     tags: [BirthdayEvent]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: 성공
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 resultType:
+ *                   type: string
+ *                   example: "SUCCESS"
+ *                 error:
+ *                   type: null
+ *                 success:
+ *                   type: object
+ *                   properties:
+ *                     eventId:
+ *                       type: integer
+ *                       description: 이벤트 ID
+ *                     totalAmount:
+ *                       type: integer
+ *                       description: 총 모인 금액
+ *                     participantCount:
+ *                       type: integer
+ *                       description: 총 참여자 수
+ *                     participants:
+ *                       type: array
+ *                       items:
+ *                         $ref: '#/components/schemas/Participant'
+ *                     deadline:
+ *                       type: string
+ *                       format: date-time
+ *                       description: 이벤트 마감 시간
+ *                     status:
+ *                       type: string
+ *                       description: 이벤트 상태
+ *       401:
+ *         description: 인증 실패
+ *       404:
+ *         description: 완료된 생일 이벤트가 없음
+ */
+router.get('/me/event', authenticateJWT, birthdayEventController.getMyEventResult);
+
 router.get('/events/:eventId', authenticateJWT, birthdayEventController.getEventDetail);
 
 export default router;
