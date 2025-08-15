@@ -45,9 +45,7 @@ export const generatePresignedUploadUrl = async (folderName, fileName, fileType)
       ContentType: fileType,
       Expires: 300, // 5분간 유효
       ACL: "public-read",
-      Conditions: [
-        ["content-length-range", 0, 5 * 1024 * 1024], // 5MB 제한
-      ],
+      // Conditions는 getSignedUrlPromise에서 지원하지 않으므로 제거
     };
 
     const uploadUrl = await s3.getSignedUrlPromise("putObject", params);
