@@ -54,6 +54,12 @@ enum ParticipationType {
   WITHOUT_MONEY
 }
 
+enum FriendsStatus {
+  PENDING
+  ACCEPTED
+  BLOCKED
+}
+
 // 사용자 테이블
 model User {
   id                                               Int                        @id @default(autoincrement())
@@ -116,10 +122,10 @@ model Follow {
 }
 
 model Notification {
-  id        Int                @id @default(autoincrement())
+  id        Int              @id @default(autoincrement())
   userId    Int
-  type      notifications_type
-  title     String             @db.VarChar(100)
+  type      NotificationType
+  title     String           @db.VarChar(100)
   message   String?            @db.Text
   isRead    Boolean            @default(false)
   createdAt DateTime           @default(now())
@@ -362,7 +368,7 @@ model friends {
   id                               Int            @id @default(autoincrement())
   requesterId                      Int
   receiverId                       Int
-  status                           friends_status @default(PENDING)
+  status                           FriendsStatus @default(PENDING)
   createdAt                        DateTime       @default(now())
   acceptedAt                       DateTime?
   users_friends_receiverIdTousers  User           @relation("friends_receiverIdTousers", fields: [receiverId], references: [id], onDelete: Cascade)
