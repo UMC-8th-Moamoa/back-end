@@ -29,8 +29,17 @@ class EventParticipationService {
     );
     const participationCount = await eventParticipationRepository.getParticipantCount(eventId);
 
-    // 4. 카운트다운 계산
+    // 4. 편지 작성 여부 확인
+    const hasWrittenLetter = await eventParticipationRepository.hasUserWrittenLetter(
+      eventId,
+      userId
+    );
+
+    // 5. 카운트다운 계산
     const countdown = this.calculateCountdown(event.deadline);
+
+    // 6. Status에 따른 버튼 분류
+    const buttonStatus = this.determineButtonStatus(event, currentUserParticipated, hasWrittenLetter);
 
     return {
       event: {
@@ -42,8 +51,10 @@ class EventParticipationService {
       countdown,
       participation: {
         currentUserParticipated,
-        participationCount
-      }
+        participationCount,
+        hasWrittenLetter
+      },
+      buttonStatus
     };
   }
 
@@ -116,6 +127,101 @@ class EventParticipationService {
       },
       event: eventStatus
     };
+  }
+
+  /**
+   * Status에 따른 버튼 상태 결정
+   */
+  determineButtonStatus(event, currentUserParticipated, hasWrittenLetter) {
+    const now = new Date();
+    const deadline = new Date(event.deadline);
+    const isExpired = now > deadline;
+
+    // 이벤트 상태별 버튼 분류
+    switch (event.status.toLowerCase()) {
+      case 'active':
+        if (isExpired) {
+          return {
+            type: 'EXPIRED',
+            message: '마감된 이벤트입니다',
+            buttonText: null,
+            buttonAction: 'NONE',
+            isEnabled: false
+          };
+        }
+        
+        // 참여하지 않은 경우: "모아 참여하기" 버튼
+        if (!currentUserParticipated) {
+          return {
+            type: 'NOT_PARTICIPATED',
+            message: '이벤트에 참여해보세요',
+            buttonText: '모아 참여하기',
+            buttonAction: 'PARTICIPATE',
+            isEnabled: true
+          };
+        }
+
+        // 참여했지만 편지를 작성하지 않은 경우: "편지 작성하러 가기" 버튼
+        if (currentUserParticipated && !hasWrittenLetter) {
+          return {
+            type: 'PARTICIPATED_NO_LETTER',
+            message: '편지를 작성해주세요',
+            buttonText: '편지 작성하러 가기',
+            buttonAction: 'WRITE_LETTER',
+            isEnabled: true
+          };
+        }
+
+        // 참여했고 편지도 작성한 경우: "편지 수정하기" 버튼
+        if (currentUserParticipated && hasWrittenLetter) {
+          return {
+            type: 'PARTICIPATED_WITH_LETTER',
+            message: '편지 작성 완료',
+            buttonText: '편지 수정하기',
+            buttonAction: 'EDIT_LETTER',
+            isEnabled: true
+          };
+        }
+
+        break;
+
+      case 'closed':
+        return {
+          type: 'CLOSED',
+          message: '종료된 이벤트입니다',
+          buttonText: null,
+          buttonAction: 'NONE',
+          isEnabled: false
+        };
+
+      case 'completed':
+        return {
+          type: 'COMPLETED',
+          message: '완료된 이벤트입니다',
+          buttonText: null,
+          buttonAction: 'NONE',
+          isEnabled: false
+        };
+
+      case 'cancelled':
+        return {
+          type: 'CANCELLED',
+          message: '취소된 이벤트입니다',
+          buttonText: null,
+          buttonAction: 'NONE',
+          isEnabled: false
+        };
+
+      default:
+        // 알 수 없는 상태의 경우 안전하게 비활성화
+        return {
+          type: 'UNKNOWN',
+          message: '알 수 없는 이벤트 상태입니다',
+          buttonText: null,
+          buttonAction: 'NONE',
+          isEnabled: false
+        };
+    }
   }
 
   /**
