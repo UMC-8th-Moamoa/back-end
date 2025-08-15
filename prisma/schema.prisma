@@ -7,8 +7,6 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-<<<<<<< HEAD
-=======
 // Enum 정의
 enum NotificationType {
   FOLLOW_REQUEST    // 팔로우 요청
@@ -57,7 +55,6 @@ enum ParticipationType {
 }
 
 // 사용자 테이블
->>>>>>> 7697acdb887e9fabd09598d7c6d0dd77ed6dd4e5
 model User {
   id                                               Int                        @id @default(autoincrement())
   user_id                                          String                     @unique @db.VarChar(50)
@@ -178,16 +175,6 @@ model BirthdayEvent {
 }
 
 model BirthdayEventParticipant {
-<<<<<<< HEAD
-  id        Int           @id @default(autoincrement())
-  eventId   Int
-  userId    Int
-  amount    Int
-  message   String?       @db.Text
-  createdAt DateTime      @default(now())
-  event     BirthdayEvent @relation(fields: [eventId], references: [id], onDelete: Cascade)
-  user      User          @relation(fields: [userId], references: [id])
-=======
   id               Int               @id @default(autoincrement())
   eventId          Int
   userId           Int
@@ -198,7 +185,6 @@ model BirthdayEventParticipant {
 
   event BirthdayEvent @relation(fields: [eventId], references: [id], onDelete: Cascade)
   user  User         @relation(fields: [userId], references: [id])
->>>>>>> 7697acdb887e9fabd09598d7c6d0dd77ed6dd4e5
 
   @@unique([eventId, userId])
   @@index([userId], map: "birthday_event_participants_userId_fkey")
@@ -384,46 +370,4 @@ model friends {
 
   @@unique([requesterId, receiverId])
   @@index([receiverId], map: "friends_receiverId_fkey")
-}
-
-enum PointType {
-  CHARGE
-  USE
-  ADVERTISEMENT
-  ITEM_PURCHASE
-}
-
-enum PaymentMethod {
-  BANK_TRANSFER
-  KAKAO_PAY
-}
-
-enum PaymentStatus {
-  PENDING
-  COMPLETED
-  FAILED
-  CANCELLED
-}
-
-enum InsertType {
-  URL
-  IMAGE
-}
-
-enum ItemCategory {
-  font
-  paper
-  envelope
-}
-
-enum notifications_type {
-  FOLLOW_REQUEST
-  BIRTHDAY_REMINDER
-  PRIVATE_EVENT
-}
-
-enum friends_status {
-  PENDING
-  ACCEPTED
-  BLOCKED
 }
