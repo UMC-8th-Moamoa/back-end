@@ -56,6 +56,9 @@ class LetterHomeRepository {
         LIMIT ?
       `;
 
+      console.log('🔍 [Repository] 실행할 SQL:', query);
+      console.log('🔍 [Repository] SQL 파라미터:', params);
+
       const events = await prisma.$queryRawUnsafe(query, ...params);
       
       return events.map(row => ({
@@ -69,8 +72,11 @@ class LetterHomeRepository {
         lastModified: row.lastModified
       }));
     } catch (error) {
-      console.error('생일 이벤트 조회 실패:', error);
-      console.error('SQL 파라미터:', params);
+      console.error('❌ [Repository] 생일 이벤트 조회 실패:', error);
+      console.error('❌ [Repository] Error name:', error.name);
+      console.error('❌ [Repository] Error message:', error.message);
+      console.error('❌ [Repository] Error code:', error.code);
+      console.error('❌ [Repository] SQL 파라미터:', params);
       throw new Error('생일 이벤트 조회 중 오류가 발생했습니다.');
     }
   }
