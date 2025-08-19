@@ -73,23 +73,39 @@ class EmailService {
    */
   async sendMail(mailOptions) {
     if (!this.transporter) {
+      console.error('❌ 이메일 전송기가 초기화되지 않음');
       throw new ValidationError('이메일 서비스가 설정되지 않았습니다');
     }
 
     try {
+      console.log('📧 이메일 발송 시도:', {
+        to: mailOptions.to,
+        from: `"${process.env.SMTP_FROM_NAME}" <${process.env.SMTP_FROM_EMAIL}>`,
+        subject: mailOptions.subject
+      });
+
       const info = await this.transporter.sendMail({
         from: `"${process.env.SMTP_FROM_NAME}" <${process.env.SMTP_FROM_EMAIL}>`,
         ...mailOptions
       });
 
-      console.log(`이메일 발송 성공: ${info.messageId}`);
+      console.log(`✅ 이메일 발송 성공: ${info.messageId}`);
       return {
         success: true,
         messageId: info.messageId
       };
     } catch (error) {
-      console.error('이메일 발송 실패:', error);
-      throw new ValidationError('이메일 발송에 실패했습니다');
+      console.error('❌ 이메일 발송 실패 - 상세 정보:');
+      console.error('에러 코드:', error.code);
+      console.error('에러 메시지:', error.message);
+      console.error('전체 에러:', error);
+      
+      // SMTP 인증 에러인지 확인
+      if (error.code === 'EAUTH') {
+        console.error('🔐 SMTP 인증 실패 - Gmail 앱 비밀번호를 확인하세요');
+      }
+      
+      throw new ValidationError(`이메일 발송에 실패했습니다: ${error.message}`);
     }
   }
 
@@ -271,10 +287,21 @@ class EmailService {
    * @returns {boolean} 서비스 사용 가능 여부
    */
   isAvailable() {
-    return this.transporter !== null && 
+    // 🔍 디버깅: 환경 변수 확인
+    console.log('🔍 SMTP 환경 변수 디버깅:');
+    console.log('SMTP_HOST:', process.env.SMTP_HOST || 'NOT_SET');
+    console.log('SMTP_USER:', process.env.SMTP_USER || 'NOT_SET');
+    console.log('SMTP_PASS:', process.env.SMTP_PASS ? 'SET' : 'NOT_SET');
+    console.log('transporter:', this.transporter ? 'CREATED' : 'NULL');
+    
+    const isAvailable = this.transporter !== null && 
            process.env.SMTP_HOST && 
            process.env.SMTP_USER && 
            process.env.SMTP_PASS;
+    
+    console.log('🔍 이메일 서비스 사용 가능:', isAvailable);
+    
+    return isAvailable;
   }
 }
 
