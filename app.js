@@ -297,6 +297,10 @@ app.use('/api/donations', donationRoutes);
 // 테스트 라우트 (이벤트 강제 생성)
 app.use('/api/test', testRoutes);
 
+// 디버그 라우트 추가
+import debugRoutes from './debug-routes.js';
+app.use('/debug', debugRoutes);
+
 
 
 

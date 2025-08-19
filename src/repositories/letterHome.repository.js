@@ -76,8 +76,19 @@ class LetterHomeRepository {
       console.error('❌ [Repository] Error name:', error.name);
       console.error('❌ [Repository] Error message:', error.message);
       console.error('❌ [Repository] Error code:', error.code);
+      console.error('❌ [Repository] Error stack:', error.stack);
       console.error('❌ [Repository] SQL 파라미터:', params);
-      throw new Error('생일 이벤트 조회 중 오류가 발생했습니다.');
+      
+      // Prisma 특정 에러 정보 추가
+      if (error.meta) {
+        console.error('❌ [Repository] Prisma meta:', error.meta);
+      }
+      if (error.clientVersion) {
+        console.error('❌ [Repository] Prisma client version:', error.clientVersion);
+      }
+      
+      // 실제 에러를 다시 throw하여 상위에서 확인 가능하도록
+      throw error;
     }
   }
 }
