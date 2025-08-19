@@ -102,22 +102,18 @@ class BirthdayEventRepository {
   }
 
   /**
-   * 특정 생일자와 날짜로 이벤트 조회
+   * 특정 생일자와 날짜로 이벤트 조회 (월/일 기준)
    */
   async getEventByBirthdayPersonAndDate(birthdayPersonId, targetDate) {
-    const startOfDay = new Date(targetDate);
-    startOfDay.setHours(0, 0, 0, 0);
+    const targetDateObj = new Date(targetDate);
+    const targetMonth = targetDateObj.getMonth();
+    const targetDay = targetDateObj.getDate();
     
-    const endOfDay = new Date(targetDate);
-    endOfDay.setHours(23, 59, 59, 999);
-
-    return await prisma.birthdayEvent.findFirst({
+    // 모든 이벤트를 조회한 후 월/일 기준으로 필터링
+    const events = await prisma.birthdayEvent.findMany({
       where: {
         birthdayPersonId: birthdayPersonId,
-        deadline: {
-          gte: startOfDay,
-          lte: endOfDay
-        }
+        status: 'ACTIVE'
       },
       include: {
         birthdayPerson: {
@@ -130,6 +126,14 @@ class BirthdayEventRepository {
         }
       }
     });
+    
+    // 월/일이 일치하는 이벤트 찾기
+    const matchingEvent = events.find(event => {
+      const eventDate = new Date(event.deadline);
+      return eventDate.getMonth() === targetMonth && eventDate.getDate() === targetDay;
+    });
+    
+    return matchingEvent || null;
   }
 
   /**
