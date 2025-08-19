@@ -5,11 +5,7 @@ import { ValidationError } from '../middlewares/errorHandler.js';
  * 이메일 발송 전략 선택
  */
 const getEmailStrategy = () => {
-  // 운영 환경에서는 AWS SES 우선 사용
-  if (process.env.NODE_ENV === 'production' && process.env.AWS_ACCESS_KEY) {
-    return 'aws-ses';
-  }
-  // 개발/테스트 환경에서는 SMTP 사용
+  // 모든 환경에서 SMTP 사용 (AWS SES는 추후 구현)
   return 'smtp';
 };
 
