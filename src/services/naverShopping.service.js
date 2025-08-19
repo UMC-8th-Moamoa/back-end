@@ -26,6 +26,10 @@ class NaverShoppingService {
 
       // API 키 검증
       if (!this.clientId || !this.clientSecret) {
+        console.error('❌ 네이버 API 키 누락:', {
+          clientId: this.clientId ? '설정됨' : '누락',
+          clientSecret: this.clientSecret ? '설정됨' : '누락'
+        });
         throw new Error('네이버 API 키가 설정되지 않았습니다. NAVER_CLIENT_ID와 NAVER_CLIENT_SECRET을 확인해주세요.');
       }
 
@@ -33,7 +37,10 @@ class NaverShoppingService {
       const encodedQuery = encodeURIComponent(cleanQuery);
       const url = `${this.baseUrl}?query=${encodedQuery}&display=${display}&start=${start}&sort=sim`;
 
-      console.log(`📡 네이버 쇼핑 API 요청: ${url}`);
+      console.log(`📡 네이버 쇼핑 API 요청:`);
+      console.log(`   - 검색어: "${cleanQuery}"`);
+      console.log(`   - URL: ${url}`);
+      console.log(`   - 헤더: Client-Id=${this.clientId.substring(0, 8)}...`);
 
       const response = await axios.get(url, {
         headers: {
@@ -43,14 +50,19 @@ class NaverShoppingService {
         timeout: 10000 // 10초 타임아웃
       });
 
-      console.log(`📡 네이버 쇼핑 API 응답 상태: ${response.status}`);
+      console.log(`📡 네이버 쇼핑 API 응답:`);
+      console.log(`   - 상태: ${response.status}`);
+      console.log(`   - 헤더: ${JSON.stringify(response.headers, null, 2)}`);
 
       if (!response.data) {
+        console.error('❌ 응답 데이터가 비어있음');
         throw new Error('네이버 쇼핑 API 응답이 비어있습니다');
       }
 
+      console.log(`   - 응답 데이터:`, JSON.stringify(response.data, null, 2));
+
       if (!response.data.items) {
-        console.warn('검색 결과가 없습니다:', response.data);
+        console.warn('⚠️ items 필드가 없음:', response.data);
         return [];
       }
 
@@ -58,22 +70,26 @@ class NaverShoppingService {
       console.log(`📦 검색 결과: ${items.length}개 상품 발견`);
 
       if (items.length === 0) {
-        console.warn(`검색어 "${cleanQuery}"에 대한 결과가 없습니다`);
+        console.warn(`⚠️ 검색어 "${cleanQuery}"에 대한 결과가 없습니다`);
         return [];
       }
 
-      return this.formatProductData(items);
+      const formattedProducts = this.formatProductData(items);
+      console.log(`✅ 포맷팅 완료: ${formattedProducts.length}개 상품`);
+      
+      return formattedProducts;
     } catch (error) {
-      console.error('네이버 쇼핑 API 오류:', error);
+      console.error('❌ 네이버 쇼핑 API 오류:', error.message);
       
       if (error.response) {
         // API 응답 오류
         const status = error.response.status;
         const data = error.response.data;
         
-        console.error('API 응답 오류:', {
+        console.error('❌ API 응답 오류 상세:', {
           status,
-          data,
+          statusText: error.response.statusText,
+          data: JSON.stringify(data, null, 2),
           headers: error.response.headers
         });
         
@@ -83,19 +99,31 @@ class NaverShoppingService {
           throw new Error('네이버 API 접근 권한이 없습니다');
         } else if (status === 429) {
           throw new Error('네이버 API 요청 한도를 초과했습니다');
+        } else if (status === 400) {
+          const message = data?.errorMessage || data?.message || '잘못된 요청입니다';
+          throw new Error(`네이버 API 요청 오류: ${message}`);
         } else {
           const message = data?.errorMessage || data?.message || '네이버 쇼핑 API 오류';
           throw new Error(`네이버 쇼핑 API 오류 (${status}): ${message}`);
         }
       } else if (error.request) {
         // 네트워크 오류
-        console.error('네트워크 오류:', error.request);
+        console.error('❌ 네트워크 오류:', {
+          message: error.message,
+          code: error.code,
+          timeout: error.timeout
+        });
         throw new Error('네이버 쇼핑 API 연결 실패: 네트워크를 확인해주세요');
       } else if (error.code === 'ECONNABORTED') {
         // 타임아웃 오류
+        console.error('❌ 타임아웃 오류');
         throw new Error('네이버 쇼핑 API 요청 시간 초과');
       } else {
         // 기타 오류
+        console.error('❌ 기타 오류:', {
+          message: error.message,
+          stack: error.stack
+        });
         throw new Error(`네이버 쇼핑 API 오류: ${error.message}`);
       }
     }

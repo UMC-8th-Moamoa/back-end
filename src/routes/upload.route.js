@@ -1,9 +1,11 @@
 import express from "express";
 import { 
   getUserImageUploadUrl,
-  getWishlistImageUploadUrl, 
+  getWishlistImageUploadUrl,
+  getShoppingImageUploadUrl,
   deleteImage,
   confirmUpload,
+  verifyUpload,
   autoUploadUserImage,
   autoUploadWishlistImage,
   autoUploadMultipleImages
@@ -46,11 +48,19 @@ import {
 
 const router = express.Router();
 
-// Presigned URL 생성 API들 (기존 방식)
+// 🎯 Presigned URL 생성 API들 (권장 방식)
 router.post("/user-image/upload-url", getUserImageUploadUrl);
-router.post("/wishlist-image/upload-url", getWishlistImageUploadUrl);
+router.post("/wishlist-image/upload-url", getWishlistImageUploadUrl); 
+router.post("/shopping-image/upload-url", getShoppingImageUploadUrl);
 
-// 자동 업로드 API들 (파일을 직접 받아서 S3에 업로드)
+// 📋 업로드 검증 및 확인 API들
+router.post("/verify", verifyUpload);
+router.post("/confirm", confirmUpload);
+
+// 🗑️ 이미지 삭제 API
+router.delete("/image", deleteImage);
+
+// 📤 자동 업로드 API들 (기존 방식 - 호환성 유지)
 router.post("/user-image/auto", (req, res, next) => {
   userImageUploader.single('image')(req, res, (err) => {
     if (err) {
@@ -120,27 +130,5 @@ router.post("/multiple-images/auto", (req, res, next) => {
     next();
   });
 }, autoUploadMultipleImages);
-
-// 이미지 삭제 API
-router.delete("/image", deleteImage);
-
-// 업로드 완료 확인 API (선택사항)
-router.post("/confirm", confirmUpload);
-
-// POST /api/upload/shopping-image-presigned
-router.post('/shopping-image-presigned', async (req, res) => {
-  try {
-    const { fileName, fileType, category } = req.body;
-    
-    if (!['font', 'paper', 'seal'].includes(category)) {
-      return res.status(400).json({ error: 'Invalid category' });
-    }
-    
-    const result = await generateShoppingImageUploadUrl(fileName, fileType, category);
-    res.json(result);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
 
 export default router;

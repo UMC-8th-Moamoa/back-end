@@ -36,8 +36,8 @@ export const validateFileType = (fileName, mimeType) => {
   return allowedExtensions.includes(extension) && allowedMimeTypes.includes(mimeType);
 };
 
-// Presigned URL 생성 함수 - 업로드용
-export const generatePresignedUploadUrl = async (folderName, fileName, fileType) => {
+// Presigned URL 생성 함수 - 업로드용 (개선된 버전)
+export const generatePresignedUploadUrl = async (folderName, fileName, fileType, maxFileSize = 10 * 1024 * 1024) => {
   try {
     // 파일 확장자 및 MIME 타입 검증
     if (!validateFileType(fileName, fileType)) {
@@ -46,17 +46,19 @@ export const generatePresignedUploadUrl = async (folderName, fileName, fileType)
 
     const uuid = uuidv4();
     const extension = path.extname(fileName);
-    const key = `${folderName}/${uuid}_${Date.now()}${extension}`;
+    const timestamp = Date.now();
+    const key = `${folderName}/${uuid}_${timestamp}${extension}`;
     
     const params = {
       Bucket: process.env.AWS_S3_BUCKET_NAME,
       Key: key,
       ContentType: fileType,
-      Expires: 300, // 5분간 유효
-      ACL: "public-read",
-      // Conditions는 getSignedUrlPromise에서 지원하지 않으므로 제거
+      Expires: 900, // 15분간 유효 (개발/테스트용)
+      // ACL과 Conditions는 getSignedUrlPromise에서 지원하지 않으므로 제거
+      // 대신 S3 버킷 정책으로 관리
     };
 
+    // PUT 방식으로 Presigned URL 생성
     const uploadUrl = await s3.getSignedUrlPromise("putObject", params);
     const fileUrl = `https://${process.env.AWS_S3_BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com/${key}`;
 
@@ -64,7 +66,10 @@ export const generatePresignedUploadUrl = async (folderName, fileName, fileType)
       uploadUrl,
       fileUrl,
       key,
-      expires: new Date(Date.now() + 5 * 60 * 1000), // 5분 후 만료
+      expires: new Date(Date.now() + 15 * 60 * 1000), // 15분 후 만료
+      maxFileSize,
+      contentType: fileType,
+      method: 'PUT' // 클라이언트에서 사용할 HTTP 메서드
     };
   } catch (error) {
     console.error("Presigned URL 생성 실패:", error);
@@ -85,6 +90,62 @@ export const generateWishlistImageUploadUrl = async (fileName, fileType) => {
 // Shopping 아이템용 Presigned URL 생성
 export const generateShoppingImageUploadUrl = async (fileName, fileType, category) => {
   return await generatePresignedUploadUrl(`shopping/${category}`, fileName, fileType);
+};
+
+// 업로드 완료 확인 함수 - S3에 파일이 실제로 업로드되었는지 확인
+export const verifyUploadedFile = async (key) => {
+  try {
+    const params = {
+      Bucket: process.env.AWS_S3_BUCKET_NAME,
+      Key: key,
+    };
+    
+    const result = await s3.headObject(params).promise();
+    return {
+      exists: true,
+      size: result.ContentLength,
+      lastModified: result.LastModified,
+      contentType: result.ContentType,
+      etag: result.ETag
+    };
+  } catch (error) {
+    if (error.code === 'NotFound') {
+      return { exists: false };
+    }
+    throw error;
+  }
+};
+
+// 대용량 파일용 멀티파트 업로드 Presigned URL 생성
+export const generateMultipartUploadUrl = async (folderName, fileName, fileType) => {
+  try {
+    if (!validateFileType(fileName, fileType)) {
+      throw new Error("지원하지 않는 파일 형식입니다.");
+    }
+
+    const uuid = uuidv4();
+    const extension = path.extname(fileName);
+    const timestamp = Date.now();
+    const key = `${folderName}/${uuid}_${timestamp}${extension}`;
+    
+    const params = {
+      Bucket: process.env.AWS_S3_BUCKET_NAME,
+      Key: key,
+      ContentType: fileType,
+    };
+
+    const multipartUpload = await s3.createMultipartUpload(params).promise();
+    
+    return {
+      uploadId: multipartUpload.UploadId,
+      key,
+      bucket: process.env.AWS_S3_BUCKET_NAME,
+      expires: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24시간 후 만료
+    };
+  } catch (error) {
+    console.error("멀티파트 업로드 생성 실패:", error);
+    throw error;
+  }
 };
 
 // S3 업로더 팩토리 함수 - 폴더별로 구분하여 생성

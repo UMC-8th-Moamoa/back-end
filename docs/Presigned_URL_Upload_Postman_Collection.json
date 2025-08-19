@@ -1,0 +1,244 @@
+{
+  "info": {
+    "name": "Presigned URL Upload API",
+    "description": "Presigned URL 방식 파일 업로드 API 컬렉션",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "🎯 Presigned URL 생성",
+      "item": [
+        {
+          "name": "사용자 이미지 업로드 URL 생성",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"fileName\": \"profile.jpg\",\n  \"fileType\": \"image/jpeg\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/upload/user-image/upload-url",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "upload", "user-image", "upload-url"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "위시리스트 이미지 업로드 URL 생성",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"fileName\": \"wishlist_item.png\",\n  \"fileType\": \"image/png\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/upload/wishlist-image/upload-url",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "upload", "wishlist-image", "upload-url"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "쇼핑 이미지 업로드 URL 생성",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"fileName\": \"font_sample.jpg\",\n  \"fileType\": \"image/jpeg\",\n  \"category\": \"font\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/upload/shopping-image/upload-url",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "upload", "shopping-image", "upload-url"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "📋 업로드 검증",
+      "item": [
+        {
+          "name": "업로드 파일 검증",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"fileUrl\": \"https://moamoas-s3.s3.ap-northeast-2.amazonaws.com/users/uuid_timestamp.jpg\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/upload/verify",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "upload", "verify"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "업로드 완료 확인",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"fileUrl\": \"https://moamoas-s3.s3.ap-northeast-2.amazonaws.com/users/uuid_timestamp.jpg\",\n  \"fileName\": \"profile.jpg\",\n  \"expectedSize\": 1024000\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/upload/confirm",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "upload", "confirm"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "🗑️ 파일 삭제",
+      "item": [
+        {
+          "name": "이미지 삭제",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"imageUrl\": \"https://moamoas-s3.s3.ap-northeast-2.amazonaws.com/users/uuid_timestamp.jpg\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/upload/image",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "upload", "image"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "📤 기존 자동 업로드 (호환성)",
+      "item": [
+        {
+          "name": "사용자 이미지 자동 업로드",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "image",
+                  "type": "file",
+                  "src": []
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/upload/user-image/auto",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "upload", "user-image", "auto"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "위시리스트 이미지 자동 업로드",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "image",
+                  "type": "file",
+                  "src": []
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/upload/wishlist-image/auto",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "upload", "wishlist-image", "auto"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "다중 이미지 자동 업로드",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "images",
+                  "type": "file",
+                  "src": []
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/upload/multiple-images/auto?folder=users",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "upload", "multiple-images", "auto"],
+              "query": [
+                {
+                  "key": "folder",
+                  "value": "users",
+                  "description": "users 또는 wishlists"
+                }
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3000",
+      "type": "string"
+    }
+  ]
+}
