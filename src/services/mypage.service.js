@@ -21,7 +21,6 @@ class MypageService {
             throw error;
         }
 
-        // 직접 Prisma 쿼리 실행 (Repository 이슈로 인한 임시 해결책)
         const user = await prisma.user.findUnique({
             where: { id: userPk },
             select: {
@@ -43,7 +42,6 @@ class MypageService {
             throw error;
         }
 
-        // 팔로워/팔로잉 수 계산
         const followersCount = await prisma.follow.count({
             where: { followingId: user.id }
         });
@@ -73,7 +71,6 @@ class MypageService {
             throw error;
         }
 
-        // 직접 Prisma 쿼리 실행 (Repository 이슈로 인한 임시 해결책)
         const user = await prisma.user.findUnique({
             where: { id: userPk },
             select: {
@@ -137,7 +134,6 @@ class MypageService {
 
         console.log('🔍 Service: Checking follow relationship - currentUserId:', currentUserId, 'targetUserId:', targetUserId);
         
-        // Get both following relationships
         let followRelationship = { is_following: false, is_follower: false };
         if (currentUserId && targetUserId) {
             followRelationship = await mypageRepository.getFollowRelationship(currentUserId, targetUserId);
@@ -280,7 +276,6 @@ class MypageService {
             throw error;
         }
 
-        // 트랜잭션으로 ID 변경 처리
         const result = await mypageRepository.changeUserIdWithTransaction(userPk, newUserId);
         
         console.log('✅ Service: User ID successfully updated to', newUserId);
@@ -330,6 +325,7 @@ class MypageService {
             isFollowing: isFollowing
         };
     }
+
     async getFollowersList(userPk, page = 1, limit = 20) {
         if (!userPk) {
             const error = new Error('사용자 PK가 제공되지 않았습니다.');
@@ -350,7 +346,6 @@ class MypageService {
     
         const offset = (page - 1) * limit;
     
-        // 나를 팔로우하는 사람들 조회
         const [followers, totalCount] = await Promise.all([
             prisma.follow.findMany({
                 where: { followingId: user.id },
@@ -373,7 +368,6 @@ class MypageService {
             })
         ]);
     
-        // 각 팔로워에 대한 상호 팔로우 상태 확인
         const followersWithStatus = await Promise.all(
             followers.map(async (follow) => {
                 const followRelationship = await mypageRepository.getFollowRelationship(
@@ -386,8 +380,8 @@ class MypageService {
                     name: follow.follower.name,
                     photo: follow.follower.photo,
                     followed_at: toKSTISOString(follow.createdAt),
-                    is_following: followRelationship.is_following, // 내가 이 팔로워를 팔로우하는지
-                    is_mutual: followRelationship.is_following // 맞팔인지
+                    is_following: followRelationship.is_following,
+                    is_mutual: followRelationship.is_following
                 };
             })
         );
@@ -425,7 +419,6 @@ class MypageService {
     
         const offset = (page - 1) * limit;
     
-        // 내가 팔로우하는 사람들 조회
         const [followings, totalCount] = await Promise.all([
             prisma.follow.findMany({
                 where: { followerId: user.id },
@@ -448,7 +441,6 @@ class MypageService {
             })
         ]);
     
-        // 각 팔로잉에 대한 상호 팔로우 상태 확인
         const followingsWithStatus = await Promise.all(
             followings.map(async (follow) => {
                 const followRelationship = await mypageRepository.getFollowRelationship(
@@ -461,8 +453,8 @@ class MypageService {
                     name: follow.following.name,
                     photo: follow.following.photo,
                     followed_at: toKSTISOString(follow.createdAt),
-                    is_follower: followRelationship.is_follower, // 이 사람이 나를 팔로우하는지
-                    is_mutual: followRelationship.is_follower // 맞팔인지
+                    is_follower: followRelationship.is_follower,
+                    is_mutual: followRelationship.is_follower
                 };
             })
         );
@@ -479,7 +471,94 @@ class MypageService {
             }
         };
     }
-    
+
+    async unfollowUser(currentUserId, targetUserId) {
+        console.log('🔍 Service: unfollowUser called with currentUserId:', currentUserId, 'targetUserId:', targetUserId);
+        
+        if (!currentUserId || !targetUserId) {
+            const error = new Error('현재 사용자 ID와 대상 사용자 ID가 모두 필요합니다.');
+            error.statusCode = 400;
+            throw error;
+        }
+
+        if (currentUserId === targetUserId) {
+            const error = new Error('자기 자신을 언팔로우할 수 없습니다.');
+            error.statusCode = 400;
+            throw error;
+        }
+
+        const currentUser = await mypageRepository.findUserByUserId(currentUserId, false);
+        const targetUser = await mypageRepository.findUserByUserId(targetUserId, false);
+
+        if (!currentUser || !targetUser) {
+            const error = new Error('사용자를 찾을 수 없습니다.');
+            error.statusCode = 404;
+            throw error;
+        }
+
+        const existingFollow = await mypageRepository.findFollow(currentUser.id, targetUser.id);
+        
+        if (!existingFollow) {
+            const error = new Error('팔로우하지 않은 사용자입니다.');
+            error.statusCode = 400;
+            throw error;
+        }
+
+        await mypageRepository.unfollow(currentUser.id, targetUser.id);
+
+        console.log('✅ Service: Successfully unfollowed user');
+
+        return {
+            current_user_id: currentUserId,
+            target_user_id: targetUserId,
+            isFollowing: false,
+            message: '팔로우가 취소되었습니다.'
+        };
+    }
+
+    async removeFollower(currentUserId, followerUserId) {
+        console.log('🔍 Service: removeFollower called with currentUserId:', currentUserId, 'followerUserId:', followerUserId);
+        
+        if (!currentUserId || !followerUserId) {
+            const error = new Error('현재 사용자 ID와 팔로워 사용자 ID가 모두 필요합니다.');
+            error.statusCode = 400;
+            throw error;
+        }
+
+        if (currentUserId === followerUserId) {
+            const error = new Error('자기 자신을 팔로워에서 제거할 수 없습니다.');
+            error.statusCode = 400;
+            throw error;
+        }
+
+        const currentUser = await mypageRepository.findUserByUserId(currentUserId, false);
+        const followerUser = await mypageRepository.findUserByUserId(followerUserId, false);
+
+        if (!currentUser || !followerUser) {
+            const error = new Error('사용자를 찾을 수 없습니다.');
+            error.statusCode = 404;
+            throw error;
+        }
+
+        const existingFollow = await mypageRepository.findFollow(followerUser.id, currentUser.id);
+        
+        if (!existingFollow) {
+            const error = new Error('해당 사용자가 나를 팔로우하지 않습니다.');
+            error.statusCode = 400;
+            throw error;
+        }
+
+        await mypageRepository.unfollow(followerUser.id, currentUser.id);
+
+        console.log('✅ Service: Successfully removed follower');
+
+        return {
+            current_user_id: currentUserId,
+            removed_follower_id: followerUserId,
+            isFollower: false,
+            message: '팔로워가 제거되었습니다.'
+        };
+    }
 }
 
 export default new MypageService();
