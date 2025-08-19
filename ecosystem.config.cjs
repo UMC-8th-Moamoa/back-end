@@ -21,6 +21,15 @@ module.exports = {
         JWT_REFRESH_SECRET: "h3X7P!9zQ2m@vB1kL4yE0aS8uW5rT6n", 
         JWT_EXPIRES_IN: "2h",
         JWT_REFRESH_EXPIRES_IN: "14d",
+        
+        // SMTP 이메일 설정
+        SMTP_HOST: "smtp.gmail.com",
+        SMTP_PORT: "587",
+        SMTP_USER: "moamoahelp.official@gmail.com",
+        SMTP_PASS: "ujxhmbdcfhrgdgua",
+        SMTP_FROM_NAME: "MOA MOA",
+        SMTP_FROM_EMAIL: "moamoahelp.official@gmail.com",
+        
         // S3 설정 추가
         AWS_ACCESS_KEY: "your_aws_access_key",
         AWS_SECRET_ACCESS_KEY: "your_aws_secret_key",
