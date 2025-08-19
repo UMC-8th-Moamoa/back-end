@@ -44,7 +44,7 @@ enum InsertType {
 enum ItemCategory {
   font        // 폰트
   paper // 편지지
-  envelope     // 편지봉투
+  seal     // 우표
 }
 
 enum ProcessType {
