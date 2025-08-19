@@ -17,7 +17,13 @@ class BirthdayEventRepository {
           }
         },
         participants: {
-          include: {
+          select: {
+            id: true,
+            eventId: true,
+            userId: true,
+            amount: true,
+            message: true,
+            createdAt: true,
             user: {
               select: {
                 id: true,
@@ -48,7 +54,7 @@ class BirthdayEventRepository {
         productName: true,
         price: true,
         productImageUrl: true,
-        productUrl: true,
+        //productUrl: true,
         createdAt: true
       },
       orderBy: {
@@ -242,7 +248,13 @@ class BirthdayEventRepository {
   async getParticipants(eventId) {
     const participants = await prisma.birthdayEventParticipant.findMany({
       where: { eventId },
-      include: {
+      select: {
+        id: true,
+        eventId: true,
+        userId: true,
+        amount: true,
+        message: true,
+        createdAt: true,
         user: {
           select: {
             id: true,
@@ -324,7 +336,13 @@ class BirthdayEventRepository {
         eventId,
         userId
       },
-      include: {
+      select: {
+        id: true,
+        eventId: true,
+        userId: true,
+        amount: true,
+        message: true,
+        createdAt: true,
         user: {
           select: {
             id: true,

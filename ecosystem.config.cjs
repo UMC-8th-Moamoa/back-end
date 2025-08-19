@@ -28,13 +28,9 @@ module.exports = {
         SMTP_USER: "moamoahelp.official@gmail.com",
         SMTP_PASS: "ujxhmbdcfhrgdgua",
         SMTP_FROM_NAME: "MOA MOA",
-        SMTP_FROM_EMAIL: "moamoahelp.official@gmail.com",
+        SMTP_FROM_EMAIL: "moamoahelp.official@gmail.com"
         
-        // S3 설정 추가
-        AWS_ACCESS_KEY: "your_aws_access_key",
-        AWS_SECRET_ACCESS_KEY: "your_aws_secret_key",
-        AWS_REGION: "ap-northeast-2",
-        AWS_S3_BUCKET_NAME: "moamoas-s3"
+        // AWS 설정은 서버의 환경변수에서 읽어옴 (.env 파일 또는 시스템 환경변수)
       },
     
     // 로그 설정
