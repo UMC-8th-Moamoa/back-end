@@ -56,10 +56,21 @@ class BirthdayEventRepository {
       }
     });
 
-    // 남은 기간 계산
+    // 남은 기간 계산 (월/일 기준)
     const now = new Date();
     const deadline = new Date(event.deadline);
-    const timeDiff = deadline.getTime() - now.getTime();
+    
+    // 현재 년도 기준으로 데드라인 날짜를 재계산
+    const currentYear = now.getFullYear();
+    const deadlineThisYear = new Date(currentYear, deadline.getMonth(), deadline.getDate());
+    
+    // 만약 올해 데드라인이 이미 지났다면 내년 데드라인으로 계산
+    let targetDeadline = deadlineThisYear;
+    if (deadlineThisYear < now) {
+      targetDeadline = new Date(currentYear + 1, deadline.getMonth(), deadline.getDate());
+    }
+    
+    const timeDiff = targetDeadline.getTime() - now.getTime();
     const daysLeft = Math.ceil(timeDiff / (1000 * 3600 * 24));
 
     // 이벤트 정보에 추가 데이터 포함
@@ -341,12 +352,12 @@ class BirthdayEventRepository {
   async findActiveEvents(options = {}) {
     const { skip = 0, take = 10 } = options;
     
+    const now = new Date();
+    const currentYear = now.getFullYear();
+    
     return await prisma.birthdayEvent.findMany({
       where: {
-        status: 'ACTIVE',
-        deadline: {
-          gte: new Date()
-        }
+        status: 'ACTIVE'
       },
       skip,
       take,
@@ -368,6 +379,19 @@ class BirthdayEventRepository {
           }
         }
       }
+    }).then(events => {
+      // 올해 기준 7일 전부터 당일까지만 표시
+      return events.filter(event => {
+        const deadline = new Date(event.deadline);
+        const deadlineThisYear = new Date(currentYear, deadline.getMonth(), deadline.getDate());
+        
+        // 7일 전 날짜 계산
+        const sevenDaysBefore = new Date(deadlineThisYear);
+        sevenDaysBefore.setDate(sevenDaysBefore.getDate() - 7);
+        
+        // 7일 전부터 당일까지의 범위에 있는지 확인
+        return now >= sevenDaysBefore && now <= deadlineThisYear;
+      });
     });
   }
 }
