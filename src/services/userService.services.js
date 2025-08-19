@@ -2,6 +2,7 @@ import userRepository from '../repositories/userRepository.repositories.js';
 import { autoEventService } from './autoEvent.service.js';
 import prisma from '../config/prismaClient.js'; 
 import { demoService } from './demo.service.js';
+import emailService from '../utils/email.util.js';
 
 import { 
   hashPassword, 
@@ -235,41 +236,51 @@ class UserService {
   }
 
   async findUserId(findUserIdDto) {
-  const { email, phone } = findUserIdDto;
+    const { email, phone } = findUserIdDto;
 
-  if (!email && !phone) {
-    throw new Error('이메일이나 전화번호 중 하나를 입력해주세요.');
+    if (!email && !phone) {
+      throw new Error('이메일이나 전화번호 중 하나를 입력해주세요.');
+    }
+
+    let user;
+    if (email) {
+      user = await prisma.user.findUnique({
+        where: { email }
+      });
+      if (!user) throw new Error('가입 이력이 없는 이메일입니다.');
+    } else if (phone) {
+      user = await prisma.user.findUnique({
+        where: { phone }
+      });
+      if (!user) throw new Error('가입 이력이 없는 전화번호입니다.');
+    }
+
+    // 실제 이메일 발송
+    try {
+      if (emailService.isAvailable() && user.email) {
+        await emailService.sendFoundUserId(user.email, user.user_id);
+        console.log(`✅ 아이디 찾기 결과 발송 성공: ${user.email}`);
+      } else {
+        // 이메일 서비스가 설정되지 않은 경우 개발 모드로 폴백
+        console.log(`⚠️ 이메일 서비스 미설정 - 개발 모드로 동작`);
+        console.log(`아이디 찾기: ${user.email}로 아이디 ${user.user_id} 전송 (실제 이메일 발송 비활성화)`);
+      }
+    } catch (error) {
+      console.error('아이디 찾기 이메일 발송 실패:', error);
+      
+      // 이메일 발송 실패 시 개발 모드로 폴백
+      if (process.env.NODE_ENV === 'development') {
+        console.log(`⚠️ 이메일 발송 실패 - 개발 모드로 폴백`);
+        console.log(`아이디 찾기: ${user.email}로 아이디 ${user.user_id} 전송 (실제 이메일 발송 실패)`);
+      } else {
+        throw new ValidationError('이메일 발송에 실패했습니다. 잠시 후 다시 시도해주세요.');
+      }
+    }
+
+    return {
+      message: '회원님의 이메일로 아이디를 전송했습니다.'
+    };
   }
-
-  let user;
-  if (email) {
-    user = await prisma.user.findUnique({
-      where: { email }
-    });
-    if (!user) throw new Error('가입 이력이 없는 이메일입니다.');
-  } else if (phone) {
-    user = await prisma.user.findUnique({
-      where: { phone }
-    });
-    if (!user) throw new Error('가입 이력이 없는 전화번호입니다.');
-  }
-
-  // 이메일 발송 (현재 비활성화됨 - 실제 이메일 서비스 구현 후 활성화)
-  // await sendEmail({
-  //   to: user.email,
-  //   subject: '[MOA MOA] 아이디 찾기 안내',
-  //   text: `회원님의 아이디는 ${user.user_id} 입니다.`
-  // });
-
-  // 개발 환경에서는 콘솔에 출력
-  if (process.env.NODE_ENV === 'development') {
-    console.log(`아이디 찾기: ${user.email}로 아이디 ${user.user_id} 전송 (실제 이메일 발송 비활성화)`);
-  }
-
-  return {
-    message: '회원님의 이메일로 아이디를 전송했습니다.'
-  };
-}
 
 
 
@@ -325,9 +336,24 @@ class UserService {
     // 인증 토큰 생성 (10분 유효)
     const verificationToken = generateEmailVerificationToken(email, verificationCode);
 
-    // TODO: 실제 이메일 발송 로직 구현
-    if (process.env.NODE_ENV === 'development') {
-      console.log(`이메일 인증 코드 (${email}): ${verificationCode}`);
+    // 실제 이메일 발송
+    try {
+      if (emailService.isAvailable()) {
+        await emailService.sendVerificationCode(email, verificationCode, purpose);
+        console.log(`✅ 이메일 인증 코드 발송 성공: ${email}`);
+      } else {
+        // 이메일 서비스가 설정되지 않은 경우 개발 모드로 폴백
+        console.log(`⚠️ 이메일 서비스 미설정 - 개발 모드로 동작: ${email}, 코드: ${verificationCode}`);
+      }
+    } catch (error) {
+      console.error('이메일 발송 실패:', error);
+      
+      // 이메일 발송 실패 시 개발 모드로 폴백
+      if (process.env.NODE_ENV === 'development') {
+        console.log(`⚠️ 이메일 발송 실패 - 개발 모드로 폴백: ${email}, 코드: ${verificationCode}`);
+      } else {
+        throw new ValidationError('이메일 발송에 실패했습니다. 잠시 후 다시 시도해주세요.');
+      }
     }
 
     const response = { message: '인증 코드가 발송되었습니다' };
@@ -336,6 +362,7 @@ class UserService {
     if (process.env.NODE_ENV === 'development') {
       response.verificationToken = verificationToken;
       response.expiresIn = '10m';
+      response.debugCode = verificationCode; // 개발 환경에서만 제공
     }
 
     return response;
@@ -384,12 +411,26 @@ class UserService {
     // 비밀번호 재설정 토큰 생성
     const resetToken = generatePasswordResetToken(email, user.id);
 
-    // TODO: 실제 이메일 발송 로직 구현
-    // await this.sendPasswordResetEmail(email, resetToken);
-
-    // 개발 환경에서는 콘솔에 출력
-    if (process.env.NODE_ENV === 'development') {
-      console.log(`비밀번호 재설정 토큰 (${email}): ${resetToken}`);
+    // 실제 이메일 발송
+    try {
+      if (emailService.isAvailable()) {
+        await emailService.sendPasswordResetLink(email, resetToken);
+        console.log(`✅ 비밀번호 재설정 링크 발송 성공: ${email}`);
+      } else {
+        // 이메일 서비스가 설정되지 않은 경우 개발 모드로 폴백
+        console.log(`⚠️ 이메일 서비스 미설정 - 개발 모드로 동작: ${email}`);
+        console.log(`비밀번호 재설정 토큰: ${resetToken}`);
+      }
+    } catch (error) {
+      console.error('비밀번호 재설정 이메일 발송 실패:', error);
+      
+      // 이메일 발송 실패 시 개발 모드로 폴백
+      if (process.env.NODE_ENV === 'development') {
+        console.log(`⚠️ 이메일 발송 실패 - 개발 모드로 폴백: ${email}`);
+        console.log(`비밀번호 재설정 토큰: ${resetToken}`);
+      } else {
+        throw new ValidationError('이메일 발송에 실패했습니다. 잠시 후 다시 시도해주세요.');
+      }
     }
 
     const response = {
@@ -676,30 +717,6 @@ class UserService {
         error: error.message
       };
     }
-  }
-
-  /**
-   * 이메일 발송 (실제 구현 시 사용)
-   * @param {string} email - 수신자 이메일
-   * @param {string} code - 인증 코드
-   * @returns {Promise<void>}
-   */
-  async sendVerificationEmail(email, code) {
-    // TODO: 실제 이메일 발송 로직 구현
-    // 예: SendGrid, Nodemailer 등 사용
-    console.log(`이메일 발송: ${email}, 인증 코드: ${code}`);
-  }
-
-  /**
-   * 비밀번호 재설정 이메일 발송 (실제 구현 시 사용)
-   * @param {string} email - 수신자 이메일
-   * @param {string} resetToken - 재설정 토큰
-   * @returns {Promise<void>}
-   */
-  async sendPasswordResetEmail(email, resetToken) {
-    // TODO: 실제 이메일 발송 로직 구현
-    const resetUrl = `${process.env.CLIENT_URL}/reset-password?token=${resetToken}`;
-    console.log(`비밀번호 재설정 링크: ${resetUrl}`);
   }
 }
 

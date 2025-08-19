@@ -12,9 +12,7 @@
     "db:push": "prisma db push",
     "db:studio": "prisma studio",
     "db:seed": "node prisma/seed.js",
-    "test": "echo \"No test specified\" && exit 0",
-    "test:popular": "node test/popular-products-test.js",
-    "test:wishlist": "node test/wishlist-crawling-test.js"
+    "test": "echo \"No test specified\" && exit 0"
   },
   "repository": {
     "type": "git",
@@ -60,6 +58,7 @@
     "mysql2": "^3.6.5",
     "nanoid": "^5.1.5",
     "node-cron": "^4.2.1",
+    "nodemailer": "^7.0.5",
     "passport": "^0.6.0",
     "passport-google-oauth20": "^2.0.0",
     "passport-jwt": "^4.0.1",
