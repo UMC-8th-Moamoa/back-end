@@ -5,10 +5,12 @@ class LetterHomeRepository {
    * 사용자가 참여 중인 생일 이벤트와 편지 정보 조회 (스와이프)
    */
   async getBirthdayEventsWithLetters(userId, limit, cursor = null, direction = 'next') {
+    let params; // catch 블록에서도 접근 가능하도록 상위 스코프에 선언
+    
     try {
       let whereClause = '';
       let orderClause = 'ORDER BY be.createdAt DESC, be.id DESC';
-      let params = [userId, userId]; // senderId와 userId 모두 필요
+      params = [userId, userId]; // senderId와 userId 모두 필요
 
       // 커서 기반 페이지네이션
       if (cursor && cursor.id && cursor.createdAt) {

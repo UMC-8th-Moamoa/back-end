@@ -139,6 +139,8 @@ const globalErrorHandler = (err, req, res, next) => {
 
   // 에러 로깅
   console.error(`[${getCurrentKSTISOString()}] ${req.method} ${req.path}`);
+  console.error(`🚨 Error Stack:`, err.stack);
+  console.error(`🚨 Error Name:`, err.name);
   console.error(`에러 코드: ${errorCode}`);
   console.error(`에러 메시지: ${message}`);
   
