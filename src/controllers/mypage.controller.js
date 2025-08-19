@@ -353,6 +353,7 @@ class mypageController {
             throw error;
         }
     });
+
     static getFollowersList = catchAsync(async (req, res) => {
         const currentUser = req.user;
         const page = parseInt(req.query.page) || 1;
@@ -394,7 +395,120 @@ class mypageController {
             data: result
         });
     });
-}
 
+    // ✅ 언팔로우 메서드 (DELETE 방식만)
+    static deleteFollowing = catchAsync(async (req, res) => {
+        console.log('=== DEBUG: Controller deleteFollowing ===');
+        console.log('req.params:', req.params);
+        
+        const targetUserId = req.params.userId;
+        const currentUser = req.user;
+
+        // 입력 검증
+        if (!targetUserId) {
+            return res.status(400).json({
+                success: false,
+                message: 'userId 파라미터가 필요합니다.'
+            });
+        }
+
+        if (!/^[a-zA-Z0-9_]{4,20}$/.test(targetUserId)) {
+            return res.status(400).json({
+                success: false,
+                message: '유효하지 않은 사용자 ID입니다. (4-20자, 영문/숫자/언더스코어만 허용)'
+            });
+        }
+
+        // currentUser.user_id가 없는 경우 데이터베이스에서 조회
+        let currentUserInfo = currentUser;
+        if (!currentUser.user_id) {
+            currentUserInfo = await prisma.user.findUnique({
+                where: { id: currentUser.id },
+                select: {
+                    id: true,
+                    user_id: true,
+                    email: true,
+                    name: true
+                }
+            });
+        }
+
+        if (!currentUserInfo || !currentUserInfo.user_id) {
+            return res.status(401).json({
+                success: false,
+                message: '사용자 정보를 찾을 수 없습니다.'
+            });
+        }
+
+        const unfollowResult = await mypageService.unfollowUser(currentUserInfo.user_id, targetUserId);
+
+        res.status(200).json({
+            success: true,
+            message: unfollowResult.message,
+            data: {
+                current_user_id: unfollowResult.current_user_id,
+                target_user_id: unfollowResult.target_user_id,
+                isFollowing: unfollowResult.isFollowing
+            }
+        });
+    });
+
+    // ✅ 팔로워 제거 컨트롤러 메서드
+    static removeFollower = catchAsync(async (req, res) => {
+        console.log('=== DEBUG: Controller removeFollower ===');
+        console.log('req.params:', req.params);
+        
+        const followerUserId = req.params.userId;
+        const currentUser = req.user;
+
+        // 입력 검증
+        if (!followerUserId) {
+            return res.status(400).json({
+                success: false,
+                message: 'userId 파라미터가 필요합니다.'
+            });
+        }
+
+        if (!/^[a-zA-Z0-9_]{4,20}$/.test(followerUserId)) {
+            return res.status(400).json({
+                success: false,
+                message: '유효하지 않은 사용자 ID입니다. (4-20자, 영문/숫자/언더스코어만 허용)'
+            });
+        }
+
+        // currentUser.user_id가 없는 경우 데이터베이스에서 조회
+        let currentUserInfo = currentUser;
+        if (!currentUser.user_id) {
+            currentUserInfo = await prisma.user.findUnique({
+                where: { id: currentUser.id },
+                select: {
+                    id: true,
+                    user_id: true,
+                    email: true,
+                    name: true
+                }
+            });
+        }
+
+        if (!currentUserInfo || !currentUserInfo.user_id) {
+            return res.status(401).json({
+                success: false,
+                message: '사용자 정보를 찾을 수 없습니다.'
+            });
+        }
+
+        const removeResult = await mypageService.removeFollower(currentUserInfo.user_id, followerUserId);
+
+        res.status(200).json({
+            success: true,
+            message: removeResult.message,
+            data: {
+                current_user_id: removeResult.current_user_id,
+                removed_follower_id: removeResult.removed_follower_id,
+                isFollower: removeResult.isFollower
+            }
+        });
+    });
+}
 
 export default mypageController;

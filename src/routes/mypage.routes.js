@@ -863,4 +863,161 @@ router.get('/followings',
   mypageController.getFollowingsList
 );
 
+
+/**
+ * @swagger
+ * /api/mypage/followings/{userId}/unfollow:
+ *   delete:
+ *     summary: 팔로잉 목록에서 특정 사용자 언팔로우
+ *     description: 팔로잉 목록에서 특정 사용자를 언팔로우합니다.
+ *     tags: [Mypage]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: userId
+ *         required: true
+ *         schema:
+ *           type: string
+ *           pattern: "^[a-zA-Z0-9_]{4,20}$"
+ *         description: 언팔로우할 사용자 ID
+ *         example: "chaoni_gold"
+ *     responses:
+ *       200:
+ *         description: 언팔로우 성공
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: "팔로우가 취소되었습니다."
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     current_user_id:
+ *                       type: string
+ *                       example: "lesly"
+ *                     target_user_id:
+ *                       type: string
+ *                       example: "chaoni_gold"
+ *                     isFollowing:
+ *                       type: boolean
+ *                       example: false
+ *       400:
+ *         description: 잘못된 요청
+ *       401:
+ *         description: 인증 필요
+ *       404:
+ *         description: 사용자를 찾을 수 없음
+ *       500:
+ *         description: 서버 내부 오류
+ */
+router.delete('/followings/:userId/unfollow',
+  authenticateJWT,
+  mypageController.deleteFollowing
+);
+
+/**
+ * @swagger
+ * /api/mypage/followers/{userId}/remove:
+ *   delete:
+ *     summary: 팔로워 제거 (차단 기능)
+ *     description: |
+ *       나를 팔로우하는 특정 사용자를 팔로워 목록에서 제거합니다. 
+ *       이는 해당 사용자가 나에게 선물을 보내지 못하도록 하는 차단 기능입니다.
+ *       
+ *       **주의**: 이 기능은 상대방의 팔로우를 강제로 취소시킵니다.
+ *     tags: [Mypage]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: userId
+ *         required: true
+ *         schema:
+ *           type: string
+ *           pattern: "^[a-zA-Z0-9_]{4,20}$"
+ *         description: 제거할 팔로워의 사용자 ID
+ *         example: "annoying_user"
+ *     responses:
+ *       200:
+ *         description: 팔로워 제거 성공
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: "팔로워가 제거되었습니다."
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     current_user_id:
+ *                       type: string
+ *                       description: 현재 사용자 ID
+ *                       example: "lesly"
+ *                     removed_follower_id:
+ *                       type: string
+ *                       description: 제거된 팔로워 사용자 ID
+ *                       example: "annoying_user"
+ *                     isFollower:
+ *                       type: boolean
+ *                       description: 팔로워 상태 (제거 후 false)
+ *                       example: false
+ *             example:
+ *               success: true
+ *               message: "팔로워가 제거되었습니다."
+ *               data:
+ *                 current_user_id: "lesly"
+ *                 removed_follower_id: "annoying_user"
+ *                 isFollower: false
+ *       400:
+ *         description: 잘못된 요청
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
+ *                 message:
+ *                   type: string
+ *             examples:
+ *               invalid_user_id:
+ *                 summary: 잘못된 사용자 ID
+ *                 value:
+ *                   success: false
+ *                   message: "유효하지 않은 사용자 ID입니다. (4-20자, 영문/숫자/언더스코어만 허용)"
+ *               self_remove:
+ *                 summary: 자기 자신 제거 시도
+ *                 value:
+ *                   success: false
+ *                   message: "자기 자신을 팔로워에서 제거할 수 없습니다."
+ *               not_follower:
+ *                 summary: 팔로워가 아닌 사용자
+ *                 value:
+ *                   success: false
+ *                   message: "해당 사용자가 나를 팔로우하지 않습니다."
+ *       401:
+ *         description: 인증 필요
+ *       404:
+ *         description: 사용자를 찾을 수 없음
+ *       500:
+ *         description: 서버 내부 오류
+ */
+router.delete('/followers/:userId/remove',
+  authenticateJWT,
+  mypageController.removeFollower
+);
+
 export default router;
