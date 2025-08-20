@@ -92,6 +92,11 @@ export const generateShoppingImageUploadUrl = async (fileName, fileType, categor
   return await generatePresignedUploadUrl(`shopping/${category}`, fileName, fileType);
 };
 
+// 모아레터 편지봉투 이미지용 Presigned URL 생성
+export const generateLetterEnvelopeImageUploadUrl = async (fileName, fileType) => {
+  return await generatePresignedUploadUrl("letters/envelopes", fileName, fileType);
+};
+
 // 업로드 완료 확인 함수 - S3에 파일이 실제로 업로드되었는지 확인
 export const verifyUploadedFile = async (key) => {
   try {

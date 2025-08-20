@@ -3,6 +3,7 @@ import {
   getUserImageUploadUrl,
   getWishlistImageUploadUrl,
   getShoppingImageUploadUrl,
+  getLetterEnvelopeImageUploadUrl,
   deleteImage,
   confirmUpload,
   verifyUpload,
@@ -52,6 +53,7 @@ const router = express.Router();
 router.post("/user-image/upload-url", getUserImageUploadUrl);
 router.post("/wishlist-image/upload-url", getWishlistImageUploadUrl); 
 router.post("/shopping-image/upload-url", getShoppingImageUploadUrl);
+router.post("/letter-envelope/upload-url", getLetterEnvelopeImageUploadUrl);
 
 // 📋 업로드 검증 및 확인 API들
 router.post("/verify", verifyUpload);
