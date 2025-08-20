@@ -543,7 +543,155 @@ export const autoUploadMultipleImages = (req, res) => {
       error: error.message
     });
   }
-};// 모아레터 편지봉투 이미지 업로드 URL 생성 함수
+};
+
+/**
+ * @swagger
+ * /api/upload/letter-envelope/upload-url:
+ *   post:
+ *     summary: 모아레터 편지봉투 우표 이미지 업로드 URL 생성
+ *     description: |
+ *       모아레터 편지봉투에 붙일 우표 이미지를 S3에 업로드하기 위한 Presigned URL을 생성합니다.
+ *       
+ *       ## 업로드 폴더 구조:
+ *       - **letters/envelopes/**: 편지봉투 우표 이미지 전용 폴더
+ *       
+ *       ## 사용 워크플로우:
+ *       1. 이 API로 Presigned URL 생성 (15분 유효)
+ *       2. 클라이언트에서 받은 uploadUrl로 직접 S3에 PUT 요청으로 이미지 업로드
+ *       3. 편지 작성/수정 시 fileUrl을 envelopeImageUrl 필드에 사용
+ *       
+ *       ## 지원 파일 형식:
+ *       - PNG, JPG, JPEG, BMP, GIF
+ *       - 최대 파일 크기: 5MB
+ *       
+ *     tags: [Upload]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - fileName
+ *               - fileType
+ *             properties:
+ *               fileName:
+ *                 type: string
+ *                 example: "envelope_stamp.png"
+ *                 description: 업로드할 파일명 (확장자 포함)
+ *               fileType:
+ *                 type: string
+ *                 example: "image/png"
+ *                 enum:
+ *                   - image/png
+ *                   - image/jpeg
+ *                   - image/jpg
+ *                   - image/bmp
+ *                   - image/gif
+ *                 description: 파일의 MIME 타입
+ *           examples:
+ *             PNG 우표:
+ *               summary: PNG 형식 우표 이미지
+ *               value:
+ *                 fileName: "christmas_stamp.png"
+ *                 fileType: "image/png"
+ *             JPG 우표:
+ *               summary: JPG 형식 우표 이미지  
+ *               value:
+ *                 fileName: "birthday_stamp.jpg"
+ *                 fileType: "image/jpeg"
+ *     responses:
+ *       200:
+ *         description: 업로드 URL이 성공적으로 생성됨
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: "편지봉투 이미지 업로드 URL이 생성되었습니다."
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     uploadUrl:
+ *                       type: string
+ *                       format: uri
+ *                       description: S3 업로드용 Presigned URL (15분 유효)
+ *                       example: "https://moamoas-s3.s3.amazonaws.com/letters/envelopes/550e8400-e29b-41d4-a716-446655440000_1723456789000.png?AWSAccessKeyId=..."
+ *                     fileUrl:
+ *                       type: string
+ *                       format: uri
+ *                       description: 업로드 완료 후 접근 가능한 최종 URL (편지 작성 시 사용)
+ *                       example: "https://moamoas-s3.s3.ap-northeast-2.amazonaws.com/letters/envelopes/550e8400-e29b-41d4-a716-446655440000_1723456789000.png"
+ *                     key:
+ *                       type: string
+ *                       description: S3 객체 키
+ *                       example: "letters/envelopes/550e8400-e29b-41d4-a716-446655440000_1723456789000.png"
+ *                     expires:
+ *                       type: string
+ *                       format: date-time
+ *                       description: URL 만료 시간
+ *                       example: "2025-08-20T15:30:00.000Z"
+ *                     maxFileSize:
+ *                       type: integer
+ *                       description: 최대 허용 파일 크기 (바이트)
+ *                       example: 5242880
+ *                     contentType:
+ *                       type: string
+ *                       description: 업로드할 파일의 MIME 타입
+ *                       example: "image/png"
+ *                     method:
+ *                       type: string
+ *                       description: 클라이언트에서 사용할 HTTP 메서드
+ *                       example: "PUT"
+ *       400:
+ *         description: 잘못된 요청 (필수 파라미터 누락 또는 잘못된 파일 형식)
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
+ *                 message:
+ *                   type: string
+ *                   example: "fileName과 fileType이 필요합니다."
+ *             examples:
+ *               missing_params:
+ *                 summary: 필수 파라미터 누락
+ *                 value:
+ *                   success: false
+ *                   message: "fileName과 fileType이 필요합니다."
+ *               invalid_file_type:
+ *                 summary: 지원하지 않는 파일 형식
+ *                 value:
+ *                   success: false
+ *                   message: "지원하지 않는 파일 형식입니다."
+ *       500:
+ *         description: 서버 내부 오류 (AWS S3 연결 실패 등)
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
+ *                 message:
+ *                   type: string
+ *                   example: "업로드 URL 생성에 실패했습니다."
+ *                 error:
+ *                   type: string
+ *                   description: 구체적인 오류 메시지
+ *                   example: "AccessDenied: User is not authorized to perform s3:PutObject"
+ */
+// 모아레터 편지봉투 이미지 업로드 URL 생성 함수
 export const getLetterEnvelopeImageUploadUrl = async (req, res) => {
   try {
     const { fileName, fileType } = req.body;
