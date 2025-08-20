@@ -1,5 +1,6 @@
 import cron from 'node-cron';
 import prisma from '../config/prismaClient.js';
+import { notificationService } from './notification.service.js';
 
 class AutoEventService {
   constructor() {
@@ -202,21 +203,12 @@ class AutoEventService {
           }
         }
       });
-
-      // 각 팔로워에게 알림 생성
-      const notifications = followers.map(follow => ({
-        userId: follow.followerId,
-        message: `${follow.following.name}님의 생일이 일주일 후입니다! 생일 모아에 참여해보세요.`,
-        isRead: false,
-        createdAt: new Date()
-      }));
-
-      if (notifications.length > 0) {
-        await prisma.notification.createMany({
-          data: notifications
-        });
-        
-        console.log(`${notifications.length}명의 팔로워에게 생일 알림 전송 완료`);
+      // 알림 전송 (BIRTHDAY_REMINDER)
+      const followerUsers = followers.map(f => f.follower);
+      if (followerUsers.length > 0) {
+        await notificationService.createBirthdayReminderToFollowers(followerUsers, followers[0].following.name, 7);
+        // 이벤트 생성 알림도 함께 전송
+        await notificationService.createFriendEventCreatedToFollowers(followerUsers, followers[0].following.name);
       }
     } catch (error) {
       console.error('생일 알림 생성 실패:', error);
@@ -269,6 +261,7 @@ class AutoEventService {
 
       console.log(`활성 이벤트 발견: ${activeEvent.birthdayPerson.name}님의 이벤트 (ID: ${activeEvent.id})`);
 
+
       // 이벤트 상태를 completed로 변경
       const completedEvent = await prisma.birthdayEvent.update({
         where: {
@@ -280,8 +273,26 @@ class AutoEventService {
         }
       });
 
+
+      // 알림 생성 (생일자에게 얼마가 모금되었는지)
+      await notificationService.createMoaCompletedNotification(
+        activeEvent.birthdayPersonId,
+        activeEvent.currentAmount
+      );
+
+      // 참여자 전체 알림 (EVENT_COMPLETED)
+      const participants = await prisma.birthdayEventParticipant.findMany({
+        where: { eventId: activeEvent.id },
+        include: { user: { select: { id: true, name: true } } }
+      });
+      if (participants.length > 0) {
+        await notificationService.createEventCompletedToParticipants(
+          participants.map(p => ({ userId: p.user.id })),
+          activeEvent.birthdayPerson.name
+        );
+      }
+
       console.log(`이벤트가 성공적으로 완료되었습니다! (완료 시간: ${completedEvent.updatedAt})`);
-      
       return completedEvent;
 
     } catch (error) {

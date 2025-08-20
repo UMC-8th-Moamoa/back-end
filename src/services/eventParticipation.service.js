@@ -1,4 +1,5 @@
 import { eventParticipationRepository } from '../repositories/eventParticipation.repository.js';
+import { notificationService } from './notification.service.js';
 import { ValidationError, NotFoundError, ForbiddenError } from '../middlewares/errorHandler.js';
 
 class EventParticipationService {
@@ -6,13 +7,11 @@ class EventParticipationService {
    * 이벤트 참여 화면 정보 조회
    */
   async getParticipationInfo(userId, eventId) {
-    // 1. 이벤트 존재 확인
     const event = await eventParticipationRepository.getEventById(eventId);
     if (!event) {
       throw new NotFoundError('생일 이벤트를 찾을 수 없습니다');
     }
 
-    // 2. 접근 권한 확인 (팔로우 관계 또는 본인)
     const isFollowing = await eventParticipationRepository.isFollowing(
       userId, 
       event.birthdayPersonId
@@ -22,23 +21,18 @@ class EventParticipationService {
       throw new ForbiddenError('이벤트에 접근할 권한이 없습니다');
     }
 
-    // 3. 참여 정보 조회
     const currentUserParticipated = await eventParticipationRepository.isUserParticipating(
       eventId, 
       userId
     );
     const participationCount = await eventParticipationRepository.getParticipantCount(eventId);
 
-    // 4. 편지 작성 여부 확인
     const hasWrittenLetter = await eventParticipationRepository.hasUserWrittenLetter(
       eventId,
       userId
     );
 
-    // 5. 카운트다운 계산
     const countdown = this.calculateCountdown(event.deadline);
-
-    // 6. Status에 따른 버튼 분류
     const buttonStatus = this.determineButtonStatus(event, currentUserParticipated, hasWrittenLetter);
 
     return {
@@ -115,6 +109,35 @@ class EventParticipationService {
 
     // 8. 현재 이벤트 상태 조회
     const eventStatus = await eventParticipationRepository.getEventStatus(eventId);
+
+    // 🚀 9. 참여 성공 후 알림 전송 (새로 추가)
+    try {
+      // 참여자 정보 조회
+      const participant = await eventParticipationRepository.getUserById(userId);
+      
+      if (participant) {
+        // 송금 참여인 경우
+        if (participationType === 'WITH_MONEY' && amount > 0) {
+          await notificationService.createMoaParticipationNotification(
+            event.birthdayPersonId,
+            participant.name,
+            amount
+          );
+          console.log(`✅ 송금 참여 알림 전송 - ${participant.name}님이 ${amount.toLocaleString()}원 참여`);
+        } 
+        // 송금 없이 참여인 경우
+        else if (participationType === 'WITHOUT_MONEY') {
+          await notificationService.createMoaJoinNotification(
+            event.birthdayPersonId,
+            participant.name
+          );
+          console.log(`✅ 참여 알림 전송 - ${participant.name}님이 모아에 참여`);
+        }
+      }
+    } catch (notificationError) {
+      // 알림 전송 실패는 전체 참여 프로세스를 막지 않음
+      console.error('참여 알림 전송 실패:', notificationError);
+    }
 
     return {
       participation: {

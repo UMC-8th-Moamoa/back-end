@@ -569,6 +569,36 @@ const validateShareLink = [
   handleValidationErrors
 ];
 
+// 프로필 이미지 업데이트 유효성 검사
+export const validateProfileImageUpdate = [
+  body('imageUrl')
+    .notEmpty()
+    .withMessage('이미지 URL이 필요합니다')
+    .isURL()
+    .withMessage('유효한 URL 형식이어야 합니다')
+    .matches(/^https?:\/\/.+\.(jpg|jpeg|png|gif|bmp)$/i)
+    .withMessage('jpg, jpeg, png, gif, bmp 형식의 이미지만 지원합니다')
+    .isLength({ max: 500 })
+    .withMessage('URL은 500자를 초과할 수 없습니다')
+    .custom((value) => {
+      // XSS 방지를 위한 추가 검증
+      if (value.includes('javascript:') || value.includes('data:')) {
+        throw new Error('허용되지 않는 URL 형식입니다');
+      }
+      
+      // AWS S3 URL 패턴 검증 (선택적)
+      const s3UrlPattern = /^https:\/\/.*\.s3\..*\.amazonaws\.com\/.*$/;
+      if (!s3UrlPattern.test(value)) {
+        console.warn('S3 URL이 아닌 URL이 제공됨:', value);
+        // 경고만 출력하고 통과시킴 (다른 스토리지 서비스도 허용)
+      }
+      
+      return true;
+    }),
+  
+  handleValidationErrors
+];
+
 export {
   validateUserRegistration,
   validateUserLogin,

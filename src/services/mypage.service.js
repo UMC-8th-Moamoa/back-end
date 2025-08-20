@@ -311,12 +311,39 @@ class MypageService {
         const existingFollow = await mypageRepository.findFollow(follower.id, following.id);
 
         let isFollowing = false;
+
         if (existingFollow) {
             await mypageRepository.unfollow(follower.id, following.id);
             isFollowing = false;
         } else {
             await mypageRepository.requestFollow(follower.id, following.id);
             isFollowing = true;
+
+            // 팔로우가 성립된 경우: 팔로우 대상의 active 생일 이벤트가 있으면 알림 생성
+            const prisma = (await import('../config/prismaClient.js')).default;
+            const { notificationService } = await import('./notification.service.js');
+
+            // 1. 팔로우 당한 사용자에게 "[팔로워]님이 회원님을 팔로우하기 시작했습니다" 알림
+            await notificationService.createNotificationWithAllParams(
+                following.id,
+                'FOLLOWED',
+                '새 팔로워',
+                `${follower.name}님이 회원님을 팔로우하기 시작했습니다.`
+            );
+
+            // 2. 팔로우 대상의 active 생일 이벤트가 있으면 팔로워에게 알림
+            const activeEvent = await prisma.birthdayEvent.findFirst({
+                where: {
+                    birthdayPersonId: following.id,
+                    status: 'active',
+                    deadline: { gte: new Date() }
+                }
+            });
+            if (activeEvent) {
+                await notificationService.createFriendEventCreatedToFollowers([
+                    { id: follower.id }
+                ], following.name);
+            }
         }
 
         return {
@@ -558,6 +585,47 @@ class MypageService {
             isFollower: false,
             message: '팔로워가 제거되었습니다.'
         };
+    }
+    
+    async updateProfileImage(userPk, imageUrl) {
+        console.log('🔍 Service: updateProfileImage called with userPk:', userPk, 'imageUrl:', imageUrl);
+        
+        if (!userPk) {
+            console.error('❌ Service: userPk is undefined/null');
+            const error = new Error('사용자 PK가 제공되지 않았습니다.');
+            error.statusCode = 400;
+            throw error;
+        }
+
+        if (!imageUrl) {
+            console.error('❌ Service: imageUrl is undefined/null');
+            const error = new Error('이미지 URL이 제공되지 않았습니다.');
+            error.statusCode = 400;
+            throw error;
+        }
+
+        try {
+            // 사용자 존재 확인
+            const user = await mypageRepository.findUserById(userPk);
+            if (!user) {
+                const error = new Error('사용자를 찾을 수 없습니다.');
+                error.statusCode = 404;
+                throw error;
+            }
+
+            // 프로필 이미지 업데이트
+            const updatedUser = await mypageRepository.updateProfileImage(userPk, imageUrl);
+
+            console.log('✅ Service: Profile image successfully updated');
+
+            return {
+                imageUrl: updatedUser.photo,
+                message: '프로필 이미지가 성공적으로 변경되었습니다.'
+            };
+        } catch (error) {
+            console.error('프로필 이미지 업데이트 서비스 오류:', error);
+            throw error;
+        }
     }
 }
 

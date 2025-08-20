@@ -11,12 +11,6 @@ datasource db {
 }
 
 // Enum 정의
-enum NotificationType {
-  FOLLOW_REQUEST    // 팔로우 요청
-  BIRTHDAY_REMINDER // 생일 알림
-  PRIVATE_EVENT     // 나를 팔로우한 사람만 모아 참여
-}
-
 enum PointType {
   CHARGE        // 충전
   USE           // 사용
@@ -55,6 +49,17 @@ enum ProcessType {
 enum ParticipationType {
   WITH_MONEY
   WITHOUT_MONEY
+}
+
+enum NotificationType {
+  BIRTHDAY_REMINDER     // 생일 알림
+  MOA_PARTICIPATION     // 모아 참여 알림
+  MOA_COMPLETED         // 모아 완료 알림
+  MOA_INVITE           // 모아 초대 알림
+  LETTER_RECEIVED      // 편지 받음 알림
+  FRIEND_REQUEST       // 친구 요청 알림
+  SYSTEM              // 시스템 알림
+  FOLLOWED            // 팔로우 요청
 }
 
 // 사용자 테이블
@@ -131,6 +136,8 @@ model Follow {
 model Notification {
   id           Int              @id @default(autoincrement())
   userId       Int
+  type         NotificationType @default(SYSTEM)
+  title        String          @db.VarChar(100)
   message      String          @db.Text
   isRead       Boolean          @default(false)
   readAt       DateTime?
