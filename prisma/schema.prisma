@@ -53,13 +53,14 @@ enum ParticipationType {
 
 enum NotificationType {
   BIRTHDAY_REMINDER     // 생일 알림
+  FOLLOWED              // 팔로우 요청
   MOA_PARTICIPATION     // 모아 참여 알림
   MOA_COMPLETED         // 모아 완료 알림
-  MOA_INVITE           // 모아 초대 알림
   LETTER_RECEIVED      // 편지 받음 알림
   FRIEND_REQUEST       // 친구 요청 알림
   SYSTEM              // 시스템 알림
-  FOLLOWED            // 팔로우 요청
+  EVENT_COMPLETED     // 이벤트 종료
+  PURCHASE_PROOF      // 구매 인증
 }
 
 // 사용자 테이블
