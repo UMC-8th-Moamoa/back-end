@@ -40,4 +40,10 @@ router.patch('/letters/:id/read',
   demoController.markDemoLetterAsRead
 );
 
+// 편지 상세 조회
+router.get('/letters/:id',
+  authenticateJWT,
+  demoController.getDemoLetterById
+);
+
 export default router;
