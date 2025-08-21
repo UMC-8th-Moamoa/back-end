@@ -87,6 +87,17 @@ class UserController {
   });
 
   /**
+   * 사용자 ID 중복 확인
+   * GET /api/users/user-id/:userId/check
+   */
+  checkUserId = catchAsync(async (req, res) => {
+    const { userId } = req.params;
+    const result = await userService.checkUserId(userId);
+    
+    res.success(result);
+  });
+
+  /**
    * 이메일 중복 확인
    * POST /api/auth/email/check
    */
@@ -152,6 +163,17 @@ class UserController {
   requestPasswordReset = catchAsync(async (req, res) => {
     const passwordResetRequestDto = new PasswordResetRequestDto(req.body);
     const result = await userService.requestPasswordReset(passwordResetRequestDto);
+    
+    res.success(result);
+  });
+
+  /**
+   * 비밀번호 재설정 인증 코드 확인
+   * POST /api/users/verify-reset-code
+   */
+  verifyPasswordResetCode = catchAsync(async (req, res) => {
+    const { email, code, token } = req.body;
+    const result = await userService.verifyPasswordResetCode({ email, code, token });
     
     res.success(result);
   });

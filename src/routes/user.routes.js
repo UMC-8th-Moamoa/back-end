@@ -212,6 +212,43 @@ router.get('/nickname/:nickname/check', userController.checkNickname);
 
 /**
  * @swagger
+ * /api/users/user-id/{userId}/check:
+ *   get:
+ *     summary: 사용자 ID 중복 확인
+ *     tags: [Users]
+ *     parameters:
+ *       - in: path
+ *         name: userId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: 중복 확인할 사용자 ID
+ *     responses:
+ *       200:
+ *         description: 사용자 ID 중복 확인 결과
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     available:
+ *                       type: boolean
+ *                       example: true
+ *                     message:
+ *                       type: string
+ *                       example: 사용 가능한 아이디입니다
+ */
+// 사용자 ID 중복 확인
+router.get('/user-id/:userId/check', userController.checkUserId);
+
+/**
+ * @swagger
  * /api/users/email/check:
  *   post:
  *     summary: 이메일 중복 확인
@@ -434,6 +471,77 @@ router.post('/find-id', userController.findUserId);
  */
 // 비밀번호 찾기 (재설정 요청)
 router.post('/find-password', userController.requestPasswordReset);
+
+/**
+ * @swagger
+ * /api/users/verify-reset-code:
+ *   post:
+ *     summary: 비밀번호 재설정 인증 코드 확인
+ *     description: |
+ *       비밀번호 재설정을 위한 인증 코드를 확인합니다.
+ *       인증 코드 확인 후 새로운 비밀번호를 설정할 수 있습니다.
+ *     tags: [Users, Email]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - code
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 format: email
+ *                 description: 이메일 (선택사항)
+ *               code:
+ *                 type: string
+ *                 pattern: '^[0-9]{6}$'
+ *                 description: 6자리 인증 코드
+ *               token:
+ *                 type: string
+ *                 description: 인증 토큰 (선택사항)
+ *           examples:
+ *             simple:
+ *               summary: 간단한 코드 확인
+ *               value:
+ *                 email: user@example.com
+ *                 code: "123456"
+ *             with_token:
+ *               summary: 토큰과 함께 확인
+ *               value:
+ *                 code: "123456"
+ *                 token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+ *     responses:
+ *       200:
+ *         description: 인증 코드 확인 성공
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     success:
+ *                       type: boolean
+ *                       example: true
+ *                     message:
+ *                       type: string
+ *                       example: 인증 코드가 확인되었습니다. 새로운 비밀번호를 입력해주세요.
+ *                     email:
+ *                       type: string
+ *                       example: user@example.com
+ *       400:
+ *         description: 잘못된 인증 코드 또는 만료된 토큰
+ *       422:
+ *         description: 인증 코드가 일치하지 않음
+ */
+// 비밀번호 재설정 인증 코드 확인
+router.post('/verify-reset-code', userController.verifyPasswordResetCode);
 
 /**
  * @swagger
