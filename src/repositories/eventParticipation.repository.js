@@ -186,6 +186,27 @@ class EventParticipationRepository {
       return false;
     }
   }
+  /**
+   * 사용자 정보 조회 (알림용)
+   */
+  async getUserById(userId) {
+    try {
+      const user = await prisma.user.findUnique({
+        where: { id: userId },
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          photo: true
+        }
+      });
+
+      return user;
+    } catch (error) {
+      console.error('사용자 정보 조회 실패:', error);
+      throw error;
+    }
+  }
 }
 
 export const eventParticipationRepository = new EventParticipationRepository();
