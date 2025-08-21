@@ -1,5 +1,6 @@
 import userService from '../services/userService.services.js';
 import { autoEventService } from '../services/autoEvent.service.js';
+import PaymentService from '../services/payment.service.js'; // 추가
 // import { hashPassword, comparePassword } from '../utils/password.util.js';
 import { generateTokenPair, verifyRefreshToken } from '../utils/jwt.util.js';
 import { catchAsync } from '../middlewares/errorHandler.js';
@@ -23,12 +24,32 @@ import {
 class UserController {
 
   /**
-   * 회원가입
+   * 회원가입 (수정된 버전 - 보너스 포함)
    * POST /api/auth/register
    */
   register = catchAsync(async (req, res) => {
     const createUserDto = new CreateUserDto(req.body);
     const result = await userService.register(createUserDto);
+    
+    // 💰 회원가입 보너스 지급
+    try {
+      console.log('💰 일반 회원가입 보너스 지급 시작');
+      const bonusResult = await PaymentService.giveSignupBonus(result.user.id, result.user.user_id);
+      
+      console.log('✅ 일반 회원가입 보너스 지급 완료:', {
+        userId: bonusResult.user.id,
+        newCash: bonusResult.user.cash
+      });
+
+      // 응답에 보너스 정보 포함
+      result.user.cash = bonusResult.user.cash;
+      result.message = '회원가입이 완료되었습니다. 회원가입 축하 보너스 400 포인트가 지급되었습니다!';
+
+    } catch (bonusError) {
+      console.error('⚠️ 일반 회원가입 보너스 지급 실패 (사용자는 생성됨):', bonusError);
+      // 보너스 지급 실패해도 회원가입은 성공으로 처리
+      result.message = '회원가입이 완료되었습니다. (보너스 지급 중 일시적 오류가 발생했습니다)';
+    }
     
     res.status(201).success(result);
   });
@@ -146,7 +167,6 @@ class UserController {
   });
 
   
-
 
   /**
    * 비밀번호 변경

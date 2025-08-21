@@ -9,6 +9,7 @@ const { PrismaClient } = pkg;
 import { UnauthorizedError, UserNotFoundError } from '../middlewares/errorHandler.js';
 import { comparePassword } from '../utils/password.util.js';
 import { getCurrentKSTTime } from '../utils/datetime.util.js';
+import PaymentService from '../services/payment.service.js';
 
 const prisma = new PrismaClient();
 
@@ -106,7 +107,7 @@ passport.use(new JwtStrategy(
   }
 ));
 
-// 카카오 Strategy (수정된 버전)
+// 카카오 Strategy (수정된 버전 - 회원가입 보너스 포함)
 if (process.env.KAKAO_CLIENT_ID && process.env.KAKAO_CLIENT_SECRET && process.env.KAKAO_REDIRECT_URI) {
   passport.use(new KakaoStrategy(
     {
@@ -212,7 +213,7 @@ if (process.env.KAKAO_CLIENT_ID && process.env.KAKAO_CLIENT_SECRET && process.en
           return done(null, userWithoutPassword);
         }
         
-        // 새 사용자 생성 (카카오 전용)
+        // 새 사용자 생성 (카카오 전용) + 회원가입 보너스
         console.log('🆕 새 카카오 사용자 생성 시작');
         const uniqueUserId = await generateUniqueKakaoUserId();
         console.log('🔢 생성된 카카오 user_id:', uniqueUserId);
@@ -225,6 +226,7 @@ if (process.env.KAKAO_CLIENT_ID && process.env.KAKAO_CLIENT_SECRET && process.en
             photo: kakaoProfileImage || null,
             emailVerified: !!kakaoEmail,
             password: '', // 소셜 로그인은 비밀번호 없음
+            cash: 0, // 초기값 0 (보너스는 별도로 지급)
             lastLoginAt: getCurrentKSTTime(),
             createdAt: getCurrentKSTTime(),
             updatedAt: getCurrentKSTTime()
@@ -252,6 +254,24 @@ if (process.env.KAKAO_CLIENT_ID && process.env.KAKAO_CLIENT_SECRET && process.en
           provider: socialLogin.provider,
           user_id: socialLogin.user_id
         });
+
+        // 💰 카카오 회원가입 보너스 지급
+        try {
+          console.log('💰 카카오 회원가입 보너스 지급 시작');
+          const bonusResult = await PaymentService.giveSignupBonus(newUser.id, newUser.user_id);
+          
+          console.log('✅ 카카오 회원가입 보너스 지급 완료:', {
+            userId: bonusResult.user.id,
+            newCash: bonusResult.user.cash
+          });
+
+          // 업데이트된 캐시 정보를 사용자 객체에 반영
+          newUser.cash = bonusResult.user.cash;
+
+        } catch (bonusError) {
+          console.error('⚠️ 카카오 회원가입 보너스 지급 실패 (사용자는 생성됨):', bonusError);
+          // 보너스 지급 실패해도 로그인은 성공으로 처리
+        }
         
         // 생성된 사용자 정보 반환
         const userResult = {
@@ -261,7 +281,8 @@ if (process.env.KAKAO_CLIENT_ID && process.env.KAKAO_CLIENT_SECRET && process.en
           user_id: newUser.user_id, // kakao_123456
           photo: newUser.photo,
           createdAt: newUser.createdAt,
-          lastLoginAt: newUser.lastLoginAt
+          lastLoginAt: newUser.lastLoginAt,
+          cash: newUser.cash // 보너스 포함된 최신 캐시
         };
 
         console.log('새 카카오 사용자 생성:', {
@@ -269,7 +290,8 @@ if (process.env.KAKAO_CLIENT_ID && process.env.KAKAO_CLIENT_SECRET && process.en
           userIdString: newUser.user_id,
           email: newUser.email,
           name: newUser.name, // 빈 문자열
-          isEmpty: newUser.name === ''
+          isEmpty: newUser.name === '',
+          cash: newUser.cash
         });
         
         return done(null, userResult);
