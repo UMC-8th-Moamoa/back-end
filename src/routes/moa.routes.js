@@ -54,6 +54,45 @@ const router = express.Router();
  *           nullable: true
  *           description: 이전 페이지 커서
  *     
+ *     MainBanner:
+ *       type: object
+ *       properties:
+ *         type:
+ *           type: string
+ *           enum: [balance, birthday_today, my_in_progress, participating, default]
+ *           description: 메인 배너 타입
+ *         title:
+ *           type: string
+ *           description: 배너 제목
+ *         description:
+ *           type: string
+ *           description: 배너 설명
+ *         actionText:
+ *           type: string
+ *           description: 배너 버튼 텍스트
+ *         moaId:
+ *           type: integer
+ *           nullable: true
+ *           description: 관련 모아 ID (없으면 null)
+ *     SubBanner:
+ *       type: object
+ *       properties:
+ *         type:
+ *           type: string
+ *           enum: [participating, certification]
+ *           description: 서브 배너 타입
+ *         title:
+ *           type: string
+ *           description: 배너 제목
+ *         description:
+ *           type: string
+ *           description: 배너 설명
+ *         actionText:
+ *           type: string
+ *           description: 배너 버튼 텍스트
+ *         moaId:
+ *           type: integer
+ *           description: 관련 모아 ID
  *     MoaResponse:
  *       type: object
  *       properties:
@@ -63,6 +102,12 @@ const router = express.Router();
  *             $ref: '#/components/schemas/MoaItem'
  *         pagination:
  *           $ref: '#/components/schemas/MoaPagination'
+ *         mainBanner:
+ *           $ref: '#/components/schemas/MainBanner'
+ *         subBanners:
+ *           type: array
+ *           items:
+ *             $ref: '#/components/schemas/SubBanner'
  */
 
 /**
@@ -125,6 +170,23 @@ const router = express.Router();
  *                   Prev: false
  *                   nextCursor: "eyJpZCI6MSwiY3JlYXRlZEF0IjoiMjAyNS0wOC0yM1QxMjowMDowMFoifQ=="
  *                   prevCursor: null
+ *                 mainBanner:
+ *                   type: "balance"
+ *                   title: "송금을 완료했어요!"
+ *                   description: "잔금을 현명하게 소비하러 가요"
+ *                   actionText: "잔금 처리하기"
+ *                   moaId: 1
+ *                 subBanners:
+ *                   - type: "participating"
+ *                     title: "김민수님의 모아모아 참여 중"
+ *                     description: ""
+ *                     actionText: "진행도 보러 가기"
+ *                     moaId: 2
+ *                   - type: "certification"
+ *                     title: "받은 선물을 인증해보세요"
+ *                     description: ""
+ *                     actionText: "선물 인증하기"
+ *                     moaId: 1
  *       400:
  *         description: 잘못된 요청 (DTO 검증 실패)
  *       401:

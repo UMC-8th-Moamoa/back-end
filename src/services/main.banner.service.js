@@ -39,11 +39,12 @@ export function getMainBanner(user, moas, upcomingBirthdays = []) {
     }
   }
 
-  // 3순위: 본인 생일 이벤트 진행 중 (bannerType === 'my_in_progress') 또는 본인 생일이 7일 이내
-  const myEventBanner = moas.find(moa => moa.bannerType === 'my_in_progress');
+  // 3순위: 본인 생일 이벤트 진행 중 (bannerType === 'my_in_progress' && status가 active) 또는 본인 생일이 7일 이내
+  const myEventBanner = moas.find(moa => moa.bannerType === 'my_in_progress' && moa.eventStatus === 'active');
   // 본인 생일 D-7 이하 여부 계산
   let isMyBirthdayUpcoming = false;
   let myBirthdayDday = null;
+  let hasMyCompletedEvent = false;
   if (user && user.birthday) {
     const today = new Date();
     const birthday = new Date(user.birthday);
@@ -54,8 +55,12 @@ export function getMainBanner(user, moas, upcomingBirthdays = []) {
     const diff = Math.floor((birthday - today) / (1000 * 60 * 60 * 24));
     myBirthdayDday = diff;
     if (diff >= 0 && diff <= 7) isMyBirthdayUpcoming = true;
+    // 본인 이벤트가 종료된 게 있는지 확인
+    hasMyCompletedEvent = moas.some(moa => moa.isBirthdayPerson && moa.eventStatus === 'completed');
   }
-  if (myEventBanner || isMyBirthdayUpcoming) {
+  // 본인 이벤트가 종료된 경우에는 isMyBirthdayUpcoming이 true여도 mainBanner에 my_in_progress를 노출하지 않음
+  if (myEventBanner || (isMyBirthdayUpcoming && !hasMyCompletedEvent)) {
+    // 단, myEventBanner가 있을 때만 moaId를 전달
     return {
       type: 'my_in_progress',
       title: `${user.name}님을 위한 모아가 진행 중이에요!`,
