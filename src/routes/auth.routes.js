@@ -442,58 +442,60 @@ if (isKakaoEnabled()) {
    *       400:
    *         description: 인증 실패
    */
-router.get('/kakao/callback', 
-  handleSocialCallback('kakao'),
-  (req, res) => {
-    try {
-      const tokens = generateTokenPair(req.user.id, req.user.email, req.user.user_id);
-      const clientUrl = process.env.CLIENT_URL || 'https://www.moamoas.com'; // API URL이 아닌 클라이언트 URL
-      
-      // 사용자 타입과 이름 상태에 따른 리다이렉트 결정
-      const isKakaoUser = req.user.user_id.startsWith('kakao_');
-      const hasValidName = req.user.name && req.user.name.trim() !== '' && req.user.name.trim() !== '.';
-      
-      let redirectPath;
-      if (isKakaoUser) {
-        redirectPath = '/complete-profile';
-        console.log('👤 카카오 전용 사용자 - 프로필 완성 페이지로 리다이렉트');
-      } else if (!hasValidName) {
-        redirectPath = '/complete-profile';
-        console.log('⚠️ 기존 사용자이지만 이름이 비정상적 - 프로필 완성 페이지로 리다이렉트');
-      } else {
-        redirectPath = '/login?success=kakao'; // 성공 페이지 대신 로그인 페이지에 성공 파라미터
-        console.log('✅ 기존 사용자 카카오 연동 - 성공');
+  router.get('/kakao/callback', 
+    handleSocialCallback('kakao'),
+    (req, res) => {
+      try {
+        const tokens = generateTokenPair(req.user.id, req.user.email, req.user.user_id);
+        const clientUrl = process.env.CLIENT_URL || 'http://localhost:3000';
+        
+        // 사용자 타입과 이름 상태에 따른 리다이렉트 결정
+        const isKakaoUser = req.user.user_id.startsWith('kakao_');
+        const hasValidName = req.user.name && req.user.name.trim() !== '' && req.user.name.trim() !== '.';
+        
+        let redirectPath;
+        if (isKakaoUser) {
+          // 카카오 전용 사용자는 무조건 프로필 완성 페이지로
+          redirectPath = '/api/auth/kakao/complete-profile';
+          console.log('👤 카카오 전용 사용자 - 프로필 완성 페이지로 리다이렉트');
+        } else if (!hasValidName) {
+          // 기존 사용자이지만 이름이 비정상적인 경우
+          redirectPath = '/api/auth/kakao/complete-profile';
+          console.log('⚠️ 기존 사용자이지만 이름이 비정상적 - 프로필 완성 페이지로 리다이렉트');
+        } else {
+          // 기존 사용자이고 이름이 정상적인 경우
+          redirectPath = '/api/auth/kakao/success';
+          console.log('✅ 기존 사용자 카카오 연동 - 성공 페이지로 리다이렉트');
+        }
+        
+        // 쿠키에 토큰 설정
+        res.cookie('accessToken', tokens.accessToken, {
+          httpOnly: false,
+          secure: process.env.NODE_ENV === 'production',
+          maxAge: 24 * 60 * 60 * 1000, // 24시간
+          sameSite: 'lax'
+        });
+        
+        res.cookie('refreshToken', tokens.refreshToken, {
+          httpOnly: false,
+          secure: process.env.NODE_ENV === 'production',
+          maxAge: 7 * 24 * 60 * 60 * 1000, // 7일
+          sameSite: 'lax'
+        });
+        
+        // 적절한 페이지로 리다이렉트
+        const redirectUrl = `${clientUrl}${redirectPath}`;
+        console.log('🔗 카카오 콜백 리다이렉트:', redirectUrl);
+        
+        res.redirect(redirectUrl);
+        
+      } catch (error) {
+        console.error('❌ 카카오 로그인 콜백 처리 중 오류:', error);
+        const clientUrl = process.env.CLIENT_URL || 'http://localhost:3000';
+        res.redirect(`${clientUrl}/auth/error?message=${encodeURIComponent('로그인 처리 중 오류가 발생했습니다')}`);
       }
-      
-      // 쿠키에 토큰 설정
-      res.cookie('accessToken', tokens.accessToken, {
-        httpOnly: false,
-        secure: process.env.NODE_ENV === 'production',
-        maxAge: 24 * 60 * 60 * 1000,
-        sameSite: 'lax',
-        domain: process.env.NODE_ENV === 'production' ? '.moamoas.com' : undefined
-      });
-      
-      res.cookie('refreshToken', tokens.refreshToken, {
-        httpOnly: false,
-        secure: process.env.NODE_ENV === 'production',
-        maxAge: 7 * 24 * 60 * 60 * 1000,
-        sameSite: 'lax',
-        domain: process.env.NODE_ENV === 'production' ? '.moamoas.com' : undefined
-      });
-      
-      // 클라이언트로 리다이렉트
-      const redirectUrl = `${clientUrl}${redirectPath}`;
-      console.log('🔗 카카오 콜백 리다이렉트:', redirectUrl);
-      res.redirect(redirectUrl);
-      
-    } catch (error) {
-      console.error('❌ 카카오 로그인 콜백 처리 중 오류:', error);
-      const clientUrl = process.env.CLIENT_URL || 'https://www.moamoas.com';
-      res.redirect(`${clientUrl}/login?error=auth_failed`);
     }
-  }
-);
+  );
 
   /**
    * @swagger
