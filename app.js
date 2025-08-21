@@ -258,6 +258,8 @@ import aiRoutes from './src/routes/aiRoutes.js';
 
 import eventForceRoutes from './src/routes/eventForce.routes.js';
 
+import paymentRoutes from './src/routes/payment.routes.js';
+
 // 라우트 등록
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
@@ -302,7 +304,7 @@ app.use('/debug', debugRoutes);
 // 이벤트 강제 종료
 app.use('/api/test', eventForceRoutes);
 
-
+app.use('/api/payment', paymentRoutes);
 
 
 // 에러 처리
