@@ -173,19 +173,10 @@ export class ItemBuyResponseDTO {
  * @desc 사용자 보유 아이템의 데이터 전송 객체 (DTO)
  * API 응답에서 하나의 구매한 아이템 정보를 나타냅니다.
  */
+
 export class HoldItemEntryDTO {
   /**
    * @param {object} itemData - 데이터베이스에서 조회된 원본 구매 아이템 데이터
-   * @param {number} itemData.holditem_no - 구매한 아이템 고유 번호 (구매 기록 ID)
-   * @param {string} itemData.category - 아이템 카테고리
-   * @param {number} itemData.item_no - 원본 아이템 고유 번호
-   * @param {string} itemData.user_id - 사용자 ID
-   * @param {string} itemData.image - 아이템 사진 URL
-   * @param {string} itemData.name - 아이템 이름
-   * @param {number} itemData.price - 아이템 가격
-   * @param {string} itemData.detail - 아이템 상세 설명
-   * @param {boolean} itemData.event - 이벤트 아이템 여부
-   * @param {string} itemData.purchasedAt - 구매 일시
    */
   constructor(itemData) {
     this.holditem_no = itemData.holditem_no;
@@ -193,16 +184,10 @@ export class HoldItemEntryDTO {
     this.item_no = itemData.item_no;
     this.user_id = itemData.user_id;
     this.image = itemData.image;
-    
-    // ⭐ 상품 이름
-    this.name = itemData.name || '이름 없음';
-    
-    // ⭐ 상품 디테일만 유지 (description 제거)
-    this.detail = itemData.detail || '';
-    
-    // 추가 정보들
-    this.price = itemData.price || 0;
-    this.event = Boolean(itemData.event);
+    this.name = itemData.name;
+    this.detail = itemData.detail;
+    this.price = itemData.price;
+    this.event = itemData.event;
     this.purchasedAt = itemData.purchasedAt;
   }
 }
