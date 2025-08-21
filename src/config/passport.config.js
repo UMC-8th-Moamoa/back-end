@@ -154,7 +154,7 @@ passport.use(new JwtStrategy(
   }
 ));
 
-if (process.env.KAKAO_CLIENT_ID && process.env.KAKAO_CLIENT_SECRET) {
+if (process.env.KAKAO_CLIENT_ID && process.env.KAKAO_CLIENT_SECRET && process.env.KAKAO_REDIRECT_URI) {
   passport.use(new KakaoStrategy(
     {
       clientID: process.env.KAKAO_CLIENT_ID,
