@@ -21,7 +21,7 @@ class MoaRepository {
             photo: true
           }
         },
-        participants: {
+        eventParticipants: {
           where: { userId }, // 현재 사용자의 참여 여부만 확인
           select: { userId: true }
         }
@@ -30,16 +30,27 @@ class MoaRepository {
       take: limit + 1 // 다음 페이지 존재 여부 확인용
     });
 
-    // 사용자가 볼 수 있는 이벤트만 필터링
-    const visibleEvents = await this.filterVisibleEvents(events, userId);
-
     // 참여 상태 정보 추가하여 반환
-    return visibleEvents.map(event => ({
-      ...event,
-      isParticipating: event.participants.length > 0
-    }));
+    return visibleEvents.map(event => {
+      const isParticipating = event.participants.length > 0;
+      
+      // 🚨 디버깅 로그 추가 (임시)
+      if (event.id === 18) {
+        console.log('🔍 Event 18 Debug Info:');
+        console.log('  - Event ID:', event.id);
+        console.log('  - Birthday Person ID:', event.birthdayPersonId);
+        console.log('  - Event Status:', event.status);
+        console.log('  - Participants:', event.participants);
+        console.log('  - IsParticipating:', isParticipating);
+        console.log('  - UserId:', userId);
+      }
+      
+      return {
+        ...event,
+        isParticipating
+      };
+    });
   }
-
 
 // Where 조건 빌드
   buildWhereCondition(cursor, direction) {
