@@ -464,7 +464,7 @@ if (isKakaoEnabled()) {
           console.log('⚠️ 기존 사용자이지만 이름이 비정상적 - 프로필 완성 페이지로 리다이렉트');
         } else {
           // 기존 사용자이고 이름이 정상적인 경우
-          redirectPath = '/auth/success';
+          redirectPath = '/api/auth/kakao/success';
           console.log('✅ 기존 사용자 카카오 연동 - 성공 페이지로 리다이렉트');
         }
         
