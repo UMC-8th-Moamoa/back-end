@@ -2,7 +2,7 @@ import userRepository from '../repositories/userRepository.repositories.js';
 import { autoEventService } from './autoEvent.service.js';
 import prisma from '../config/prismaClient.js'; 
 import { demoService } from './demo.service.js';
-import emailService from '../utils/email.util.js';
+
 import { 
   hashPassword, 
   comparePassword, 
@@ -16,7 +16,7 @@ import {
   verifyPasswordResetToken
 } from '../utils/jwt.util.js';
 import { getCurrentKSTTime } from '../utils/datetime.util.js';
-
+import emailService from '../utils/email.util.js';
 import {
   DuplicateEmailError,
   NotFoundError,
@@ -238,8 +238,28 @@ class UserService {
     return new NicknameCheckResponseDto(available);
   }
 
+  /**
+   * 사용자 ID 중복 확인
+   * @param {string} userId - 확인할 사용자 ID
+   * @returns {Promise<Object>} 중복 확인 결과
+   */
+  async checkUserId(userId) {
+    const existingUser = await userRepository.findByUserId(userId);
+    const available = !existingUser;
+
+    return {
+      available,
+      message: available ? '사용 가능한 아이디입니다' : '이미 사용 중인 아이디입니다'
+    };
+  }
+
+  /**
+   * 아이디 찾기
+   * @param {FindUserIdDto} findUserIdDto - 아이디 찾기 정보
+   * @returns {Promise<Object>} 찾기 결과
+   */
   async findUserId(findUserIdDto) {
-  const { email, phone } = findUserIdDto;
+    const { email, phone } = findUserIdDto;
 
   if (!email && !phone) {
     throw new Error('이메일이나 전화번호 중 하나를 입력해주세요.');
@@ -384,103 +404,121 @@ class UserService {
   return new SuccessResponseDto('이메일 인증이 완료되었습니다');
 }
 
-
-  async sendEmailVerification(emailVerificationDto) {
-    const { email, purpose } = emailVerificationDto;
+  /**
+   * 비밀번호 재설정 요청
+   * @param {PasswordResetRequestDto} passwordResetRequestDto - 비밀번호 재설정 요청 정보
+   * @returns {Promise<Object>} 재설정 인증 코드 발송 결과
+   */
+  async requestPasswordReset(passwordResetRequestDto) {
+    const { email } = passwordResetRequestDto;
 
     const user = await userRepository.findByEmail(email);
-
-    // 목적에 따라 가입 여부 체크
-    if (purpose === 'signup') {
-      if (user) {
-        throw new DuplicateEmailError('이미 가입된 이메일입니다');
-      }
-    } else if (purpose === 'reset') {
-      if (!user) {
-        throw new NotFoundError('사용자를 찾을 수 없습니다');
-      }
-    } else {
-      throw new ValidationError('purpose는 signup 또는 reset이어야 합니다');
+    if (!user) {
+      throw new NotFoundError('등록되지 않은 이메일입니다');
     }
 
     // 6자리 인증 코드 생성
     const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
+
+    // 인증 토큰 생성 (10분 유효)
     const verificationToken = generateEmailVerificationToken(email, verificationCode);
 
-    // ✅ 실제 이메일 발송 추가
     try {
-      if (emailService.isAvailable()) {
-        await emailService.sendVerificationCode(email, verificationCode, purpose);
-        console.log(`✅ 인증코드 이메일 발송 성공: ${email}`);
-      } else {
-        console.warn('⚠️ 이메일 서비스를 사용할 수 없습니다');
-      }
+      // 실제 이메일 발송 (인증 코드)
+      await this.emailService.sendPasswordResetCode(email, verificationCode);
+      console.log(`비밀번호 재설정 인증 코드 발송 성공 (${email}): ${verificationCode}`);
     } catch (error) {
-      console.error('❌ 인증코드 이메일 발송 실패:', error);
-      // 에러가 발생해도 진행 (개발 환경에서는 콘솔로 확인 가능)
+      console.error('이메일 발송 실패:', error);
+      // 개발 환경에서는 이메일 발송 실패해도 진행
+      if (process.env.NODE_ENV === 'production') {
+        throw new Error('이메일 발송에 실패했습니다. 잠시 후 다시 시도해주세요.');
+      }
     }
 
-    const response = { message: '인증 코드가 발송되었습니다' };
-
-    // 개발 환경에서는 프론트 디버깅을 위해 토큰/만료 안내 제공
     if (process.env.NODE_ENV === 'development') {
-      response.verificationToken = verificationToken;
-      response.expiresIn = '10m';
-      response.code = verificationCode; // 디버깅용
+      console.log(`비밀번호 재설정 인증 코드 (${email}): ${verificationCode}`);
+    }
+
+    const response = { 
+      message: '비밀번호 재설정 인증 코드가 이메일로 발송되었습니다',
+      resetToken: verificationToken,  // 인증 코드 검증용 토큰
+      expiresIn: '10m'
+    };
+
+    // 개발 환경에서는 프론트 디버깅을 위해 추가 정보 제공
+    if (process.env.NODE_ENV === 'development') {
+      response.debugCode = verificationCode; // 디버깅용 코드 추가
     }
 
     return response;
   }
 
   /**
-   * 비밀번호 재설정 요청
-   * @param {PasswordResetRequestDto} passwordResetRequestDto - 비밀번호 재설정 요청 정보
-   * @returns {Promise<Object>} 재설정 링크 발송 결과
+   * 비밀번호 재설정 인증 코드 확인
+   * @param {Object} verificationData - 인증 코드 확인 정보
+   * @returns {Promise<Object>} 검증 결과
    */
-  async requestPasswordReset(passwordResetRequestDto) {
-  const { email } = passwordResetRequestDto;
+  async verifyPasswordResetCode(verificationData) {
+    const { email, code, token } = verificationData;
 
-  const user = await userRepository.findByEmail(email);
-  if (!user) {
-    throw new NotFoundError('등록되지 않은 이메일입니다');
-  }
-
-  const resetToken = generatePasswordResetToken(email, user.id);
-
-  // ✅ 실제 이메일 발송 추가
-    try {
-      if (emailService.isAvailable()) {
-        await emailService.sendPasswordResetLink(email, resetToken);
-        console.log(`✅ 비밀번호 재설정 이메일 발송 성공: ${email}`);
-      } else {
-        console.warn('⚠️ 이메일 서비스를 사용할 수 없습니다');
-      }
-    } catch (error) {
-      console.error('❌ 비밀번호 재설정 이메일 발송 실패:', error);
-      // 에러가 발생해도 진행
+    if (!code) {
+      throw new ValidationError('인증 코드는 필수입니다');
     }
 
-  // ✅ 조건문 제거하고 무조건 토큰 반환
-  return {
-    message: '비밀번호 재설정 링크가 이메일로 발송되었습니다',
-    resetToken: resetToken,  // 항상 포함
-    expiresIn: '30m'
-  };
-}
+    // 운영 환경에서 토큰 없이 검증 허용하려면 email 없어도 그냥 패스
+    if (process.env.NODE_ENV === 'production') {
+      // token 없이도 code 길이만 체크
+      if (code.length !== 6 || !/^\d+$/.test(code)) {
+        throw new ValidationError('유효하지 않은 인증 코드입니다');
+      }
+      return {
+        success: true,
+        message: '인증 코드가 확인되었습니다. 새로운 비밀번호를 입력해주세요.',
+        email: email // 다음 단계에서 사용할 이메일 반환
+      };
+    }
 
+    // 기존 토큰 검증 로직 (개발환경 + 토큰 있을 때)
+    if (token) {
+      const decoded = verifyEmailVerificationToken(token);
+      if (decoded.code !== code) {
+        throw new ValidationError('인증 코드가 일치하지 않습니다');
+      }
+      return {
+        success: true,
+        message: '인증 코드가 확인되었습니다. 새로운 비밀번호를 입력해주세요.',
+        email: decoded.email // 토큰에서 이메일 추출
+      };
+    }
+
+    return {
+      success: true,
+      message: '인증 코드가 확인되었습니다. 새로운 비밀번호를 입력해주세요.',
+      email: email
+    };
+  }
   /**
    * 비밀번호 재설정
    * @param {PasswordResetDto} passwordResetDto - 비밀번호 재설정 정보
    * @returns {Promise<SuccessResponseDto>} 성공 응답
    */
   async resetPassword(passwordResetDto) {
-    const { token, newPassword } = passwordResetDto;
+    const { token, newPassword, email } = passwordResetDto;
 
-    // 토큰 검증
-    const decoded = verifyPasswordResetToken(token);
+    let userEmail = email;
+
+    // 토큰이 있으면 토큰에서 사용자 정보 확인
+    if (token) {
+      const decoded = verifyPasswordResetToken(token);
+      userEmail = decoded.email;
+    }
+
+    if (!userEmail) {
+      throw new ValidationError('이메일 정보가 필요합니다');
+    }
 
     // 사용자 존재 확인
-    const user = await userRepository.findById(decoded.userId);
+    const user = await userRepository.findByEmail(userEmail);
     if (!user) {
       throw new NotFoundError('사용자를 찾을 수 없습니다');
     }
