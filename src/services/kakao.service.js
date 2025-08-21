@@ -1,5 +1,5 @@
-// src/services/kakao.service.js (수정된 버전)
-// 카카오 관련 비즈니스 로직
+// src/services/kakao.service.js
+// 카카오 관련 비즈니스 로직 (수정된 버전)
 import { KakaoUtil } from '../utils/kakao.util.js';
 import { generateTokenPair } from '../utils/jwt.util.js';
 import prisma from '../config/prismaClient.js';
@@ -44,7 +44,7 @@ class KakaoService {
    * 사용자 찾기 또는 생성
    */
   static async findOrCreateUser(kakaoUserInfo, tokenInfo) {
-    // 기존 사용자 확인 (이메일 또는 카카오 ID로)
+    // 기존 사용자 확인 (이메일 또는 카카오 ID로 검색)
     let user = await prisma.user.findFirst({
       where: {
         OR: [
@@ -53,7 +53,7 @@ class KakaoService {
             socialLogins: { 
               some: { 
                 provider: 'kakao', 
-                token: kakaoUserInfo.id  // ⚠️ 스키마에서는 token 필드 사용
+                providerId: kakaoUserInfo.id 
               } 
             } 
           }
@@ -72,29 +72,29 @@ class KakaoService {
   }
 
   /**
-   * 새 사용자 생성 (스키마에 맞게 수정)
+   * 새 사용자 생성
    */
   static async createNewUser(kakaoUserInfo, tokenInfo) {
     console.log('🆕 새 사용자 생성');
 
-    // 1. 고유한 user_id 생성 (String 타입)
-    const uniqueUserId = await this.generateUniqueUserId(kakaoUserInfo.id);
+    // 고유한 user_id 생성 (kakao_ + 6자리 랜덤 숫자)
+    const uniqueUserId = await this.generateUniqueKakaoUserId();
 
-    // 2. 사용자 생성 (스키마 구조에 맞게)
     const user = await prisma.user.create({
       data: {
-        email: kakaoUserInfo.email || `kakao_${kakaoUserInfo.id}@temp.com`,
-        name: kakaoUserInfo.nickname || '카카오 사용자',
-        user_id: uniqueUserId,  // ✅ 필수 필드 추가
-        password: '',  // 소셜 로그인은 빈 패스워드
+        email: kakaoUserInfo.email,
+        name: '', // 이름은 비워둠 (다음 페이지에서 입력받음)
+        user_id: uniqueUserId,
         photo: kakaoUserInfo.thumbnailImage,
         emailVerified: kakaoUserInfo.isEmailVerified || false,
-        lastLoginAt: new Date(),
+        password: '', // 소셜 로그인은 비밀번호 없음
         socialLogins: {
           create: {
             provider: 'kakao',
-            user_id: uniqueUserId,  // ✅ SocialLogin의 user_id에 String 값 설정
-            token: kakaoUserInfo.id  // 카카오 사용자 ID를 token으로 저장
+            providerId: kakaoUserInfo.id,
+            accessToken: tokenInfo.accessToken,
+            refreshToken: tokenInfo.refreshToken,
+            tokenExpiry: new Date(Date.now() + tokenInfo.expiresIn * 1000)
           }
         }
       },
@@ -104,7 +104,8 @@ class KakaoService {
     console.log('✅ 새 사용자 생성 완료:', { 
       userId: user.id, 
       userIdString: user.user_id,
-      email: user.email 
+      email: user.email,
+      name: user.name // 빈 문자열
     });
 
     return user;
@@ -119,21 +120,26 @@ class KakaoService {
     const existingKakaoLogin = user.socialLogins.find(sl => sl.provider === 'kakao');
 
     if (existingKakaoLogin) {
-      // 기존 카카오 로그인 정보 업데이트 (필요시)
+      // 기존 카카오 로그인 정보 업데이트
       await prisma.socialLogin.update({
         where: { id: existingKakaoLogin.id },
         data: {
-          // token은 변경하지 않음 (카카오 사용자 ID는 고정)
-          updatedAt: new Date()
+          accessToken: tokenInfo.accessToken,
+          refreshToken: tokenInfo.refreshToken,
+          tokenExpiry: new Date(Date.now() + tokenInfo.expiresIn * 1000),
+          lastLoginAt: new Date()
         }
       });
     } else {
       // 새 카카오 연동 추가
       await prisma.socialLogin.create({
         data: {
+          userId: user.id,
           provider: 'kakao',
-          user_id: user.user_id,  // ✅ 기존 사용자의 user_id (String) 사용
-          token: kakaoUserInfo.id  // 카카오 사용자 ID
+          providerId: kakaoUserInfo.id,
+          accessToken: tokenInfo.accessToken,
+          refreshToken: tokenInfo.refreshToken,
+          tokenExpiry: new Date(Date.now() + tokenInfo.expiresIn * 1000)
         }
       });
     }
@@ -156,52 +162,70 @@ class KakaoService {
   }
 
   /**
-   * 고유한 user_id 생성 (String 타입)
+   * 고유한 카카오 user_id 생성 (kakao_ + 6자리 랜덤 숫자)
    */
-  static async generateUniqueUserId(kakaoId) {
-    const baseUserId = `kakao_${kakaoId}`;
-    let uniqueUserId = baseUserId;
-    let counter = 1;
+  static async generateUniqueKakaoUserId() {
+    let uniqueUserId;
+    let attempts = 0;
+    const maxAttempts = 1000; // 무한 루프 방지
 
-    // user_id 중복 확인 및 고유값 생성
-    while (await prisma.user.findUnique({ where: { user_id: uniqueUserId } })) {
-      uniqueUserId = `${baseUserId}_${counter}`;
-      counter++;
-    }
+    do {
+      // 6자리 랜덤 숫자 생성 (100000 ~ 999999)
+      const randomNumber = Math.floor(100000 + Math.random() * 900000);
+      uniqueUserId = `kakao_${randomNumber}`;
+      
+      // 기존 user_id와 중복 확인
+      const existingUser = await prisma.user.findUnique({ 
+        where: { user_id: uniqueUserId } 
+      });
+      
+      if (!existingUser) {
+        break; // 중복되지 않으면 루프 종료
+      }
+      
+      attempts++;
+      if (attempts >= maxAttempts) {
+        throw new Error('고유한 사용자 ID 생성에 실패했습니다');
+      }
+      
+    } while (true);
 
+    console.log(`✅ 고유한 카카오 user_id 생성: ${uniqueUserId}`);
     return uniqueUserId;
   }
 
   /**
-   * 카카오 토큰 갱신 (스키마에 맞게 수정)
+   * 카카오 토큰 갱신
    */
   static async refreshKakaoToken(userId) {
     try {
-      const user = await prisma.user.findUnique({
-        where: { id: userId },
-        include: {
-          socialLogins: {
-            where: { provider: 'kakao' }
-          }
+      const socialLogin = await prisma.socialLogin.findFirst({
+        where: {
+          userId: userId,
+          provider: 'kakao'
         }
       });
 
-      if (!user || !user.socialLogins.length) {
-        throw new Error('카카오 연동 정보를 찾을 수 없습니다');
+      if (!socialLogin || !socialLogin.refreshToken) {
+        throw new Error('카카오 리프레시 토큰을 찾을 수 없습니다');
       }
 
-      // 현재 스키마에서는 리프레시 토큰을 별도로 저장하지 않으므로
-      // 새로운 토큰 정보 조회가 필요한 경우 구현
-      console.log('✅ 카카오 토큰 정보 확인 완료');
-      
-      return {
-        message: '카카오 연동 상태 확인됨',
-        provider: 'kakao',
-        connected: true
-      };
+      const newTokenInfo = await KakaoUtil.refreshToken(socialLogin.refreshToken);
+
+      // 새 토큰 정보로 업데이트
+      await prisma.socialLogin.update({
+        where: { id: socialLogin.id },
+        data: {
+          accessToken: newTokenInfo.accessToken,
+          refreshToken: newTokenInfo.refreshToken,
+          tokenExpiry: new Date(Date.now() + newTokenInfo.expiresIn * 1000)
+        }
+      });
+
+      return newTokenInfo;
 
     } catch (error) {
-      console.error('❌ 카카오 토큰 확인 실패:', error);
+      console.error('❌ 카카오 토큰 갱신 실패:', error);
       throw error;
     }
   }
@@ -211,25 +235,23 @@ class KakaoService {
    */
   static async unlinkKakao(userId) {
     try {
-      const user = await prisma.user.findUnique({
-        where: { id: userId },
-        include: {
-          socialLogins: {
-            where: { provider: 'kakao' }
-          }
+      const socialLogin = await prisma.socialLogin.findFirst({
+        where: {
+          userId: userId,
+          provider: 'kakao'
         }
       });
 
-      if (!user || !user.socialLogins.length) {
+      if (!socialLogin) {
         throw new Error('연결된 카카오 계정이 없습니다');
       }
 
-      // 카카오 소셜 로그인 정보 삭제
-      await prisma.socialLogin.deleteMany({
-        where: {
-          user_id: user.user_id,
-          provider: 'kakao'
-        }
+      // 카카오 API로 연동 해제 요청 (선택사항)
+      // await KakaoUtil.unlinkAccount(socialLogin.accessToken);
+
+      // 데이터베이스에서 소셜 로그인 정보 삭제
+      await prisma.socialLogin.delete({
+        where: { id: socialLogin.id }
       });
 
       return { success: true, message: '카카오 연동이 해제되었습니다' };
@@ -241,10 +263,48 @@ class KakaoService {
   }
 
   /**
+   * 카카오 사용자 정보 동기화
+   */
+  static async syncKakaoUserInfo(userId) {
+    try {
+      const socialLogin = await prisma.socialLogin.findFirst({
+        where: {
+          userId: userId,
+          provider: 'kakao'
+        }
+      });
+
+      if (!socialLogin) {
+        throw new Error('연결된 카카오 계정이 없습니다');
+      }
+
+      // 카카오에서 최신 사용자 정보 조회
+      const kakaoUserInfo = await KakaoUtil.getUserInfo(socialLogin.accessToken);
+
+      // 데이터베이스 사용자 정보 업데이트 (name은 업데이트하지 않음)
+      const updatedUser = await prisma.user.update({
+        where: { id: userId },
+        data: {
+          photo: kakaoUserInfo.thumbnailImage || undefined,
+          emailVerified: kakaoUserInfo.isEmailVerified || undefined
+          // name은 제외 - 사용자가 직접 입력한 값 유지
+        }
+      });
+
+      console.log('✅ 카카오 사용자 정보 동기화 완료');
+      return updatedUser;
+
+    } catch (error) {
+      console.error('❌ 카카오 사용자 정보 동기화 실패:', error);
+      throw error;
+    }
+  }
+
+  /**
    * 카카오 인증 URL 생성
    */
   static generateKakaoAuthURL(redirectURI = null, state = null) {
-    const finalRedirectURI = redirectURI || `${process.env.BASE_URL}/api/auth/kakao/callback`;
+    const finalRedirectURI = redirectURI || `${process.env.BASE_URL}/api/auth/kakao/callback-direct`;
     const finalState = state || Math.random().toString(36).substring(7);
     
     return KakaoUtil.generateAuthURL(finalRedirectURI, finalState);
@@ -254,27 +314,33 @@ class KakaoService {
    * 사용자의 카카오 연동 상태 확인
    */
   static async getKakaoConnectionStatus(userId) {
-    try { 
-      const user = await prisma.user.findUnique({
-        where: { id: userId },
-        include: {
-          socialLogins: {
-            where: { provider: 'kakao' }
-          }
+    try {
+      const socialLogin = await prisma.socialLogin.findFirst({
+        where: {
+          userId: userId,
+          provider: 'kakao'
+        },
+        select: {
+          id: true,
+          providerId: true,
+          tokenExpiry: true,
+          lastLoginAt: true,
+          createdAt: true
         }
       });
 
-      if (!user || !user.socialLogins.length) {
+      if (!socialLogin) {
         return { connected: false };
       }
 
-      const kakaoLogin = user.socialLogins[0];
+      const isTokenExpired = socialLogin.tokenExpiry < new Date();
 
       return {
         connected: true,
-        providerId: kakaoLogin.token,  // 카카오 사용자 ID
-        connectedAt: kakaoLogin.createdAt,
-        lastUpdated: kakaoLogin.updatedAt
+        providerId: socialLogin.providerId,
+        tokenExpired: isTokenExpired,
+        lastLoginAt: socialLogin.lastLoginAt,
+        connectedAt: socialLogin.createdAt
       };
 
     } catch (error) {

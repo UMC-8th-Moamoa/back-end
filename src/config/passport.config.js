@@ -12,36 +12,34 @@ import { getCurrentKSTTime } from '../utils/datetime.util.js';
 
 const prisma = new PrismaClient();
 
-// 중복되지 않는 user_id 생성 함수
-const generateUniqueUserId = async () => {
-  let userId;
-  let existingUser;
+// 고유한 카카오 user_id 생성 함수 (kakao_ + 6자리 랜덤 숫자)
+const generateUniqueKakaoUserId = async () => {
+  let uniqueUserId;
+  let attempts = 0;
+  const maxAttempts = 1000; // 무한 루프 방지
   
   do {
-    const randomNumber = Math.floor(100000 + Math.random() * 900000); // 6자리 랜덤 숫자
-    userId = randomNumber.toString(); // String으로 변환
-    existingUser = await prisma.user.findUnique({
-      where: { user_id: userId }
+    // 6자리 랜덤 숫자 생성 (100000 ~ 999999)
+    const randomNumber = Math.floor(100000 + Math.random() * 900000);
+    uniqueUserId = `kakao_${randomNumber}`;
+    
+    // 기존 user_id와 중복 확인
+    const existingUser = await prisma.user.findUnique({
+      where: { user_id: uniqueUserId }
     });
-  } while (existingUser); // 중복되면 다시 생성
+    
+    if (!existingUser) {
+      break; // 중복되지 않으면 루프 종료
+    }
+    
+    attempts++;
+    if (attempts >= maxAttempts) {
+      throw new Error('고유한 사용자 ID 생성에 실패했습니다');
+    }
+    
+  } while (true);
   
-  return userId;
-};
-
-// 랜덤 닉네임 생성 함수
-const generateRandomNickname = async () => {
-  let nickname;
-  let existingUser;
-  
-  do {
-    const randomNumber = Math.floor(100000 + Math.random() * 900000); // 6자리 랜덤 숫자
-    nickname = `User${randomNumber}`;
-    existingUser = await prisma.user.findFirst({
-      where: { name: nickname }
-    });
-  } while (existingUser); // 중복되면 다시 생성
-  
-  return nickname;
+  return uniqueUserId;
 };
 
 // 사용자 직렬화 (세션 저장용)
@@ -74,59 +72,12 @@ passport.deserializeUser(async (id, done) => {
   }
 });
 
-// // 1. Local Strategy (이메일/비밀번호 로그인)
-// passport.use(new LocalStrategy(
-//   {
-//     usernameField: 'email',
-//     passwordField: 'password'
-//   },
-//   async (email, password, done) => {
-//     try {
-//       // 사용자 조회
-//       const user = await prisma.user.findUnique({
-//         where: { email },
-//         include: {
-//           socialLogins: true
-//         }
-//       });
-
-//       if (!user) {
-//         return done(new UnauthorizedError('이메일 또는 비밀번호가 잘못되었습니다'), false);
-//       }
-
-//       // 소셜 로그인 전용 계정인지 확인
-//       if (!user.password && user.socialLogins.length > 0) {
-//         return done(new UnauthorizedError('소셜 로그인으로 가입된 계정입니다'), false);
-//       }
-
-      // 비밀번호 검증
-      // const isValidPassword = await comparePassword(password, user.password);
-      // if (!isValidPassword) {
-      //   return done(new UnauthorizedError('이메일 또는 비밀번호가 잘못되었습니다'), false);
-      // }
-
-//       // 마지막 로그인 시간 업데이트
-//       await prisma.user.update({
-//         where: { id: user.id },
-//         data: { lastLoginAt: new Date() }
-//       });
-
-//       // 비밀번호 제거 후 반환
-//       const { password: _, ...userWithoutPassword } = user;
-//       return done(null, userWithoutPassword);
-
-//     } catch (error) {
-//       return done(error, false);
-//     }
-//   }
-// ));
-
-// 2. JWT Strategy (토큰 검증)
+// JWT Strategy (토큰 검증)
 passport.use(new JwtStrategy(
   {
     jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
     secretOrKey: process.env.JWT_SECRET || 'fallback-jwt-secret',
-    // ✅ issuer/audience도 함께 검증 (jwt.util.js와 일치)
+    // issuer/audience도 함께 검증 (jwt.util.js와 일치)
     issuer: 'moamoa-platform',
     audience: 'moamoa-users'
   },
@@ -155,6 +106,7 @@ passport.use(new JwtStrategy(
   }
 ));
 
+// 카카오 Strategy (수정된 버전)
 if (process.env.KAKAO_CLIENT_ID && process.env.KAKAO_CLIENT_SECRET && process.env.KAKAO_REDIRECT_URI) {
   passport.use(new KakaoStrategy(
     {
@@ -168,7 +120,7 @@ if (process.env.KAKAO_CLIENT_ID && process.env.KAKAO_CLIENT_SECRET && process.en
         
         const kakaoId = profile.id.toString();
         const kakaoEmail = profile._json.kakao_account?.email;
-        const kakaoNickname = profile.displayName || profile._json.properties?.nickname;
+        // name은 받지 않음 - 나중에 사용자가 직접 입력
         const kakaoProfileImage = profile._json.properties?.profile_image;
         
         // 기존 소셜 로그인 확인
@@ -181,6 +133,7 @@ if (process.env.KAKAO_CLIENT_ID && process.env.KAKAO_CLIENT_SECRET && process.en
             user: {
               select: {
                 id: true,
+                user_id: true,
                 email: true,
                 name: true,
                 photo: true,
@@ -239,35 +192,17 @@ if (process.env.KAKAO_CLIENT_ID && process.env.KAKAO_CLIENT_SECRET && process.en
           return done(null, userWithoutPassword);
         }
         
-
         // 새 사용자 생성
-        const newUserData = {
-          email: kakaoEmail || `kakao_${kakaoId}@kakao.temp`,
-          name: kakaoNickname || '카카오 사용자',
-          photo: kakaoProfileImage || null,
-          emailVerified: !!kakaoEmail, // 카카오에서 이메일을 제공하면 인증된 것으로 간주
-          password: '', // 소셜 로그인 사용자는 비밀번호 없음
-          lastLoginAt: getCurrentKSTTime(),
-          createdAt: getCurrentKSTTime(), // 한국 시간으로 설정
-          updatedAt: getCurrentKSTTime(),
-          socialLogins: {
-            create: {
-              provider: 'kakao',
-              token: kakaoId
-            }
-          }
-        };
-
-        const uniqueUserId = await generateUniqueUserId();
+        const uniqueUserId = await generateUniqueKakaoUserId();
 
         const newUser = await prisma.user.create({
           data: {
             email: kakaoEmail || `kakao_${kakaoId}@kakao.temp`,
-            name: kakaoNickname || '카카오 사용자',
-            user_id: uniqueUserId,
+            name: '', // 이름은 비워둠 (다음 페이지에서 입력받음)
+            user_id: uniqueUserId, // kakao_123456 형태
             photo: kakaoProfileImage || null,
             emailVerified: !!kakaoEmail,
-            password: '',
+            password: '', // 소셜 로그인은 비밀번호 없음
             lastLoginAt: getCurrentKSTTime(),
             createdAt: getCurrentKSTTime(),
             updatedAt: getCurrentKSTTime()
@@ -287,15 +222,22 @@ if (process.env.KAKAO_CLIENT_ID && process.env.KAKAO_CLIENT_SECRET && process.en
         const userResult = {
           id: newUser.id,
           email: newUser.email,
-          name: newUser.name,
-          user_id: newUser.user_id,
+          name: newUser.name, // 빈 문자열
+          user_id: newUser.user_id, // kakao_123456
           photo: newUser.photo,
           createdAt: newUser.createdAt,
           lastLoginAt: newUser.lastLoginAt
         };
 
-        console.log('새 카카오 사용자 생성:', newUser);
-        return done(null, newUser);
+        console.log('새 카카오 사용자 생성:', {
+          userId: newUser.id,
+          userIdString: newUser.user_id,
+          email: newUser.email,
+          name: newUser.name, // 빈 문자열
+          isEmpty: newUser.name === ''
+        });
+        
+        return done(null, userResult);
         
       } catch (error) {
         console.error('카카오 로그인 중 오류:', error);
