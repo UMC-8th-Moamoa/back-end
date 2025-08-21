@@ -123,6 +123,12 @@ if (process.env.KAKAO_CLIENT_ID && process.env.KAKAO_CLIENT_SECRET && process.en
         // name은 받지 않음 - 나중에 사용자가 직접 입력
         const kakaoProfileImage = profile._json.properties?.profile_image;
         
+        console.log('🔍 카카오 기본 정보:', {
+          kakaoId,
+          kakaoEmail,
+          kakaoProfileImage
+        });
+        
         // 기존 소셜 로그인 확인
         const existingSocialLogin = await prisma.socialLogin.findFirst({
           where: {
@@ -144,8 +150,15 @@ if (process.env.KAKAO_CLIENT_ID && process.env.KAKAO_CLIENT_SECRET && process.en
           }
         });
 
+        console.log('🔍 기존 소셜 로그인 확인:', {
+          found: !!existingSocialLogin,
+          socialLoginId: existingSocialLogin?.id,
+          userId: existingSocialLogin?.user?.user_id
+        });
+
         if (existingSocialLogin) {
           // 기존 사용자 로그인 - 마지막 로그인 시간 업데이트
+          console.log('✅ 기존 카카오 사용자 로그인');
           await prisma.user.update({
             where: { id: existingSocialLogin.user.id },
             data: { lastLoginAt: getCurrentKSTTime() }
@@ -169,10 +182,17 @@ if (process.env.KAKAO_CLIENT_ID && process.env.KAKAO_CLIENT_SECRET && process.en
               password: true
             }
           });
+          
+          console.log('🔍 이메일로 기존 사용자 확인:', {
+            email: kakaoEmail,
+            found: !!existingUser,
+            userId: existingUser?.user_id
+          });
         }
 
         if (existingUser) {
           // 기존 사용자에 카카오 소셜 로그인 연결
+          console.log('🔗 기존 사용자에 카카오 연동');
           await prisma.socialLogin.create({
             data: {
               user_id: existingUser.user_id,
@@ -193,7 +213,9 @@ if (process.env.KAKAO_CLIENT_ID && process.env.KAKAO_CLIENT_SECRET && process.en
         }
         
         // 새 사용자 생성 (카카오 전용)
+        console.log('🆕 새 카카오 사용자 생성 시작');
         const uniqueUserId = await generateUniqueKakaoUserId();
+        console.log('🔢 생성된 카카오 user_id:', uniqueUserId);
 
         const newUser = await prisma.user.create({
           data: {
@@ -209,13 +231,26 @@ if (process.env.KAKAO_CLIENT_ID && process.env.KAKAO_CLIENT_SECRET && process.en
           }
         });
         
+        console.log('✅ 새 카카오 사용자 생성 완료:', {
+          id: newUser.id,
+          user_id: newUser.user_id,
+          email: newUser.email,
+          name: newUser.name
+        });
+        
         // 별도로 SocialLogin 생성
-        await prisma.socialLogin.create({
+        const socialLogin = await prisma.socialLogin.create({
           data: {
             provider: 'kakao',
             user_id: newUser.user_id,
             token: kakaoId
           }
+        });
+        
+        console.log('✅ 소셜 로그인 정보 생성 완료:', {
+          socialLoginId: socialLogin.id,
+          provider: socialLogin.provider,
+          user_id: socialLogin.user_id
         });
         
         // 생성된 사용자 정보 반환
