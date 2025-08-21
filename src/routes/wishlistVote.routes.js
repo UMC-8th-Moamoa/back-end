@@ -241,8 +241,8 @@ const router = express.Router();
 
 
 
-// 투표할 위시리스트 목록 조회
-router.get('/events/:eventId/wishlist', authenticateJWT, WishlistVoteController.getVotingWishlists);
+// 투표할 위시리스트 목록 조회  
+router.get('/events/:eventId/wishlist/vote', authenticateJWT, WishlistVoteController.getVotingWishlists);
 
 // 위시리스트 투표하기
 router.post('/events/:eventId/wishlist/vote', authenticateJWT, WishlistVoteController.voteForWishlists);
