@@ -256,11 +256,29 @@ if (process.env.KAKAO_CLIENT_ID && process.env.KAKAO_CLIENT_SECRET && process.en
         };
 
         const newUser = await prisma.user.create({
-          data: newUserData,
+          data: {
+            email: kakaoEmail || `kakao_${kakaoId}@kakao.temp`,
+            name: kakaoNickname || '카카오 사용자',
+            user_id: `kakao_${kakaoId}_${Date.now()}`,  // ✅ 필수 필드 추가
+            photo: kakaoProfileImage || null,
+            emailVerified: !!kakaoEmail,
+            password: '', // ✅ 필수 필드 추가 (소셜 로그인은 빈 값)
+            lastLoginAt: getCurrentKSTTime(),
+            createdAt: getCurrentKSTTime(),
+            updatedAt: getCurrentKSTTime(),
+            socialLogins: {
+              create: {
+                provider: 'kakao',
+                user_id: `kakao_${kakaoId}_${Date.now()}`,  // ✅ SocialLogin의 user_id도 설정
+                token: kakaoId
+              }
+            }
+          },
           select: {
             id: true,
             email: true,
             name: true,
+            user_id: true,  // ✅ user_id도 select에 추가
             photo: true,
             createdAt: true,
             lastLoginAt: true
