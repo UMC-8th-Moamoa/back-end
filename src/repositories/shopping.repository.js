@@ -123,76 +123,174 @@ class shoppingRepository {
         });
     };
 
-    // ê¸°ì¡´: user_id ë¬¸ìžì—´ë¡œ ì¡°íšŒ
     static findUserItemsByUserId = async (user_id, num) => {
-        const user = await prisma.user.findUnique({
-            where: { user_id: user_id }
-        });
-
-        if (!user) {
-            return [];
+        try {
+            const user = await prisma.user.findUnique({
+                where: { user_id: user_id }
+            });
+    
+            if (!user) {
+                return [];
+            }
+    
+            // Raw SQL로 조회 (더 명확한 컬럼명 지정)
+            let query = `
+                SELECT 
+                    ui.id as holditem_no,
+                    ui.userId,
+                    ui.itemId,
+                    ui.purchasedAt,
+                    i.id as item_id,
+                    i.category as item_category,
+                    i.name as item_name,
+                    i.price as item_price,
+                    i.imageUrl as item_image,
+                    i.description as item_description,
+                    i.event as item_event
+                FROM user_items ui
+                INNER JOIN items i ON ui.itemId = i.id
+                WHERE ui.userId = ${user.id}
+                ORDER BY ui.purchasedAt DESC
+            `;
+            
+            if (num) {
+                query += ` LIMIT ${parseInt(num, 10)}`;
+            }
+    
+            const userItems = await prisma.$queryRawUnsafe(query);
+    
+            // 데이터 확인을 위한 임시 로그 (문제 해결 후 제거)
+            if (userItems.length > 0) {
+                console.log('🔍 Raw 데이터 확인:', {
+                    item_name: userItems[0].item_name,
+                    item_description: userItems[0].item_description,
+                    item_category: userItems[0].item_category
+                });
+            }
+    
+            // 데이터 형변환 및 매핑
+            const mappedItems = userItems.map(userItem => ({
+                holditem_no: typeof userItem.holditem_no === 'bigint' 
+                    ? Number(userItem.holditem_no) 
+                    : userItem.holditem_no,
+                category: userItem.item_category,
+                item_no: typeof userItem.item_id === 'bigint' 
+                    ? Number(userItem.item_id) 
+                    : userItem.item_id,
+                name: userItem.item_name || '이름 없음',
+                price: typeof userItem.item_price === 'bigint' 
+                    ? Number(userItem.item_price) 
+                    : userItem.item_price,
+                user_id: user.user_id,
+                image: userItem.item_image,
+                detail: userItem.item_description || '',
+                event: Boolean(userItem.item_event),
+                purchasedAt: userItem.purchasedAt
+            }));
+    
+            return mappedItems;
+    
+        } catch (error) {
+            // 기존 ORM 방식으로 폴백 시도
+            try {
+                const user = await prisma.user.findUnique({
+                    where: { user_id: user_id }
+                });
+    
+                if (!user) return [];
+                
+                const userItems = await prisma.userItem.findMany({
+                    where: {
+                        userId: user.id,
+                    },
+                    include: {
+                        item: true
+                    },
+                    take: num ? parseInt(num, 10) : undefined,
+                    orderBy: {
+                        purchasedAt: 'desc',
+                    },
+                });
+    
+                return userItems.map(userItem => ({
+                    holditem_no: userItem.id,
+                    category: userItem.item.category,
+                    item_no: userItem.item.id,
+                    name: userItem.item.name,
+                    price: userItem.item.price,
+                    user_id: user.user_id,
+                    image: userItem.item.imageUrl,
+                    detail: userItem.item.description || '',
+                    event: userItem.item.event,
+                    purchasedAt: userItem.purchasedAt
+                }));
+    
+            } catch (ormError) {
+                throw error;
+            }
         }
-
-        const userItems = await prisma.userItem.findMany({
-            where: {
-                userId: user.id,
-            },
-            include: {
-                item: true
-            },
-            take: num ? parseInt(num, 10) : undefined,
-            orderBy: {
-                purchasedAt: 'desc',
-            },
-        });
-
-        return userItems.map(userItem => ({
-            holditem_no: userItem.id,
-            category: userItem.item.category,
-            item_no: userItem.item.id,
-            user_id: user.user_id,
-            image: userItem.item.imageUrl
-        }));
     };
-
-    static findUserByIdNumber = async (userId) => {
-        return await prisma.user.findUnique({
-            where: { id: userId },
-            select: { id: true, user_id: true }
-        });
-    };
-
-    // ì¶"ê°€: ìˆ«ìž IDë¡œ ì§ì ' ì¡°íšŒ
+    
+    // findUserItemsByUserIdNumber 메서드도 동일하게 이름 포함
     static findUserItemsByUserIdNumber = async (userId, num) => {
-        const user = await prisma.user.findUnique({
-            where: { id: userId },
-            select: { id: true, user_id: true }
-        });
-
-        if (!user) {
-            return [];
+        try {
+            const user = await prisma.user.findUnique({
+                where: { id: userId },
+                select: { id: true, user_id: true }
+            });
+    
+            if (!user) {
+                return [];
+            }
+    
+            // Raw SQL로 조회 (명확한 컬럼명 지정)
+            let query = `
+                SELECT 
+                    ui.id as holditem_no,
+                    ui.userId,
+                    ui.itemId,
+                    ui.purchasedAt,
+                    i.id as item_id,
+                    i.category as item_category,
+                    i.name as item_name,
+                    i.price as item_price,
+                    i.imageUrl as item_image,
+                    i.description as item_description,
+                    i.event as item_event
+                FROM user_items ui
+                INNER JOIN items i ON ui.itemId = i.id
+                WHERE ui.userId = ${userId}
+                ORDER BY ui.purchasedAt DESC
+            `;
+            
+            if (num) {
+                query += ` LIMIT ${parseInt(num, 10)}`;
+            }
+    
+            const userItems = await prisma.$queryRawUnsafe(query);
+    
+            return userItems.map(userItem => ({
+                holditem_no: typeof userItem.holditem_no === 'bigint' 
+                    ? Number(userItem.holditem_no) 
+                    : userItem.holditem_no,
+                category: userItem.item_category,
+                item_no: typeof userItem.item_id === 'bigint' 
+                    ? Number(userItem.item_id) 
+                    : userItem.item_id,
+                name: userItem.item_name || '이름 없음',
+                price: typeof userItem.item_price === 'bigint' 
+                    ? Number(userItem.item_price) 
+                    : userItem.item_price,
+                user_id: user.user_id,
+                image: userItem.item_image,
+                detail: userItem.item_description || '',
+                event: Boolean(userItem.item_event),
+                purchasedAt: userItem.purchasedAt
+            }));
+    
+        } catch (error) {
+            throw error;
         }
-
-        const userItems = await prisma.userItem.findMany({
-            where: {
-                userId: userId,
-            },
-            include: {
-                item: true
-            },
-            take: num ? parseInt(num, 10) : undefined,
-            orderBy: {
-                purchasedAt: 'desc',
-            },
-        });
-
-        return userItems.map(userItem => ({
-            holditem_no: userItem.id,
-            category: userItem.item.category,
-            item_no: userItem.item.id,
-            user_id: user.user_id,
-            image: userItem.item.imageUrl
-        }));
     };
 }
 

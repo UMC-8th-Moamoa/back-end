@@ -181,9 +181,9 @@ export class HoldItemEntryDTO {
    * @param {number} itemData.item_no - 원본 아이템 고유 번호
    * @param {string} itemData.user_id - 사용자 ID
    * @param {string} itemData.image - 아이템 사진 URL
-   * @param {string} itemData.name - 아이템 이름 ⭐ 필수 필드
+   * @param {string} itemData.name - 아이템 이름
    * @param {number} itemData.price - 아이템 가격
-   * @param {string} itemData.description - 아이템 설명 (디테일)
+   * @param {string} itemData.detail - 아이템 상세 설명
    * @param {boolean} itemData.event - 이벤트 아이템 여부
    * @param {string} itemData.purchasedAt - 구매 일시
    */
@@ -194,14 +194,13 @@ export class HoldItemEntryDTO {
     this.user_id = itemData.user_id;
     this.image = itemData.image;
     
-    // ⭐ 상품 이름 - 필수 필드
-    this.name = itemData.name || '알 수 없는 아이템';
+    // ⭐ 상품 이름
+    this.name = itemData.name || '이름 없음';
     
-    // ⭐ 상품 디테일 - 상세 설명
-    this.description = itemData.description || '';
-    this.detail = itemData.description || ''; // detail 필드도 추가 (호환성)
+    // ⭐ 상품 디테일만 유지 (description 제거)
+    this.detail = itemData.detail || '';
     
-    // 추가 상세 정보들
+    // 추가 정보들
     this.price = itemData.price || 0;
     this.event = Boolean(itemData.event);
     this.purchasedAt = itemData.purchasedAt;
