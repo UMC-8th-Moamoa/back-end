@@ -460,8 +460,17 @@ if (isKakaoEnabled()) {
         // 클라이언트 URL 설정
         const clientUrl = process.env.CLIENT_URL || 'http://localhost:3000';
         
+        console.log('카카오 로그인 성공:', {
+          userId: req.user.id,
+          email: req.user.email,
+          user_id: req.user.user_id,
+          clientUrl: clientUrl
+        });
+        
         // 토큰을 쿼리 파라미터로 전달하여 리다이렉트
-        const redirectUrl = `${clientUrl}/auth/callback?accessToken=${tokens.accessToken}&refreshToken=${tokens.refreshToken}`;
+        const redirectUrl = `${clientUrl}/auth/callback?accessToken=${encodeURIComponent(tokens.accessToken)}&refreshToken=${encodeURIComponent(tokens.refreshToken)}`;
+        
+        console.log('리다이렉트 URL 길이:', redirectUrl.length);
         
         res.redirect(redirectUrl);
       } catch (error) {

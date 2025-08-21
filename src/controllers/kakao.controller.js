@@ -60,11 +60,18 @@ class KakaoController {
       // KakaoService에서 전체 로그인 플로우 처리
       const result = await KakaoService.handleKakaoLogin(code);
       
-      console.log('✅ 카카오 로그인 완료 - 클라이언트로 리다이렉트');
+      console.log('✅ 카카오 로그인 완료 - 클라이언트로 리다이렉트', {
+        userId: result.user.id,
+        email: result.user.email,
+        user_id: result.user.user_id
+      });
       
       // 클라이언트로 리다이렉트 (JWT 토큰과 함께)
       const clientUrl = process.env.CLIENT_URL || 'http://localhost:3000';
-      const redirectUrl = `${clientUrl}/auth/callback?accessToken=${result.tokens.accessToken}&refreshToken=${result.tokens.refreshToken}`;
+      const redirectUrl = `${clientUrl}/auth/callback?accessToken=${encodeURIComponent(result.tokens.accessToken)}&refreshToken=${encodeURIComponent(result.tokens.refreshToken)}`;
+      
+      console.log('리다이렉트 URL 길이:', redirectUrl.length);
+      console.log('클라이언트 URL:', clientUrl);
       
       res.redirect(redirectUrl);
 
