@@ -244,7 +244,7 @@ class KakaoService {
    * 카카오 인증 URL 생성
    */
   static generateKakaoAuthURL(redirectURI = null, state = null) {
-    const finalRedirectURI = redirectURI || `${process.env.BASE_URL}/api/auth/kakao/callback-direct`;
+    const finalRedirectURI = redirectURI || `${process.env.BASE_URL}/api/auth/kakao/callback`;
     const finalState = state || Math.random().toString(36).substring(7);
     
     return KakaoUtil.generateAuthURL(finalRedirectURI, finalState);
@@ -254,7 +254,7 @@ class KakaoService {
    * 사용자의 카카오 연동 상태 확인
    */
   static async getKakaoConnectionStatus(userId) {
-    try {
+    try { 
       const user = await prisma.user.findUnique({
         where: { id: userId },
         include: {
