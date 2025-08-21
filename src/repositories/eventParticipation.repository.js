@@ -175,8 +175,8 @@ class EventParticipationRepository {
     try {
       const letter = await prisma.letter.findFirst({
         where: {
-          eventId: eventId,
-          writerId: userId
+          birthdayEventId: eventId,
+          senderId: userId
         }
       });
 
