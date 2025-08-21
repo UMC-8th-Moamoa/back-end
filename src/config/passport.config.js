@@ -220,7 +220,7 @@ if (process.env.KAKAO_CLIENT_ID && process.env.KAKAO_CLIENT_SECRET && process.en
           // 기존 사용자에 카카오 소셜 로그인 연결
           await prisma.socialLogin.create({
             data: {
-              userId: existingUser.id,
+              userId: existingUser.user_id,
               provider: 'kakao',
               token: kakaoId
             }
@@ -276,7 +276,7 @@ if (process.env.KAKAO_CLIENT_ID && process.env.KAKAO_CLIENT_SECRET && process.en
         await prisma.socialLogin.create({
           data: {
             provider: 'kakao',
-            user_id: newUser.id,
+            user_id: newUser.user_id,
             token: kakaoId
           }
         });
