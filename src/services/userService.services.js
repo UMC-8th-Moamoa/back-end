@@ -2,7 +2,7 @@ import userRepository from '../repositories/userRepository.repositories.js';
 import { autoEventService } from './autoEvent.service.js';
 import prisma from '../config/prismaClient.js'; 
 import { demoService } from './demo.service.js';
-
+import emailService from '../utils/email.util.js';
 import { 
   hashPassword, 
   comparePassword, 
@@ -384,6 +384,54 @@ class UserService {
   return new SuccessResponseDto('이메일 인증이 완료되었습니다');
 }
 
+
+  async sendEmailVerification(emailVerificationDto) {
+    const { email, purpose } = emailVerificationDto;
+
+    const user = await userRepository.findByEmail(email);
+
+    // 목적에 따라 가입 여부 체크
+    if (purpose === 'signup') {
+      if (user) {
+        throw new DuplicateEmailError('이미 가입된 이메일입니다');
+      }
+    } else if (purpose === 'reset') {
+      if (!user) {
+        throw new NotFoundError('사용자를 찾을 수 없습니다');
+      }
+    } else {
+      throw new ValidationError('purpose는 signup 또는 reset이어야 합니다');
+    }
+
+    // 6자리 인증 코드 생성
+    const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
+    const verificationToken = generateEmailVerificationToken(email, verificationCode);
+
+    // ✅ 실제 이메일 발송 추가
+    try {
+      if (emailService.isAvailable()) {
+        await emailService.sendVerificationCode(email, verificationCode, purpose);
+        console.log(`✅ 인증코드 이메일 발송 성공: ${email}`);
+      } else {
+        console.warn('⚠️ 이메일 서비스를 사용할 수 없습니다');
+      }
+    } catch (error) {
+      console.error('❌ 인증코드 이메일 발송 실패:', error);
+      // 에러가 발생해도 진행 (개발 환경에서는 콘솔로 확인 가능)
+    }
+
+    const response = { message: '인증 코드가 발송되었습니다' };
+
+    // 개발 환경에서는 프론트 디버깅을 위해 토큰/만료 안내 제공
+    if (process.env.NODE_ENV === 'development') {
+      response.verificationToken = verificationToken;
+      response.expiresIn = '10m';
+      response.code = verificationCode; // 디버깅용
+    }
+
+    return response;
+  }
+
   /**
    * 비밀번호 재설정 요청
    * @param {PasswordResetRequestDto} passwordResetRequestDto - 비밀번호 재설정 요청 정보
@@ -398,6 +446,19 @@ class UserService {
   }
 
   const resetToken = generatePasswordResetToken(email, user.id);
+
+  // ✅ 실제 이메일 발송 추가
+    try {
+      if (emailService.isAvailable()) {
+        await emailService.sendPasswordResetLink(email, resetToken);
+        console.log(`✅ 비밀번호 재설정 이메일 발송 성공: ${email}`);
+      } else {
+        console.warn('⚠️ 이메일 서비스를 사용할 수 없습니다');
+      }
+    } catch (error) {
+      console.error('❌ 비밀번호 재설정 이메일 발송 실패:', error);
+      // 에러가 발생해도 진행
+    }
 
   // ✅ 조건문 제거하고 무조건 토큰 반환
   return {
