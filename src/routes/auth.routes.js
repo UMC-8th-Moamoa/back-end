@@ -30,6 +30,7 @@ import {
 
 import { generateTokenPair } from '../utils/jwt.util.js';
 import userController from '../controllers/userController.controllers.js';
+import KakaoController from '../controllers/kakao.controller.js';
 
 const router = express.Router();
 const prisma = new PrismaClient();
@@ -160,7 +161,6 @@ router.post('/refresh', validateRefreshToken, userController.refreshToken);
  *         description: 사용자 정보 조회 성공
  */
 router.get('/me', authenticateJWT, userController.getMe);
-
 
 /**
  * @swagger
@@ -359,15 +359,20 @@ router.post('/reset-password', validatePasswordReset, userController.resetPasswo
  */
 router.get('/nickname/:nickname/check', validateNicknameCheck, userController.checkNickname);
 
+// ===========================================
+// 카카오 로그인 관련 라우트들
+// ===========================================
+
 // 카카오 로그인 라우트들 (조건부 등록)
 if (isKakaoEnabled()) {
   console.log('✅ 카카오 OAuth 라우트가 등록되었습니다.');
   
+  // 기존 Passport 방식 카카오 로그인
   /**
    * @swagger
    * /api/auth/kakao:
    *   get:
-   *     summary: 카카오 로그인 시작
+   *     summary: 카카오 로그인 시작 (Passport 방식)
    *     tags: [Auth]
    *     description: 카카오 OAuth 인증 페이지로 리다이렉트
    *     responses:
@@ -386,7 +391,7 @@ if (isKakaoEnabled()) {
    * @swagger
    * /api/auth/kakao/callback:
    *   get:
-   *     summary: 카카오 로그인 콜백
+   *     summary: 카카오 로그인 콜백 (Passport 방식)
    *     tags: [Auth]
    *     description: 카카오에서 인증 후 콜백을 받는 엔드포인트
    *     responses:
@@ -417,17 +422,71 @@ if (isKakaoEnabled()) {
     }
   );
 
+  // 새로운 직접 구현 방식 카카오 로그인
   /**
    * @swagger
-   * /api/auth/kakao/unlink:
+   * /api/auth/kakao-direct:
+   *   get:
+   *     summary: 카카오 로그인 시작 (직접 구현)
+   *     tags: [Auth]
+   *     description: 카카오 OAuth 인증 페이지로 리다이렉트 (Passport 대신 직접 구현)
+   *     responses:
+   *       302:
+   *         description: 카카오 인증 페이지로 리다이렉트
+   */
+  router.get('/kakao-direct', KakaoController.startKakaoLogin);
+
+  /**
+   * @swagger
+   * /api/auth/kakao/callback-direct:
+   *   get:
+   *     summary: 카카오 로그인 콜백 (직접 구현)
+   *     tags: [Auth]
+   *     description: 카카오에서 인증 후 콜백을 받는 엔드포인트
+   *     parameters:
+   *       - in: query
+   *         name: code
+   *         schema:
+   *           type: string
+   *         description: 카카오에서 발급한 인가 코드
+   *       - in: query
+   *         name: state
+   *         schema:
+   *           type: string
+   *         description: CSRF 방지용 state 값
+   *     responses:
+   *       302:
+   *         description: 클라이언트 앱으로 리다이렉트 (토큰 포함)
+   *       400:
+   *         description: 인증 실패
+   */
+  router.get('/kakao/callback-direct', KakaoController.handleKakaoCallback);
+
+  /**
+   * @swagger
+   * /api/auth/kakao/refresh:
    *   post:
-   *     summary: 카카오 계정 연결 해제
+   *     summary: 카카오 토큰 갱신
    *     tags: [Auth]
    *     security:
    *       - bearerAuth: []
    *     responses:
    *       200:
-   *         description: 연결 해제 성공
+   *         description: 토큰 갱신 성공
+   */
+  router.post('/kakao/refresh', authenticateJWT, KakaoController.refreshKakaoToken);
+
+  /**
+   * @swagger
+   * /api/auth/kakao/unlink:
+   *   post:
+   *     summary: 카카오 계정 연동 해제
+   *     tags: [Auth]
+   *     security:
+   *       - bearerAuth: []
+   *     responses:
+   *       200:
+   *         description: 연동 해제 성공
    */
   router.post('/kakao/unlink', 
     authenticateJWT,
@@ -456,8 +515,75 @@ if (isKakaoEnabled()) {
       });
     })
   );
+
+  /**
+   * @swagger
+   * /api/auth/kakao/sync:
+   *   post:
+   *     summary: 카카오 사용자 정보 동기화
+   *     tags: [Auth]
+   *     security:
+   *       - bearerAuth: []
+   *     responses:
+   *       200:
+   *         description: 정보 동기화 성공
+   */
+  router.post('/kakao/sync', authenticateJWT, KakaoController.syncKakaoUserInfo);
+
+  /**
+   * @swagger
+   * /api/auth/kakao/status:
+   *   get:
+   *     summary: 카카오 연동 상태 확인
+   *     tags: [Auth]
+   *     security:
+   *       - bearerAuth: []
+   *     responses:
+   *       200:
+   *         description: 연동 상태 조회 성공
+   */
+  router.get('/kakao/status', authenticateJWT, KakaoController.getKakaoConnectionStatus);
+
+  /**
+   * @swagger
+   * /api/auth/kakao/auth-url:
+   *   get:
+   *     summary: 카카오 인증 URL 생성
+   *     tags: [Auth]
+   *     parameters:
+   *       - in: query
+   *         name: redirect_uri
+   *         schema:
+   *           type: string
+   *         description: 커스텀 리다이렉트 URI
+   *       - in: query
+   *         name: state
+   *         schema:
+   *           type: string
+   *         description: 커스텀 state 값
+   *     responses:
+   *       200:
+   *         description: 인증 URL 생성 성공
+   */
+  router.get('/kakao/auth-url', KakaoController.getKakaoAuthURL);
+
+  /**
+   * @swagger
+   * /api/auth/kakao/test:
+   *   get:
+   *     summary: 카카오 로그인 테스트 (개발용)
+   *     tags: [Auth]
+   *     description: 개발 환경에서만 사용 가능한 테스트 엔드포인트
+   *     responses:
+   *       200:
+   *         description: 테스트 정보 제공
+   *       403:
+   *         description: 프로덕션 환경에서는 사용 불가
+   */
+  router.get('/kakao/test', KakaoController.testKakaoLogin);
+
 } else {
-  console.log('⚠️  카카오 OAuth가 비활성화되어 있어 관련 라우트가 등록되지 않았습니다.');
+  console.log('⚠️ 카카오 OAuth가 비활성화되어 있어 관련 라우트가 등록되지 않았습니다.');
 }
 
 /**
@@ -527,7 +653,8 @@ router.get('/social/providers',
       kakao: {
         enabled: isKakaoEnabled(),
         name: '카카오',
-        loginUrl: isKakaoEnabled() ? '/api/auth/kakao' : null
+        loginUrl: isKakaoEnabled() ? '/api/auth/kakao' : null,
+        directLoginUrl: isKakaoEnabled() ? '/api/auth/kakao-direct' : null
       }
     };
     
