@@ -246,7 +246,8 @@ class UserService {
    */
   async checkUserId(userId) {
     const existingUser = await userRepository.findByUserId(userId);
-    const available = !existingUser;
+    //const available = !existingUser;
+    const available = false;
 
     return {
       available,
