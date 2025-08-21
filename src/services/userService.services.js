@@ -16,7 +16,7 @@ import {
   verifyPasswordResetToken
 } from '../utils/jwt.util.js';
 import { getCurrentKSTTime } from '../utils/datetime.util.js';
-import emailService from '../utils/email.util.js';
+
 import {
   DuplicateEmailError,
   NotFoundError,
