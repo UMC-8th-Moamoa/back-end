@@ -171,6 +171,7 @@ router.post('/charge', authenticateJWT, paymentController.chargeMongcoin);
  * /api/payment/charge-history:
  *   get:
  *     summary: 충전 내역 조회
+ *     description: 사용자의 몽코인 충전 내역을 최신순으로 조회합니다.
  *     tags: [Payment]
  *     security:
  *       - bearerAuth: []
@@ -183,6 +184,7 @@ router.post('/charge', authenticateJWT, paymentController.chargeMongcoin);
  *           maximum: 50
  *           default: 10
  *         description: 조회할 내역 수
+ *         example: 10
  *     responses:
  *       200:
  *         description: 충전 내역 조회 성공
@@ -191,10 +193,12 @@ router.post('/charge', authenticateJWT, paymentController.chargeMongcoin);
  *             schema:
  *               type: object
  *               properties:
+ *                 resultType:
+ *                   type: string
+ *                   example: "SUCCESS"
+ *                 error:
+ *                   type: null
  *                 success:
- *                   type: boolean
- *                   example: true
- *                 data:
  *                   type: object
  *                   properties:
  *                     history:
@@ -205,25 +209,32 @@ router.post('/charge', authenticateJWT, paymentController.chargeMongcoin);
  *                           id:
  *                             type: integer
  *                             description: 거래 ID
+ *                             example: 123
  *                           packageId:
  *                             type: string
  *                             description: 패키지 ID
+ *                             example: "MC_10"
  *                           packageName:
  *                             type: string
  *                             description: 패키지 이름
+ *                             example: "10MC"
  *                           mongcoinAmount:
  *                             type: integer
  *                             description: 충전된 몽코인
+ *                             example: 10
  *                           price:
  *                             type: integer
  *                             description: 결제 금액
+ *                             example: 1000
  *                           status:
  *                             type: string
  *                             description: 거래 상태
+ *                             example: "COMPLETED"
  *                           createdAt:
  *                             type: string
  *                             format: date-time
  *                             description: 거래 일시
+ *                             example: "2025-08-22T03:00:00.000Z"
  *       401:
  *         description: 인증 필요
  *       500:
