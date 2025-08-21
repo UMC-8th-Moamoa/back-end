@@ -453,27 +453,36 @@ if (isKakaoEnabled()) {
   router.get('/kakao/callback', 
   handleSocialCallback('kakao'),
   (req, res) => {
+    console.log('🔍 카카오 콜백 시작');
+    console.log('🔍 req.user:', req.user);
+    
     try {
+      console.log('🔍 JWT 토큰 생성 시작');
+      
+      // JWT 토큰 생성
       const tokens = generateTokenPair(req.user.id, req.user.email, req.user.user_id);
+      
+      console.log('✅ JWT 토큰 생성 성공');
+      console.log('🔍 tokens:', {
+        accessTokenLength: tokens.accessToken?.length,
+        refreshTokenLength: tokens.refreshToken?.length
+      });
+      
+      // 클라이언트 URL 설정
       const clientUrl = process.env.CLIENT_URL || 'http://localhost:3000';
+      console.log('🔍 clientUrl:', clientUrl);
       
-      // 쿠키에 토큰 설정
-      res.cookie('accessToken', tokens.accessToken, {
-        httpOnly: false,
-        secure: process.env.NODE_ENV === 'production',
-        maxAge: 24 * 60 * 60 * 1000 // 24시간
-      });
+      // 토큰을 쿼리 파라미터로 전달하여 리다이렉트
+      const redirectUrl = `${clientUrl}/auth/callback?accessToken=${tokens.accessToken}&refreshToken=${tokens.refreshToken}`;
       
-      res.cookie('refreshToken', tokens.refreshToken, {
-        httpOnly: false,
-        secure: process.env.NODE_ENV === 'production',
-        maxAge: 7 * 24 * 60 * 60 * 1000 // 7일
-      });
+      console.log('🔍 리다이렉트 URL 길이:', redirectUrl.length);
+      console.log('✅ 리다이렉트 실행');
       
-      // 짧은 URL로 리다이렉트
-      res.redirect(`${clientUrl}/auth/success`);
+      res.redirect(redirectUrl);
     } catch (error) {
-      console.error('카카오 로그인 콜백 처리 중 오류:', error);
+      console.error('❌ 카카오 로그인 콜백 처리 중 오류:', error);
+      console.error('❌ Error Stack:', error.stack);
+      
       const clientUrl = process.env.CLIENT_URL || 'http://localhost:3000';
       res.redirect(`${clientUrl}/auth/error?message=${encodeURIComponent('로그인 처리 중 오류가 발생했습니다')}`);
     }
