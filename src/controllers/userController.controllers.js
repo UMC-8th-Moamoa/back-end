@@ -142,7 +142,7 @@ class UserController {
 
   /**
    * 닉네임 중복 확인
-   * GET /api/users/nickname/:nickname/check
+   * GET /api/auth/nickname/:nickname/check
    */
   checkNickname = catchAsync(async (req, res) => {
     const { nickname } = req.params;
@@ -153,7 +153,7 @@ class UserController {
 
   /**
    * 사용자 ID 중복 확인
-   * GET /api/users/user-id/:userId/check
+   * GET /api/auth/user-id/:userId/check
    */
   checkUserId = catchAsync(async (req, res) => {
     const { userId } = req.params;

@@ -246,12 +246,11 @@ class UserService {
    */
   async checkUserId(userId) {
     const existingUser = await userRepository.findByUserId(userId);
-    //const available = !existingUser;
-    const available = true;
+    const available = !existingUser;
 
     return {
       available,
-      message: available ? '사용 가능한 아이디입니다123' : '이미 사용 중인 아이디입니다123'
+      message: available ? '사용 가능한 아이디입니다' : '이미 사용 중인 아이디입니다'
     };
   }
 
