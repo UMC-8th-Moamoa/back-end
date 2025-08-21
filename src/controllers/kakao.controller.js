@@ -1,5 +1,5 @@
 // src/controllers/kakao.controller.js
-// 카카오 관련 요청/응답 처리
+// 카카오 관련 요청/응답 처리 (리다이렉트 경로 수정)
 import KakaoService from '../services/kakao.service.js';
 import { catchAsync } from '../middlewares/errorHandler.js';
 
@@ -63,15 +63,44 @@ class KakaoController {
       console.log('✅ 카카오 로그인 완료 - 클라이언트로 리다이렉트', {
         userId: result.user.id,
         email: result.user.email,
-        user_id: result.user.user_id
+        user_id: result.user.user_id,
+        name: result.user.name,
+        isEmpty: result.user.name === '',
+        isKakaoUser: result.user.user_id.startsWith('kakao_')
       });
       
-      // 클라이언트로 리다이렉트 (JWT 토큰과 함께)
       const clientUrl = process.env.CLIENT_URL || 'http://localhost:3000';
-      const redirectUrl = `${clientUrl}/auth/callback?accessToken=${encodeURIComponent(result.tokens.accessToken)}&refreshToken=${encodeURIComponent(result.tokens.refreshToken)}`;
       
-      console.log('리다이렉트 URL 길이:', redirectUrl.length);
-      console.log('클라이언트 URL:', clientUrl);
+      // 카카오 전용 사용자 (user_id가 kakao_로 시작)인지 확인
+      let redirectPath;
+      if (result.user.user_id.startsWith('kakao_')) {
+        // 카카오 전용 사용자는 무조건 프로필 완성 페이지로
+        redirectPath = '/auth/complete-profile';
+        console.log('👤 카카오 전용 사용자 - 프로필 완성 페이지로 리다이렉트');
+      } else {
+        // 기존 사용자는 성공 페이지로
+        redirectPath = '/auth/success';
+        console.log('✅ 기존 사용자 카카오 연동 - 성공 페이지로 리다이렉트');
+      }
+      
+      // 토큰을 쿠키에 설정 (보안상 더 안전)
+      res.cookie('accessToken', result.tokens.accessToken, {
+        httpOnly: false, // 클라이언트에서 접근 가능하도록
+        secure: process.env.NODE_ENV === 'production',
+        maxAge: 24 * 60 * 60 * 1000, // 24시간
+        sameSite: 'lax'
+      });
+      
+      res.cookie('refreshToken', result.tokens.refreshToken, {
+        httpOnly: false,
+        secure: process.env.NODE_ENV === 'production',
+        maxAge: 7 * 24 * 60 * 60 * 1000, // 7일
+        sameSite: 'lax'
+      });
+      
+      // 단순한 경로로 리다이렉트 (토큰은 쿠키에 있음)
+      const redirectUrl = `${clientUrl}${redirectPath}`;
+      console.log('🔗 최종 리다이렉트 URL:', redirectUrl);
       
       res.redirect(redirectUrl);
 
@@ -81,6 +110,61 @@ class KakaoController {
       res.redirect(
         `${clientUrl}/auth/error?message=${encodeURIComponent('로그인 처리 중 오류가 발생했습니다: ' + error.message)}`
       );
+    }
+  });
+
+  /**
+   * 사용자 프로필 완성 (이름, 생일 입력)
+   * POST /api/auth/kakao/complete-profile
+   */
+  static completeProfile = catchAsync(async (req, res) => {
+    const { name, birthday } = req.body;
+    const userId = req.user.id;
+
+    if (!name || name.trim() === '') {
+      return res.error({
+        errorCode: 'VALIDATION_ERROR',
+        reason: '이름을 입력해주세요'
+      });
+    }
+
+    try {
+      // 사용자 정보 업데이트
+      const updatedUser = await prisma.user.update({
+        where: { id: userId },
+        data: {
+          name: name.trim(),
+          birthday: birthday ? new Date(birthday) : null,
+          updatedAt: new Date()
+        },
+        select: {
+          id: true,
+          user_id: true,
+          email: true,
+          name: true,
+          birthday: true,
+          photo: true,
+          emailVerified: true
+        }
+      });
+
+      console.log('✅ 사용자 프로필 완성:', {
+        userId: updatedUser.id,
+        name: updatedUser.name,
+        birthday: updatedUser.birthday
+      });
+
+      res.success({
+        message: '프로필이 완성되었습니다',
+        user: updatedUser
+      });
+
+    } catch (error) {
+      console.error('❌ 프로필 완성 실패:', error);
+      res.error({
+        errorCode: 'PROFILE_UPDATE_FAILED',
+        reason: error.message
+      });
     }
   });
 
