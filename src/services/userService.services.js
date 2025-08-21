@@ -16,6 +16,7 @@ import {
   verifyPasswordResetToken
 } from '../utils/jwt.util.js';
 import { getCurrentKSTTime } from '../utils/datetime.util.js';
+import emailService from '../utils/email.util.js';
 import {
   DuplicateEmailError,
   NotFoundError,
@@ -45,6 +46,9 @@ import {
  * 사용자 비즈니스 로직 처리 서비스
  */
 class UserService {
+  constructor() {
+    this.emailService = emailService;
+  }
 
   /**
    * 회원가입
@@ -325,7 +329,18 @@ class UserService {
     // 인증 토큰 생성 (10분 유효)
     const verificationToken = generateEmailVerificationToken(email, verificationCode);
 
-    // TODO: 실제 이메일 발송 로직 구현
+    try {
+      // 실제 이메일 발송
+      await this.emailService.sendVerificationCode(email, verificationCode, purpose);
+      console.log(`이메일 인증 코드 발송 성공 (${email}): ${verificationCode}`);
+    } catch (error) {
+      console.error('이메일 발송 실패:', error);
+      // 개발 환경에서는 이메일 발송 실패해도 진행
+      if (process.env.NODE_ENV === 'production') {
+        throw new Error('이메일 발송에 실패했습니다. 잠시 후 다시 시도해주세요.');
+      }
+    }
+
     if (process.env.NODE_ENV === 'development') {
       console.log(`이메일 인증 코드 (${email}): ${verificationCode}`);
     }
@@ -336,6 +351,7 @@ class UserService {
     if (process.env.NODE_ENV === 'development') {
       response.verificationToken = verificationToken;
       response.expiresIn = '10m';
+      response.debugCode = verificationCode; // 디버깅용 코드 추가
     }
 
     return response;
