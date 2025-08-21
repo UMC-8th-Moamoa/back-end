@@ -163,6 +163,16 @@ class EmailService {
   }
 
   /**
+   * 비밀번호 재설정 인증 코드 발송 (이메일 인증 코드 발송과 동일하지만 목적이 다름)
+   * @param {string} email - 수신자 이메일
+   * @param {string} code - 인증 코드
+   * @returns {Promise<Object>} 발송 결과
+   */
+  async sendPasswordResetCode(email, code) {
+    return await this.sendVerificationCode(email, code, 'reset');
+  }
+
+  /**
    * 비밀번호 재설정 링크 발송
    * @param {string} email - 수신자 이메일
    * @param {string} resetToken - 재설정 토큰

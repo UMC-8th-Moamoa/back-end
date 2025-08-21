@@ -310,6 +310,37 @@ router.post('/find-password', validatePasswordResetRequest, userController.reque
 
 /**
  * @swagger
+ * /api/auth/verify-reset-code:
+ *   post:
+ *     summary: 비밀번호 재설정 인증 코드 확인
+ *     tags: [Auth]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - code
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 format: email
+ *                 description: 이메일
+ *               code:
+ *                 type: string
+ *                 description: 인증 코드
+ *               token:
+ *                 type: string
+ *                 description: 인증 토큰
+ *     responses:
+ *       200:
+ *         description: 인증 코드 확인 성공
+ */
+router.post('/verify-reset-code', userController.verifyPasswordResetCode);
+
+/**
+ * @swagger
  * /api/auth/reset-password:
  *   post:
  *     summary: 비밀번호 재설정
@@ -358,6 +389,25 @@ router.post('/reset-password', validatePasswordReset, userController.resetPasswo
  *         description: 닉네임 중복 여부 확인 성공
  */
 router.get('/nickname/:nickname/check', validateNicknameCheck, userController.checkNickname);
+
+/**
+ * @swagger
+ * /api/auth/user-id/{userId}/check:
+ *   get:
+ *     summary: 사용자 ID 중복 확인
+ *     tags: [Auth]
+ *     parameters:
+ *       - in: path
+ *         name: userId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: 확인할 사용자 ID
+ *     responses:
+ *       200:
+ *         description: 사용자 ID 중복 여부 확인 성공
+ */
+router.get('/user-id/:userId/check', userController.checkUserId);
 
 // ===========================================
 // 카카오 로그인 관련 라우트들
