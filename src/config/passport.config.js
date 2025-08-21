@@ -56,6 +56,7 @@ passport.deserializeUser(async (id, done) => {
       where: { id },
       select: {
         id: true,
+        user_id: true,
         email: true,
         name: true,
         photo: true,
@@ -207,6 +208,7 @@ if (process.env.KAKAO_CLIENT_ID && process.env.KAKAO_CLIENT_SECRET && process.en
             where: { email: kakaoEmail },
             select: {
               id: true,
+              user_id: true,
               email: true,
               name: true,
               photo: true,
@@ -220,7 +222,7 @@ if (process.env.KAKAO_CLIENT_ID && process.env.KAKAO_CLIENT_SECRET && process.en
           // 기존 사용자에 카카오 소셜 로그인 연결
           await prisma.socialLogin.create({
             data: {
-              userId: existingUser.user_id,
+              user_Id: existingUser.user_id,
               provider: 'kakao',
               token: kakaoId
             }
