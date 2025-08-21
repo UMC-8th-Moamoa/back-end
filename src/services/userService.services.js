@@ -2,7 +2,7 @@ import userRepository from '../repositories/userRepository.repositories.js';
 import { autoEventService } from './autoEvent.service.js';
 import prisma from '../config/prismaClient.js'; 
 import { demoService } from './demo.service.js';
-import redis from "../config/redisClient.js";
+
 import { 
   hashPassword, 
   comparePassword, 
