@@ -236,6 +236,7 @@ if (process.env.KAKAO_CLIENT_ID && process.env.KAKAO_CLIENT_SECRET && process.en
           const { password, ...userWithoutPassword } = existingUser;
           return done(null, userWithoutPassword);
         }
+        
 
         // 새 사용자 생성
         const newUserData = {
@@ -255,6 +256,8 @@ if (process.env.KAKAO_CLIENT_ID && process.env.KAKAO_CLIENT_SECRET && process.en
           }
         };
 
+        const uniqueUserId = await generateUniqueUserId();
+
         const newUser = await prisma.user.create({
           data: {
             email: kakaoEmail || `kakao_${kakaoId}@kakao.temp`,
@@ -273,7 +276,7 @@ if (process.env.KAKAO_CLIENT_ID && process.env.KAKAO_CLIENT_SECRET && process.en
         await prisma.socialLogin.create({
           data: {
             provider: 'kakao',
-            user_id: uniqueUserId,
+            user_id: newUser.id,
             token: kakaoId
           }
         });
