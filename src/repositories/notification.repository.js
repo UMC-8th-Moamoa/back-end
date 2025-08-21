@@ -28,6 +28,8 @@ class NotificationRepository {
         take: size,
         select: {
           id: true,
+          type: true,
+          title: true,
           message: true,
           isRead: true,
           createdAt: true
@@ -154,17 +156,18 @@ class NotificationRepository {
   }
 
   /**
-   * 새로운 알림 생성 (토스트 알림용)
+   * 새로운 알림 생성 (기본 버전 - 메시지만)
    * @param {number} userId - 사용자 ID
-   * @param {string} type - 알림 타입
    * @param {string} message - 알림 메시지
    * @returns {Object} 생성된 알림 정보
    */
-  async createNotification(userId, message) {
+  async createNotification(userId, type, title, message) {
     try {
       const notification = await prisma.notification.create({
         data: {
           userId: userId,
+          type: type,
+          title: title,
           message: message,
           isRead: false
         }
@@ -174,6 +177,70 @@ class NotificationRepository {
     } catch (error) {
       console.error('알림 생성 중 오류 발생:', error);
       throw new Error('알림을 생성하는 중 오류가 발생했습니다');
+    }
+  }
+
+  /**
+   * 새로운 알림 생성 (확장 버전 - 타입과 제목 포함)
+   * @param {number} userId - 사용자 ID
+   * @param {string} type - 알림 타입
+   * @param {string} title - 알림 제목
+   * @param {string} message - 알림 메시지
+   * @returns {Object} 생성된 알림 정보
+   */
+  async createNotificationWithType(userId, type, title, message) {
+    try {
+      const notification = await prisma.notification.create({
+        data: {
+          userId: userId,
+          type: type,
+          title: title,
+          message: message,
+          isRead: false
+        }
+      });
+
+      return notification;
+    } catch (error) {
+      console.error('알림 생성 중 오류 발생:', error);
+      throw new Error('알림을 생성하는 중 오류가 발생했습니다');
+    }
+  }
+
+  /**
+   * 타입별 알림 조회
+   * @param {number} userId - 사용자 ID
+   * @param {string} type - 알림 타입
+   * @param {number} offset - 건너뛸 개수
+   * @param {number} size - 가져올 개수
+   * @returns {Array} 타입별 알림 목록
+   */
+  async getNotificationsByType(userId, type, offset, size) {
+    try {
+      const notifications = await prisma.notification.findMany({
+        where: {
+          userId: userId,
+          type: type
+        },
+        orderBy: {
+          createdAt: 'desc'
+        },
+        skip: offset,
+        take: size,
+        select: {
+          id: true,
+          type: true,
+          title: true,
+          message: true,
+          isRead: true,
+          createdAt: true
+        }
+      });
+
+      return notifications;
+    } catch (error) {
+      console.error('타입별 알림 조회 중 오류 발생:', error);
+      throw new Error('타입별 알림을 조회하는 중 오류가 발생했습니다');
     }
   }
 }

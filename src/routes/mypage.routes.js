@@ -1,6 +1,7 @@
 import express from 'express';
 import { authenticateJWT } from '../middlewares/auth.middleware.js';
 import mypageController from '../controllers/mypage.controller.js';
+import { body, validationResult } from 'express-validator';
 
 const router = express.Router();
 
@@ -10,9 +11,9 @@ const router = express.Router();
  *   name: Mypage
  *   description: 마이페이지 API
  */
+
 /**
  * @swagger
- * 
  * components:
  *   schemas:
  *     MyInfo:
@@ -124,12 +125,10 @@ const router = express.Router();
  *      500:
  *        description: 서버 내부 오류
  */
-
 router.get('/mypage_info', 
   authenticateJWT,
   mypageController.getMyInfoList
 );
-
 
 /**
  * @swagger
@@ -167,7 +166,6 @@ router.get('/mypage_info',
  *      500:
  *        description: 서버 내부 오류
  */
-
 router.get('/mypagechange_info', 
   authenticateJWT,
   mypageController.getMyInfoChangeList
@@ -211,10 +209,237 @@ router.get('/mypagechange_info',
  *      500:
  *        description: 서버 내부 오류
  */
-
 router.get('/otherpage_info', 
   authenticateJWT,
   mypageController.getOtherInfoList
+);
+
+/**
+ * @swagger
+ * /api/mypage/profile-image:
+ *   patch:
+ *     summary: 프로필 이미지 업데이트
+ *     description: 사용자가 S3에 업로드한 이미지 URL을 전달하면, 해당 이미지를 프로필 사진으로 저장
+ *     tags: [Mypage]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - imageUrl
+ *             properties:
+ *               imageUrl:
+ *                 type: string
+ *                 format: uri
+ *                 pattern: "^https?:\\/\\/.+\\.(jpg|jpeg|png|gif|bmp)$"
+ *                 maxLength: 500
+ *                 example: "https://s3.amazonaws.com/your-bucket/profile/1234.jpg"
+ *                 description: S3에 업로드된 이미지의 URL (jpg, jpeg, png, gif, bmp 형식만 허용)
+ *           example:
+ *             imageUrl: "https://s3.amazonaws.com/your-bucket/profile/1234.jpg"
+ *     responses:
+ *       200:
+ *         description: 프로필 이미지 업데이트 성공
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 resultType:
+ *                   type: string
+ *                   example: "SUCCESS"
+ *                 error:
+ *                   type: null
+ *                 success:
+ *                   type: object
+ *                   properties:
+ *                     imageUrl:
+ *                       type: string
+ *                       format: uri
+ *                       example: "https://s3.amazonaws.com/your-bucket/profile/1234.jpg"
+ *                       description: 업데이트된 프로필 이미지 URL
+ *                     message:
+ *                       type: string
+ *                       example: "프로필 이미지가 성공적으로 변경되었습니다."
+ *             example:
+ *               resultType: "SUCCESS"
+ *               error: null
+ *               success:
+ *                 imageUrl: "https://s3.amazonaws.com/your-bucket/profile/1234.jpg"
+ *                 message: "프로필 이미지가 성공적으로 변경되었습니다."
+ *       400:
+ *         description: 잘못된 요청
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 resultType:
+ *                   type: string
+ *                   example: "FAIL"
+ *                 error:
+ *                   type: object
+ *                   properties:
+ *                     errorCode:
+ *                       type: string
+ *                       example: "B001"
+ *                     reason:
+ *                       type: string
+ *                       example: "이미지 URL이 필요합니다"
+ *                     data:
+ *                       type: null
+ *                 success:
+ *                   type: null
+ *             examples:
+ *               missing_url:
+ *                 summary: 이미지 URL 누락
+ *                 value:
+ *                   resultType: "FAIL"
+ *                   error:
+ *                     errorCode: "B001"
+ *                     reason: "이미지 URL이 필요합니다"
+ *                     data: null
+ *                   success: null
+ *               invalid_format:
+ *                 summary: 잘못된 URL 형식
+ *                 value:
+ *                   resultType: "FAIL"
+ *                   error:
+ *                     errorCode: "B001"
+ *                     reason: "유효한 이미지 URL 형식이 아닙니다"
+ *                     data: null
+ *                   success: null
+ *               invalid_extension:
+ *                 summary: 지원하지 않는 파일 형식
+ *                 value:
+ *                   resultType: "FAIL"
+ *                   error:
+ *                     errorCode: "B001"
+ *                     reason: "jpg, jpeg, png, gif, bmp 형식의 이미지만 지원합니다"
+ *                     data: null
+ *                   success: null
+ *       401:
+ *         description: 인증 필요
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 resultType:
+ *                   type: string
+ *                   example: "FAIL"
+ *                 error:
+ *                   type: object
+ *                   properties:
+ *                     errorCode:
+ *                       type: string
+ *                       example: "A001"
+ *                     reason:
+ *                       type: string
+ *                       example: "인증이 필요합니다"
+ *                     data:
+ *                       type: null
+ *                 success:
+ *                   type: null
+ *       404:
+ *         description: 사용자를 찾을 수 없음
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 resultType:
+ *                   type: string
+ *                   example: "FAIL"
+ *                 error:
+ *                   type: object
+ *                   properties:
+ *                     errorCode:
+ *                       type: string
+ *                       example: "N002"
+ *                     reason:
+ *                       type: string
+ *                       example: "사용자를 찾을 수 없습니다"
+ *                     data:
+ *                       type: null
+ *                 success:
+ *                   type: null
+ *       500:
+ *         description: 서버 내부 오류
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 resultType:
+ *                   type: string
+ *                   example: "FAIL"
+ *                 error:
+ *                   type: object
+ *                   properties:
+ *                     errorCode:
+ *                       type: string
+ *                       example: "S001"
+ *                     reason:
+ *                       type: string
+ *                       example: "서버 내부 오류가 발생했습니다"
+ *                     data:
+ *                       type: null
+ *                 success:
+ *                   type: null
+ */
+router.patch('/profile-image',
+  authenticateJWT,
+  [
+    body('imageUrl')
+      .notEmpty()
+      .withMessage('이미지 URL이 필요합니다')
+      .isURL()
+      .withMessage('유효한 URL 형식이어야 합니다')
+      .matches(/^https?:\/\/.+\.(jpg|jpeg|png|gif|bmp)$/i)
+      .withMessage('jpg, jpeg, png, gif, bmp 형식의 이미지만 지원합니다')
+      .isLength({ max: 500 })
+      .withMessage('URL은 500자를 초과할 수 없습니다')
+      .custom((value) => {
+        // XSS 방지를 위한 추가 검증
+        if (value.includes('javascript:') || value.includes('data:')) {
+          throw new Error('허용되지 않는 URL 형식입니다');
+        }
+        
+        // AWS S3 URL 패턴 검증 (선택적 - 경고만 출력)
+        const s3UrlPattern = /^https:\/\/.*\.s3\..*\.amazonaws\.com\/.*$/;
+        if (!s3UrlPattern.test(value)) {
+          console.warn('S3 URL이 아닌 URL이 제공됨:', value);
+          // 경고만 출력하고 통과시킴 (다른 스토리지 서비스도 허용)
+        }
+        
+        return true;
+      })
+  ],
+  // 유효성 검사 에러 처리 미들웨어
+  (req, res, next) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({
+        resultType: "FAIL",
+        error: {
+          errorCode: "B001",
+          reason: errors.array()[0].msg,
+          data: errors.array().map(error => ({
+            field: error.path || error.param,
+            message: error.msg
+          }))
+        },
+        success: null
+      });
+    }
+    next();
+  },
+  mypageController.updateProfileImage
 );
 
 /**
@@ -288,25 +513,6 @@ router.get('/otherpage_info',
  *                       example: "고객센터 문의가 성공적으로 등록되었습니다."
  *       400:
  *         description: 잘못된 요청
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 resultType:
- *                   type: string
- *                   example: "ERROR"
- *                 error:
- *                   type: object
- *                   properties:
- *                     errorCode:
- *                       type: string
- *                       example: "VALIDATION_ERROR"
- *                     reason:
- *                       type: string
- *                       example: "title, content, privacyAgreed는 필수 파라미터입니다."
- *                 success:
- *                   type: null
  *       401:
  *         description: 인증 필요
  *       404:
@@ -325,6 +531,8 @@ router.post('/customer_service',
  *   get:
  *     summary: 고객센터 문의 목록 조회
  *     tags: [Mypage]
+ *     security:
+ *       - bearerAuth: []
  *     parameters:
  *       - in: query
  *         name: page
@@ -359,6 +567,8 @@ router.get('/customer_service',
  *   get:
  *     summary: 고객센터 문의 상세 조회
  *     tags: [Mypage]
+ *     security:
+ *       - bearerAuth: []
  *     parameters:
  *       - in: path
  *         name: inquiryId
@@ -391,6 +601,8 @@ router.get('/customer_service/:inquiryId',
  *   post:
  *     summary: 팔로우 요청
  *     tags: [Mypage]
+ *     security:
+ *       - bearerAuth: []
  *     requestBody:
  *       required: true
  *       content:
@@ -444,197 +656,10 @@ router.get('/customer_service/:inquiryId',
  *       500:
  *         description: 서버 내부 오류
  */
-
 router.post('/follow/request',
   authenticateJWT,
   mypageController.postFollowRequest
 );
-
-/**
- * @swagger
- * /api/mypage/change_id:
- *   put:
- *     summary: 로그인용 사용자 ID 변경
- *     description: 마이페이지에서 현재 사용자의 로그인용 ID를 새로운 ID로 변경합니다. ID는 중복될 수 없으며, 특정 조건을 만족해야 합니다.
- *     tags: [Mypage]
- *     security:
- *       - bearerAuth: []
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             required:
- *               - newUserId
- *             properties:
- *               newUserId:
- *                 type: string
- *                 description: 새로운 로그인용 사용자 ID (4-20자, 영문/숫자/언더스코어만 허용)
- *                 pattern: "^[a-zA-Z0-9_]{4,20}$"
- *                 example: "new_user_id_2025"
- *           example:
- *             newUserId: "new_user_id_2025"
- *     responses:
- *       200:
- *         description: 성공
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 resultType:
- *                   type: string
- *                   example: "SUCCESS"
- *                 error:
- *                   type: null
- *                 success:
- *                   type: object
- *                   properties:
- *                     previousUserId:
- *                       type: string
- *                       description: 이전 사용자 ID
- *                       example: "chaon_gold"
- *                     newUserId:
- *                       type: string
- *                       description: 새로운 사용자 ID
- *                       example: "moa123"
- *                     message:
- *                       type: string
- *                       description: 성공 메시지
- *                       example: "사용자 ID가 성공적으로 변경되었습니다"
- *                     changedAt:
- *                       type: string
- *                       format: date-time
- *                       description: 변경 시간
- *                       example: "2025-08-13T10:30:00Z"
- *             example:
- *               resultType: "SUCCESS"
- *               error: null
- *               success:
- *                 previousUserId: "chaon_gold"
- *                 newUserId: "moa123"
- *                 message: "사용자 ID가 성공적으로 변경되었습니다"
- *                 changedAt: "2025-08-13T10:30:00Z"
- *       400:
- *         description: 잘못된 요청
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 resultType:
- *                   type: string
- *                   example: "FAIL"
- *                 error:
- *                   type: object
- *                   properties:
- *                     errorCode:
- *                       type: string
- *                       example: "V001"
- *                     reason:
- *                       type: string
- *                       example: "새로운 사용자 ID는 4-20자의 영문, 숫자, 언더스코어만 허용됩니다"
- *                     data:
- *                       type: null
- *                 success:
- *                   type: null
- *             examples:
- *               invalid_format:
- *                 summary: 잘못된 ID 형식
- *                 value:
- *                   resultType: "FAIL"
- *                   error:
- *                     errorCode: "V001"
- *                     reason: "새로운 사용자 ID는 4-20자의 영문, 숫자, 언더스코어만 허용됩니다"
- *                     data: null
- *                   success: null
- *               empty_user_id:
- *                 summary: ID 누락
- *                 value:
- *                   resultType: "FAIL"
- *                   error:
- *                     errorCode: "V002"
- *                     reason: "새로운 사용자 ID를 입력해주세요"
- *                     data: null
- *                   success: null
- *               same_user_id:
- *                 summary: 동일한 ID
- *                 value:
- *                   resultType: "FAIL"
- *                   error:
- *                     errorCode: "V003"
- *                     reason: "현재 ID와 동일합니다. 다른 ID를 입력해주세요"
- *                     data: null
- *                   success: null
- *       401:
- *         description: 인증 실패
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 resultType:
- *                   type: string
- *                   example: "FAIL"
- *                 error:
- *                   type: object
- *                   properties:
- *                     errorCode:
- *                       type: string
- *                       example: "A001"
- *                     reason:
- *                       type: string
- *                       example: "인증이 필요합니다"
- *                     data:
- *                       type: null
- *                 success:
- *                   type: null
- *       409:
- *         description: 중복된 사용자 ID
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 resultType:
- *                   type: string
- *                   example: "FAIL"
- *                 error:
- *                   type: object
- *                   properties:
- *                     errorCode:
- *                       type: string
- *                       example: "D001"
- *                     reason:
- *                       type: string
- *                       example: "이미 사용 중인 사용자 ID입니다"
- *                     data:
- *                       type: null
- *                 success:
- *                   type: null
- *       500:
- *         description: 서버 내부 오류
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 resultType:
- *                   type: string
- *                   example: "FAIL"
- *                 error:
- *                   type: object
- *                   properties:
- *                     errorCode:
- *                       type: string
- *                       example: "서버 내부 오류가 발생했습니다"
- *                     data:
- *                       type: null
- *                 success:
- *                   type: null
- */
-router.put('/change_id', authenticateJWT, mypageController.changeUserId);
 
 /**
  * @swagger
@@ -863,6 +888,194 @@ router.get('/followings',
   mypageController.getFollowingsList
 );
 
+/**
+ * @swagger
+ * /api/mypage/change_id:
+ *   put:
+ *     summary: 로그인용 사용자 ID 변경
+ *     description: 마이페이지에서 현재 사용자의 로그인용 ID를 새로운 ID로 변경합니다. ID는 중복될 수 없으며, 특정 조건을 만족해야 합니다.
+ *     tags: [Mypage]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - newUserId
+ *             properties:
+ *               newUserId:
+ *                 type: string
+ *                 description: 새로운 로그인용 사용자 ID (4-20자, 영문/숫자/언더스코어만 허용)
+ *                 pattern: "^[a-zA-Z0-9_]{4,20}$"
+ *                 example: "new_user_id_2025"
+ *           example:
+ *             newUserId: "new_user_id_2025"
+ *     responses:
+ *       200:
+ *         description: 성공
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 resultType:
+ *                   type: string
+ *                   example: "SUCCESS"
+ *                 error:
+ *                   type: null
+ *                 success:
+ *                   type: object
+ *                   properties:
+ *                     previousUserId:
+ *                       type: string
+ *                       description: 이전 사용자 ID
+ *                       example: "chaon_gold"
+ *                     newUserId:
+ *                       type: string
+ *                       description: 새로운 사용자 ID
+ *                       example: "moa123"
+ *                     message:
+ *                       type: string
+ *                       description: 성공 메시지
+ *                       example: "사용자 ID가 성공적으로 변경되었습니다"
+ *                     changedAt:
+ *                       type: string
+ *                       format: date-time
+ *                       description: 변경 시간
+ *                       example: "2025-08-13T10:30:00Z"
+ *             example:
+ *               resultType: "SUCCESS"
+ *               error: null
+ *               success:
+ *                 previousUserId: "chaon_gold"
+ *                 newUserId: "moa123"
+ *                 message: "사용자 ID가 성공적으로 변경되었습니다"
+ *                 changedAt: "2025-08-13T10:30:00Z"
+ *       400:
+ *         description: 잘못된 요청
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 resultType:
+ *                   type: string
+ *                   example: "FAIL"
+ *                 error:
+ *                   type: object
+ *                   properties:
+ *                     errorCode:
+ *                       type: string
+ *                       example: "V001"
+ *                     reason:
+ *                       type: string
+ *                       example: "새로운 사용자 ID는 4-20자의 영문, 숫자, 언더스코어만 허용됩니다"
+ *                     data:
+ *                       type: null
+ *                 success:
+ *                   type: null
+ *             examples:
+ *               invalid_format:
+ *                 summary: 잘못된 ID 형식
+ *                 value:
+ *                   resultType: "FAIL"
+ *                   error:
+ *                     errorCode: "V001"
+ *                     reason: "새로운 사용자 ID는 4-20자의 영문, 숫자, 언더스코어만 허용됩니다"
+ *                     data: null
+ *                   success: null
+ *               empty_user_id:
+ *                 summary: ID 누락
+ *                 value:
+ *                   resultType: "FAIL"
+ *                   error:
+ *                     errorCode: "V002"
+ *                     reason: "새로운 사용자 ID를 입력해주세요"
+ *                     data: null
+ *                   success: null
+ *               same_user_id:
+ *                 summary: 동일한 ID
+ *                 value:
+ *                   resultType: "FAIL"
+ *                   error:
+ *                     errorCode: "V003"
+ *                     reason: "현재 ID와 동일합니다. 다른 ID를 입력해주세요"
+ *                     data: null
+ *                   success: null
+ *       401:
+ *         description: 인증 실패
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 resultType:
+ *                   type: string
+ *                   example: "FAIL"
+ *                 error:
+ *                   type: object
+ *                   properties:
+ *                     errorCode:
+ *                       type: string
+ *                       example: "A001"
+ *                     reason:
+ *                       type: string
+ *                       example: "인증이 필요합니다"
+ *                     data:
+ *                       type: null
+ *                 success:
+ *                   type: null
+ *       409:
+ *         description: 중복된 사용자 ID
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 resultType:
+ *                   type: string
+ *                   example: "FAIL"
+ *                 error:
+ *                   type: object
+ *                   properties:
+ *                     errorCode:
+ *                       type: string
+ *                       example: "D001"
+ *                     reason:
+ *                       type: string
+ *                       example: "이미 사용 중인 사용자 ID입니다"
+ *                     data:
+ *                       type: null
+ *                 success:
+ *                   type: null
+ *       500:
+ *         description: 서버 내부 오류
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 resultType:
+ *                   type: string
+ *                   example: "FAIL"
+ *                 error:
+ *                   type: object
+ *                   properties:
+ *                     errorCode:
+ *                       type: string
+ *                       example: "서버 내부 오류가 발생했습니다"
+ *                     data:
+ *                       type: null
+ *                 success:
+ *                   type: null
+ */
+router.put('/change_id', 
+  authenticateJWT, 
+  mypageController.changeUserId
+);
 
 /**
  * @swagger

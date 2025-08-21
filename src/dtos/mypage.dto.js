@@ -181,3 +181,37 @@ export class FollowingDTO {
         this.is_mutual = is_mutual || false;
     }
 }
+
+// 프로필 이미지 업데이트 요청 DTO
+export class ProfileImageUpdateRequestDTO {
+    constructor(body) {
+        if (!body || !body.imageUrl) {
+            throw new Error('imageUrl은 필수 파라미터입니다.');
+        }
+        
+        if (typeof body.imageUrl !== 'string') {
+            throw new Error('imageUrl은 문자열이어야 합니다.');
+        }
+        
+        // URL 형식 검증
+        const urlRegex = /^https?:\/\/.+\.(jpg|jpeg|png|gif|bmp)$/i;
+        if (!urlRegex.test(body.imageUrl)) {
+            throw new Error('유효한 이미지 URL 형식이 아닙니다.');
+        }
+        
+        // URL 길이 제한
+        if (body.imageUrl.length > 500) {
+            throw new Error('이미지 URL은 500자를 초과할 수 없습니다.');
+        }
+
+        this.imageUrl = body.imageUrl.trim();
+    }
+}
+
+// 프로필 이미지 업데이트 응답 DTO
+export class ProfileImageUpdateResponseDTO {
+    constructor({ imageUrl, message }) {
+        this.imageUrl = imageUrl;
+        this.message = message;
+    }
+}

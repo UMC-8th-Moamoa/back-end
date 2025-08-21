@@ -408,6 +408,38 @@ class MypageRepository {
             },
         });
     }
+    async updateProfileImage(userId, imageUrl) {
+        console.log('🔍 Repository: updateProfileImage called with userId:', userId, 'imageUrl:', imageUrl);
+        
+        if (!userId || !imageUrl) {
+            console.error('❌ updateProfileImage called with undefined parameters:', { userId, imageUrl });
+            throw new Error('userId and imageUrl are required');
+        }
+
+        try {
+            const updatedUser = await prisma.user.update({
+                where: { id: userId },
+                data: { 
+                    photo: imageUrl,
+                    updatedAt: new Date()
+                },
+                select: {
+                    id: true,
+                    user_id: true,
+                    name: true,
+                    email: true,
+                    photo: true,
+                    updatedAt: true
+                }
+            });
+
+            console.log('✅ Repository: Profile image successfully updated:', updatedUser);
+            return updatedUser;
+        } catch (error) {
+            console.error('프로필 이미지 업데이트 중 오류 발생:', error);
+            throw new Error('프로필 이미지 업데이트 중 오류가 발생했습니다');
+        }
+    }
 }
 
 export default new MypageRepository();

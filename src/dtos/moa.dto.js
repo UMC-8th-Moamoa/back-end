@@ -61,12 +61,38 @@ export class MoaRequestDTO {
  * 모아모아 정보 DTO
  */
 export class MoaItemDTO {
-  constructor(moa) {
+  constructor(moa, userId) {
     this.id = moa.id;
     this.birthdayPersonName = moa.birthdayPerson?.name || moa.birthdayPersonName;
     this.birthdayPersonPhoto = moa.birthdayPerson?.photo || moa.birthdayPersonPhoto;
     this.participationStatus = moa.isParticipating ? 'participating' : 'not_participating';
     this.eventStatus = moa.status;
+
+    // 본인 여부
+    this.isBirthdayPerson = moa.birthdayPersonId === userId;
+
+    // 배너 타입 분기
+    if (this.isBirthdayPerson) {
+      // 1순위: 잔금 처리 필요 (예: needBalance === true)
+      if (moa.status === 'completed' && moa.needBalance) {
+        this.bannerType = 'balance';
+      } else if (moa.status === 'completed') {
+        // 본인 && 종료
+        this.bannerType = 'completed';
+        if (moa.needCertification) {
+          this.bannerType = 'certification';
+        }
+      } else {
+        // 본인 && 진행 중
+        this.bannerType = 'my_in_progress';
+      }
+    } else if (moa.isParticipating && moa.status === 'active') {
+      // 참여자 && 진행 중
+      this.bannerType = 'participating';
+    } else {
+      // 그 외(참여자 && 종료 등): 배너 없음
+      this.bannerType = null;
+    }
   }
 }
 
@@ -86,8 +112,8 @@ export class MoaPaginationDTO {
  * 모아모아 목록 조회 응답 DTO
  */
 export class MoaResponseDTO {
-  constructor(moas, paginationOptions) {
-    this.moas = moas.map(moa => new MoaItemDTO(moa));
+  constructor(moas, paginationOptions, userId) {
+    this.moas = moas.map(moa => new MoaItemDTO(moa, userId));
     this.pagination = new MoaPaginationDTO(paginationOptions);
   }
 

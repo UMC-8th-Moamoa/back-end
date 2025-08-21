@@ -4,6 +4,9 @@ import { naverShoppingService } from './naverShopping.service.js';
 
 class WishlistService {
   async createWishlist(userId, wishlistData) {
+    // 위시리스트 등록 완료 토스트 알림 (DB 저장 X)
+    const { notificationService } = await import('./notification.service.js');
+    notificationService.sendToastOnlyNotification(userId, '위시리스트에 등록 완료', 'success', '위시리스트');
     const { insertType, isPublic } = wishlistData;
 
     if (insertType === 'URL') {

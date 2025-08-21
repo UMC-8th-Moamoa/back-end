@@ -5,6 +5,9 @@ import { getCurrentKSTISOString, toKSTISOString } from '../utils/datetime.util.j
 class PurchaseProofService {
   // 선물 구매 인증 등록 및 감사 메시지 발송
   async createPurchaseProof(userId, eventId, proofData) {
+    // 선물 인증 등록 토스트 알림 (DB 저장 X)
+    const { notificationService } = await import('./notification.service.js');
+    notificationService.sendToastOnlyNotification(userId, '선물 인증을 등록했습니다', 'success', '선물 인증');
     const { proofImages, message } = proofData;
 
     // 입력값 검증
@@ -46,6 +49,14 @@ class PurchaseProofService {
       proofImages,
       message
     });
+
+    // 참여자 전체 알림 (PURCHASE_PROOF)
+    const notificationParticipants = participants.map(p => ({ userId: p.userId }));
+    if (notificationParticipants.length > 0) {
+      const birthdayPersonName = event.birthdayPerson.name;
+      const { notificationService } = await import('./notification.service.js');
+      await notificationService.createPurchaseProofToParticipants(notificationParticipants, birthdayPersonName);
+    }
 
     // 참여자 정보 반환
     const recipients = participants

@@ -509,6 +509,65 @@ class mypageController {
             }
         });
     });
+    
+    static updateProfileImage = catchAsync(async (req, res) => {
+        const userId = req.user.id; // JWT에서 추출한 사용자 ID
+        const { imageUrl } = req.body;
+
+        // 이미지 URL 유효성 검사
+        if (!imageUrl) {
+            return res.status(400).json({
+                resultType: "FAIL",
+                error: {
+                    errorCode: "B001",
+                    reason: "이미지 URL이 필요합니다",
+                    data: null
+                },
+                success: null
+            });
+        }
+
+        // URL 형식 검증
+        const urlRegex = /^https?:\/\/.+\.(jpg|jpeg|png|gif|bmp)$/i;
+        if (!urlRegex.test(imageUrl)) {
+            return res.status(400).json({
+                resultType: "FAIL",
+                error: {
+                    errorCode: "B001",
+                    reason: "유효한 이미지 URL 형식이 아닙니다",
+                    data: null
+                },
+                success: null
+            });
+        }
+
+        try {
+            // 서비스 레이어 호출
+            const result = await mypageService.updateProfileImage(userId, imageUrl);
+
+            res.status(200).json({
+                resultType: "SUCCESS",
+                error: null,
+                success: result
+            });
+        } catch (error) {
+            console.error('프로필 이미지 업데이트 컨트롤러 오류:', error);
+            
+            if (error.statusCode === 404) {
+                return res.status(404).json({
+                    resultType: "FAIL",
+                    error: {
+                        errorCode: "N002",
+                        reason: error.message,
+                        data: null
+                    },
+                    success: null
+                });
+            }
+            
+            throw error;
+        }
+    });
 }
 
 export default mypageController;
