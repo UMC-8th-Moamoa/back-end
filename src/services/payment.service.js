@@ -390,7 +390,7 @@ class PaymentService {
       const bonusRecord = await prisma.pointHistory.findFirst({
         where: {
           userId: userId,
-          pointType: 'SIGNUP_BONUS'
+          pointType: 'CHARGE'
         },
         select: {
           id: true,
