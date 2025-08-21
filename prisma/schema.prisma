@@ -550,3 +550,22 @@ model CustomerServiceResponse {
 
   @@map("customer_service_responses")
 }
+
+model ChargeTransaction {
+  id             Int      @id @default(autoincrement())
+  userId         Int
+  packageId      String   // MC_10, MC_50, MC_100, MC_150, MC_200
+  mongcoinAmount Int      // 충전된 몽코인 수량
+  price          Int      // 결제 금액 (원)
+  status         String   @default("COMPLETED") // PENDING, COMPLETED, FAILED, CANCELLED
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  // 관계
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("charge_transactions")
+  @@index([userId])
+  @@index([packageId])
+  @@index([createdAt])
+}
