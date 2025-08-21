@@ -75,7 +75,7 @@ class KakaoController {
       let redirectPath;
       if (result.user.user_id.startsWith('kakao_')) {
         // 카카오 전용 사용자는 무조건 프로필 완성 페이지로
-        redirectPath = '/auth/complete-profile';
+        redirectPath = '/api/auth/kakao/complete-profile';
         console.log('👤 카카오 전용 사용자 - 프로필 완성 페이지로 리다이렉트');
       } else {
         // 기존 사용자는 성공 페이지로

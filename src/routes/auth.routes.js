@@ -456,11 +456,11 @@ if (isKakaoEnabled()) {
         let redirectPath;
         if (isKakaoUser) {
           // 카카오 전용 사용자는 무조건 프로필 완성 페이지로
-          redirectPath = '/auth/complete-profile';
+          redirectPath = '/api/auth/kakao/complete-profile';
           console.log('👤 카카오 전용 사용자 - 프로필 완성 페이지로 리다이렉트');
         } else if (!hasValidName) {
           // 기존 사용자이지만 이름이 비정상적인 경우
-          redirectPath = '/auth/complete-profile';
+          redirectPath = '/api/auth/kakao/complete-profile';
           console.log('⚠️ 기존 사용자이지만 이름이 비정상적 - 프로필 완성 페이지로 리다이렉트');
         } else {
           // 기존 사용자이고 이름이 정상적인 경우
