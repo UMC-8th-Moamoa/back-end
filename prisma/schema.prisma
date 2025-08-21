@@ -264,7 +264,7 @@ model BankTransfer {
 model PointHistory {
   id             Int           @id @default(autoincrement())
   userId         Int
-  pointType      PointType
+  pointType      PointType     @db.VarChar(50)
   pointChange    Int
   description    String        @db.VarChar(255)
   totalPoints    Int
