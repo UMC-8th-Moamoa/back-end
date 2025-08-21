@@ -2,25 +2,35 @@ import prisma from '../config/prismaClient.js';
 
 class shoppingRepository {
     static findItemsByCategory = async(category, num) => {
-        const items = await prisma.item.findMany({
-            where: {
-                category: category,
-            },
-            take: num ? parseInt(num, 10) : undefined,
-        });
-        return items;
+        try {
+            const items = await prisma.item.findMany({
+                where: {
+                    category: category,
+                },
+                take: num ? parseInt(num, 10) : undefined,
+                orderBy: {
+                    id: 'asc'
+                }
+            });
+            
+            return items;
+        } catch (error) {
+            throw error;
+        }
     };
 
-    /**
-     * @desc IDë¡œ ì•„ì´í…œ ìƒì„¸ ì •ë³´ ì¡°íšŒ (ê°„ì†Œí™"ëœ ë²„ì „)
-     */
     static findItemDetailById = async (id) => {
-        const item = await prisma.item.findUnique({
-            where: {
-                id: id,
-            },
-        });
-        return item;
+        try {
+            const item = await prisma.item.findUnique({
+                where: {
+                    id: id,
+                },
+            });
+            
+            return item;
+        } catch (error) {
+            throw error;
+        }
     };
 
     static findItemDetailByIdAndCategory = async (category, id) => {
@@ -68,7 +78,7 @@ class shoppingRepository {
             });
             
             if (!user) {
-                throw new Error('ì‚¬ìš©ìžë¥¼ ì°¾ì„ ìˆ˜ ì—†ìŠµë‹ˆë‹¤.');
+                throw new Error('사용자를 찾을 수 없습니다.');
             }
 
             const item = await tx.item.findUnique({
@@ -76,15 +86,15 @@ class shoppingRepository {
             });
             
             if (!item) {
-                throw new Error('ì•„ì´í…œì„ ì°¾ì„ ìˆ˜ ì—†ìŠµë‹ˆë‹¤.');
+                throw new Error('아이템을 찾을 수 없습니다.');
             }
 
             if (item.category !== category) {
-                throw new Error('ì•„ì´í…œ ì¹´í…Œê³ ë¦¬ê°€ ì¼ì¹˜í•˜ì§€ ì•ŠìŠµë‹ˆë‹¤.');
+                throw new Error('아이템 카테고리가 일치하지 않습니다.');
             }
 
             if (user.cash < price) {
-                throw new Error('ìºì‹œê°€ ë¶€ì¡±í•©ë‹ˆë‹¤.');
+                throw new Error('캐시가 부족합니다.');
             }
 
             const newCash = user.cash - price;
@@ -99,7 +109,7 @@ class shoppingRepository {
                     userId: user.id,
                     pointType: 'ITEM_PURCHASE',
                     pointChange: -price,
-                    description: `${item.name} êµ¬ë§¤`,
+                    description: `${item.name} 구매`,
                     totalPoints: newCash
                 }
             });
@@ -123,171 +133,123 @@ class shoppingRepository {
         });
     };
 
+    // ⭐ 사용자 아이템 조회 (user_id 문자열로)
     static findUserItemsByUserId = async (user_id, num) => {
         try {
+            // 1. 사용자 찾기
             const user = await prisma.user.findUnique({
                 where: { user_id: user_id }
             });
-    
+
             if (!user) {
                 return [];
             }
-    
-            // Raw SQL로 조회 (더 명확한 컬럼명 지정)
-            let query = `
-                SELECT 
-                    ui.id as holditem_no,
-                    ui.userId,
-                    ui.itemId,
-                    ui.purchasedAt,
-                    i.id as item_id,
-                    i.category as item_category,
-                    i.name as item_name,
-                    i.price as item_price,
-                    i.imageUrl as item_image,
-                    i.description as item_description,
-                    i.event as item_event
-                FROM user_items ui
-                INNER JOIN items i ON ui.itemId = i.id
-                WHERE ui.userId = ${user.id}
-                ORDER BY ui.purchasedAt DESC
-            `;
-            
-            if (num) {
-                query += ` LIMIT ${parseInt(num, 10)}`;
-            }
-    
-            const userItems = await prisma.$queryRawUnsafe(query);
-    
-            // 데이터 확인을 위한 임시 로그 (문제 해결 후 제거)
-            if (userItems.length > 0) {
-                console.log('🔍 Raw 데이터 확인:', {
-                    item_name: userItems[0].item_name,
-                    item_description: userItems[0].item_description,
-                    item_category: userItems[0].item_category
-                });
-            }
-    
-            // 데이터 형변환 및 매핑
-            const mappedItems = userItems.map(userItem => ({
-                holditem_no: typeof userItem.holditem_no === 'bigint' 
-                    ? Number(userItem.holditem_no) 
-                    : userItem.holditem_no,
-                category: userItem.item_category,
-                item_no: typeof userItem.item_id === 'bigint' 
-                    ? Number(userItem.item_id) 
-                    : userItem.item_id,
-                name: userItem.item_name || '이름 없음',
-                price: typeof userItem.item_price === 'bigint' 
-                    ? Number(userItem.item_price) 
-                    : userItem.item_price,
+
+            // 2. ORM을 사용한 간단한 조회 (가장 확실한 방법)
+            const userItems = await prisma.userItem.findMany({
+                where: {
+                    userId: user.id,
+                },
+                include: {
+                    item: true  // 아이템 정보 포함
+                },
+                take: num ? parseInt(num, 10) : undefined,
+                orderBy: {
+                    purchasedAt: 'desc',
+                },
+            });
+
+            // 3. 명확한 매핑
+            return userItems.map(userItem => ({
+                holditem_no: userItem.id,
+                category: userItem.item.category,
+                item_no: userItem.item.id,
                 user_id: user.user_id,
-                image: userItem.item_image,
-                detail: userItem.item_description || '',
-                event: Boolean(userItem.item_event),
+                image: userItem.item.imageUrl,
+                name: userItem.item.name,                    // ⭐ 아이템 이름
+                detail: userItem.item.description,           // ⭐ 아이템 디테일
+                price: userItem.item.price,
+                event: userItem.item.event,
                 purchasedAt: userItem.purchasedAt
             }));
-    
-            return mappedItems;
-    
+
         } catch (error) {
-            // 기존 ORM 방식으로 폴백 시도
-            try {
-                const user = await prisma.user.findUnique({
-                    where: { user_id: user_id }
-                });
-    
-                if (!user) return [];
-                
-                const userItems = await prisma.userItem.findMany({
-                    where: {
-                        userId: user.id,
-                    },
-                    include: {
-                        item: true
-                    },
-                    take: num ? parseInt(num, 10) : undefined,
-                    orderBy: {
-                        purchasedAt: 'desc',
-                    },
-                });
-    
-                return userItems.map(userItem => ({
-                    holditem_no: userItem.id,
-                    category: userItem.item.category,
-                    item_no: userItem.item.id,
-                    name: userItem.item.name,
-                    price: userItem.item.price,
-                    user_id: user.user_id,
-                    image: userItem.item.imageUrl,
-                    detail: userItem.item.description || '',
-                    event: userItem.item.event,
-                    purchasedAt: userItem.purchasedAt
-                }));
-    
-            } catch (ormError) {
-                throw error;
-            }
+            throw error;
         }
     };
-    
-    // findUserItemsByUserIdNumber 메서드도 동일하게 이름 포함
+
+    static findUserByIdNumber = async (userId) => {
+        return await prisma.user.findUnique({
+            where: { id: userId },
+            select: { id: true, user_id: true }
+        });
+    };
+
+    // ⭐ 사용자 아이템 조회 (userId 숫자로)
     static findUserItemsByUserIdNumber = async (userId, num) => {
         try {
+            // 1. 사용자 찾기
             const user = await prisma.user.findUnique({
                 where: { id: userId },
                 select: { id: true, user_id: true }
             });
-    
+
             if (!user) {
                 return [];
             }
-    
-            // Raw SQL로 조회 (명확한 컬럼명 지정)
-            let query = `
-                SELECT 
-                    ui.id as holditem_no,
-                    ui.userId,
-                    ui.itemId,
-                    ui.purchasedAt,
-                    i.id as item_id,
-                    i.category as item_category,
-                    i.name as item_name,
-                    i.price as item_price,
-                    i.imageUrl as item_image,
-                    i.description as item_description,
-                    i.event as item_event
-                FROM user_items ui
-                INNER JOIN items i ON ui.itemId = i.id
-                WHERE ui.userId = ${userId}
-                ORDER BY ui.purchasedAt DESC
-            `;
-            
-            if (num) {
-                query += ` LIMIT ${parseInt(num, 10)}`;
-            }
-    
-            const userItems = await prisma.$queryRawUnsafe(query);
-    
+
+            // 2. ORM을 사용한 간단한 조회
+            const userItems = await prisma.userItem.findMany({
+                where: {
+                    userId: userId,
+                },
+                include: {
+                    item: true  // 아이템 정보 포함
+                },
+                take: num ? parseInt(num, 10) : undefined,
+                orderBy: {
+                    purchasedAt: 'desc',
+                },
+            });
+
+            // 3. 명확한 매핑
             return userItems.map(userItem => ({
-                holditem_no: typeof userItem.holditem_no === 'bigint' 
-                    ? Number(userItem.holditem_no) 
-                    : userItem.holditem_no,
-                category: userItem.item_category,
-                item_no: typeof userItem.item_id === 'bigint' 
-                    ? Number(userItem.item_id) 
-                    : userItem.item_id,
-                name: userItem.item_name || '이름 없음',
-                price: typeof userItem.item_price === 'bigint' 
-                    ? Number(userItem.item_price) 
-                    : userItem.item_price,
+                holditem_no: userItem.id,
+                category: userItem.item.category,
+                item_no: userItem.item.id,
                 user_id: user.user_id,
-                image: userItem.item_image,
-                detail: userItem.item_description || '',
-                event: Boolean(userItem.item_event),
+                image: userItem.item.imageUrl,
+                name: userItem.item.name,                    // ⭐ 아이템 이름
+                detail: userItem.item.description,           // ⭐ 아이템 디테일
+                price: userItem.item.price,
+                event: userItem.item.event,
                 purchasedAt: userItem.purchasedAt
             }));
-    
+
+        } catch (error) {
+            throw error;
+        }
+    };
+
+    // 디버깅용 메서드들
+    static getAllItems = async () => {
+        try {
+            const items = await prisma.item.findMany({
+                orderBy: { id: 'asc' }
+            });
+            return items;
+        } catch (error) {
+            throw error;
+        }
+    };
+
+    static getItemsByCategory = async (category) => {
+        try {
+            const items = await prisma.item.findMany({
+                where: { category },
+                orderBy: { id: 'asc' }
+            });
+            return items;
         } catch (error) {
             throw error;
         }
