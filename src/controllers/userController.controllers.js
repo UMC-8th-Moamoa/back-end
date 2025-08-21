@@ -41,15 +41,15 @@ class UserController {
         userId: bonusResult.user.id,
         newCash: bonusResult.user.cash
       });
-
-      // 응답에 보너스 정보 포함
+  
+      // ✅ 응답에 보너스 정보 포함 - cash 업데이트
       result.user.cash = bonusResult.user.cash;
       result.message = '회원가입이 완료되었습니다. 회원가입 축하 보너스 400 포인트가 지급되었습니다!';
-
+  
     } catch (bonusError) {
       console.error('⚠️ 일반 회원가입 보너스 지급 실패 (사용자는 생성됨):', bonusError);
       
-      // ✅ 추가된 수동 보너스 지급 시도
+      // 수동 보너스 지급 시도
       try {
         console.log('🔄 수동 포인트 지급 시도...');
         const manualResult = await prisma.$transaction(async (tx) => {
@@ -58,30 +58,43 @@ class UserController {
             data: { cash: { increment: 400 } },
             select: { id: true, user_id: true, cash: true }
           });
-
+  
           await tx.pointHistory.create({
             data: {
               userId: result.user.id,
-              pointType: 'SIGNUP_BONUS',
+              pointType: 'CHARGE',  // ← SIGNUP_BONUS 대신 CHARGE 사용
               pointChange: 400,
               description: '회원가입 축하 보너스 (수동 지급)',
               totalPoints: updatedUser.cash,
-              createdAt: new Date()
+              createdAt: new Date(),
+              updatedAt: new Date()
             }
           });
-
+  
           return updatedUser;
         });
-
+  
+        // ✅ 수동 지급 성공 시에도 cash 업데이트
         result.user.cash = manualResult.cash;
         console.log('✅ 수동 포인트 지급 성공:', manualResult.cash);
         result.message = '회원가입이 완료되었습니다. 회원가입 축하 보너스 400 포인트가 지급되었습니다!';
-
+  
       } catch (manualError) {
         console.error('❌ 수동 포인트 지급도 실패:', manualError);
+        // ✅ 실패해도 cash는 0으로 명시적 설정
+        result.user.cash = result.user.cash || 0;
         result.message = '회원가입이 완료되었습니다. (보너스 지급 중 일시적 오류가 발생했습니다)';
       }
     }
+    
+    // ✅ 최종 응답 전에 cash 확인 및 로깅
+    console.log('🎉 회원가입 최종 응답:', {
+      userId: result.user.id,
+      user_id: result.user.user_id,
+      email: result.user.email,
+      cash: result.user.cash,
+      message: result.message
+    });
     
     res.status(201).success(result);
   });

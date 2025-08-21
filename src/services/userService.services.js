@@ -86,6 +86,7 @@ class UserService {
       user_id: user_id,  // DB 필드명과 일치
       phone: phone || null,
       birthday: birthday ? new Date(birthday) : null,
+      cash: 0,
       createdAt: getCurrentKSTTime(), // 한국 시간으로 설정
       updatedAt: getCurrentKSTTime()
     };
