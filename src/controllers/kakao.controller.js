@@ -65,15 +65,23 @@ class KakaoController {
         email: result.user.email,
         user_id: result.user.user_id,
         name: result.user.name,
-        isEmpty: result.user.name === ''
+        isEmpty: result.user.name === '',
+        isKakaoUser: result.user.user_id.startsWith('kakao_')
       });
       
       const clientUrl = process.env.CLIENT_URL || 'http://localhost:3000';
       
-      // 카카오 로그인 사용자는 무조건 프로필 완성 페이지로 이동
-      // (이름이 무조건 빈 문자열이므로 항상 입력받아야 함)
-      const redirectPath = '/auth/complete-profile';
-      console.log('👤 카카오 로그인 완료 - 프로필 완성 페이지로 리다이렉트');
+      // 카카오 전용 사용자 (user_id가 kakao_로 시작)인지 확인
+      let redirectPath;
+      if (result.user.user_id.startsWith('kakao_')) {
+        // 카카오 전용 사용자는 무조건 프로필 완성 페이지로
+        redirectPath = '/auth/complete-profile';
+        console.log('👤 카카오 전용 사용자 - 프로필 완성 페이지로 리다이렉트');
+      } else {
+        // 기존 사용자는 성공 페이지로
+        redirectPath = '/auth/success';
+        console.log('✅ 기존 사용자 카카오 연동 - 성공 페이지로 리다이렉트');
+      }
       
       // 토큰을 쿠키에 설정 (보안상 더 안전)
       res.cookie('accessToken', result.tokens.accessToken, {

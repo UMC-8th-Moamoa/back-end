@@ -192,7 +192,7 @@ if (process.env.KAKAO_CLIENT_ID && process.env.KAKAO_CLIENT_SECRET && process.en
           return done(null, userWithoutPassword);
         }
         
-        // 새 사용자 생성
+        // 새 사용자 생성 (카카오 전용)
         const uniqueUserId = await generateUniqueKakaoUserId();
 
         const newUser = await prisma.user.create({
