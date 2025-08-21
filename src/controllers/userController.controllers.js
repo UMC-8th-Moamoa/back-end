@@ -92,6 +92,20 @@ class UserController {
    */
   checkUserId = catchAsync(async (req, res) => {
     const { userId } = req.params;
+    
+    // 디버그 로그 추가
+    console.log('🔍 checkUserId 호출됨:', { userId });
+    console.log('🔍 userService 객체:', typeof userService, Object.keys(userService));
+    console.log('🔍 checkUserId 메서드 존재 여부:', typeof userService.checkUserId);
+    
+    if (typeof userService.checkUserId !== 'function') {
+      console.error('❌ userService.checkUserId가 함수가 아닙니다');
+      return res.status(500).json({
+        success: false,
+        message: 'checkUserId 메서드를 찾을 수 없습니다'
+      });
+    }
+    
     const result = await userService.checkUserId(userId);
     
     res.success(result);
