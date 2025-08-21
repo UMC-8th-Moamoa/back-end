@@ -39,4 +39,10 @@ router.delete('/:id',
   letterController.deleteLetter
 );
 
+// 사용자 보관함 아이템 조회 (편지 작성용) - 쇼핑 API와 동일한 보관함
+router.get('/user/items',
+  authenticateJWT,
+  letterController.getUserItems
+);
+
 export default router;

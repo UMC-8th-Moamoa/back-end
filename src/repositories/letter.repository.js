@@ -51,10 +51,11 @@ const findUserById = async (id) => {
   }
 };
 
-// 사용자 아이템 조회
+// 사용자 아이템 조회 (통합된 방식 - 쇼핑 API와 동일한 보관함 사용)
 const findUserItemById = async (id, userId) => {
   try {
-    return await prisma.userItem.findFirst({
+    // 1. 먼저 숫자 userId로 직접 조회 시도 (편지 API에서 사용)
+    let userItem = await prisma.userItem.findFirst({
       where: {
         id,
         userId
@@ -66,9 +67,49 @@ const findUserItemById = async (id, userId) => {
             category: true,
             name: true
           }
+        },
+        user: {
+          select: {
+            id: true,
+            user_id: true
+          }
         }
       }
     });
+
+    // 2. 찾지 못했고 userId가 문자열처럼 보이면, user_id로 사용자를 찾아서 재시도
+    if (!userItem && typeof userId === 'string') {
+      const user = await prisma.user.findUnique({
+        where: { user_id: userId },
+        select: { id: true }
+      });
+      
+      if (user) {
+        userItem = await prisma.userItem.findFirst({
+          where: {
+            id,
+            userId: user.id
+          },
+          include: {
+            item: {
+              select: {
+                id: true,
+                category: true,
+                name: true
+              }
+            },
+            user: {
+              select: {
+                id: true,
+                user_id: true
+              }
+            }
+          }
+        });
+      }
+    }
+
+    return userItem;
   } catch (error) {
     console.error('사용자 아이템 조회 레포지토리 오류:', error);
     throw error;
@@ -202,6 +243,20 @@ const markAsRead = async (letterId) => {
   }
 };
 
+// 숫자 ID로 사용자의 문자열 user_id 조회 (쇼핑 API와의 통합을 위해)
+const findUserStringIdByNumericId = async (numericId) => {
+  try {
+    const user = await prisma.user.findUnique({
+      where: { id: numericId },
+      select: { user_id: true }
+    });
+    return user?.user_id || null;
+  } catch (error) {
+    console.error('사용자 문자열 ID 조회 레포지토리 오류:', error);
+    throw error;
+  }
+};
+
 export const letterRepository = {
   createLetter,
   findBirthdayEventById,
@@ -212,5 +267,6 @@ export const letterRepository = {
   deleteLetter,
   findLettersByBirthdayEventId,
   countLettersByBirthdayEventId,
-  markAsRead
+  markAsRead,
+  findUserStringIdByNumericId
 };
