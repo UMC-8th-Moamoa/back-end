@@ -16,6 +16,7 @@ enum PointType {
   USE           // 사용
   ADVERTISEMENT // 광고
   ITEM_PURCHASE // 아이템 구매
+  SIGNUP_BONUS  // 회원가입 보너스 ← 추가
 }
 
 enum PaymentMethod {
