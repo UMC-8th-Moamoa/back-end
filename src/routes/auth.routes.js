@@ -451,35 +451,34 @@ if (isKakaoEnabled()) {
    *         description: 인증 실패
    */
   router.get('/kakao/callback', 
-    handleSocialCallback('kakao'),
-    (req, res) => {
-      try {
-        // JWT 토큰 생성
-        const tokens = generateTokenPair(req.user.id, req.user.email, req.user.user_id);
-        
-        // 클라이언트 URL 설정
-        const clientUrl = process.env.CLIENT_URL || 'http://localhost:3000';
-        
-        console.log('카카오 로그인 성공:', {
-          userId: req.user.id,
-          email: req.user.email,
-          user_id: req.user.user_id,
-          clientUrl: clientUrl
-        });
-        
-        // 토큰을 쿼리 파라미터로 전달하여 리다이렉트
-        const redirectUrl = `${clientUrl}/auth/callback?accessToken=${encodeURIComponent(tokens.accessToken)}&refreshToken=${encodeURIComponent(tokens.refreshToken)}`;
-        
-        console.log('리다이렉트 URL 길이:', redirectUrl.length);
-        
-        res.redirect(redirectUrl);
-      } catch (error) {
-        console.error('카카오 로그인 콜백 처리 중 오류:', error);
-        const clientUrl = process.env.CLIENT_URL || 'http://localhost:3000';
-        res.redirect(`${clientUrl}/auth/error?message=${encodeURIComponent('로그인 처리 중 오류가 발생했습니다')}`);
-      }
+  handleSocialCallback('kakao'),
+  (req, res) => {
+    try {
+      const tokens = generateTokenPair(req.user.id, req.user.email, req.user.user_id);
+      const clientUrl = process.env.CLIENT_URL || 'http://localhost:3000';
+      
+      // 쿠키에 토큰 설정
+      res.cookie('accessToken', tokens.accessToken, {
+        httpOnly: false,
+        secure: process.env.NODE_ENV === 'production',
+        maxAge: 24 * 60 * 60 * 1000 // 24시간
+      });
+      
+      res.cookie('refreshToken', tokens.refreshToken, {
+        httpOnly: false,
+        secure: process.env.NODE_ENV === 'production',
+        maxAge: 7 * 24 * 60 * 60 * 1000 // 7일
+      });
+      
+      // 짧은 URL로 리다이렉트
+      res.redirect(`${clientUrl}/auth/success`);
+    } catch (error) {
+      console.error('카카오 로그인 콜백 처리 중 오류:', error);
+      const clientUrl = process.env.CLIENT_URL || 'http://localhost:3000';
+      res.redirect(`${clientUrl}/auth/error?message=${encodeURIComponent('로그인 처리 중 오류가 발생했습니다')}`);
     }
-  );
+  }
+);
 
   // 새로운 직접 구현 방식 카카오 로그인
   /**
