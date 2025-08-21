@@ -1,6 +1,7 @@
 import userService from '../services/userService.services.js';
 import { autoEventService } from '../services/autoEvent.service.js';
-import PaymentService from '../services/payment.service.js'; // 추가
+import PaymentService from '../services/payment.service.js';
+import prisma from '../config/prismaClient.js';
 // import { hashPassword, comparePassword } from '../utils/password.util.js';
 import { generateTokenPair, verifyRefreshToken } from '../utils/jwt.util.js';
 import { catchAsync } from '../middlewares/errorHandler.js';
@@ -31,7 +32,7 @@ class UserController {
     const createUserDto = new CreateUserDto(req.body);
     const result = await userService.register(createUserDto);
     
-    // 💰 회원가입 보너스 지급
+    // 💰 회원가입 보너스 지급 (수정된 부분)
     try {
       console.log('💰 일반 회원가입 보너스 지급 시작');
       const bonusResult = await PaymentService.giveSignupBonus(result.user.id, result.user.user_id);
@@ -47,8 +48,40 @@ class UserController {
 
     } catch (bonusError) {
       console.error('⚠️ 일반 회원가입 보너스 지급 실패 (사용자는 생성됨):', bonusError);
-      // 보너스 지급 실패해도 회원가입은 성공으로 처리
-      result.message = '회원가입이 완료되었습니다. (보너스 지급 중 일시적 오류가 발생했습니다)';
+      
+      // ✅ 추가된 수동 보너스 지급 시도
+      try {
+        console.log('🔄 수동 포인트 지급 시도...');
+        const manualResult = await prisma.$transaction(async (tx) => {
+          const updatedUser = await tx.user.update({
+            where: { id: result.user.id },
+            data: { cash: { increment: 400 } },
+            select: { id: true, user_id: true, cash: true }
+          });
+
+          await tx.pointHistory.create({
+            data: {
+              userId: result.user.id,
+              pointType: 'SIGNUP_BONUS',
+              pointChange: 400,
+              description: '회원가입 축하 보너스 (수동 지급)',
+              totalPoints: updatedUser.cash,
+              createdAt: new Date(),
+              updatedAt: new Date()
+            }
+          });
+
+          return updatedUser;
+        });
+
+        result.user.cash = manualResult.cash;
+        console.log('✅ 수동 포인트 지급 성공:', manualResult.cash);
+        result.message = '회원가입이 완료되었습니다. 회원가입 축하 보너스 400 포인트가 지급되었습니다!';
+
+      } catch (manualError) {
+        console.error('❌ 수동 포인트 지급도 실패:', manualError);
+        result.message = '회원가입이 완료되었습니다. (보너스 지급 중 일시적 오류가 발생했습니다)';
+      }
     }
     
     res.status(201).success(result);
