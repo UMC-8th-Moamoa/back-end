@@ -67,7 +67,6 @@ class UserController {
               description: '회원가입 축하 보너스 (수동 지급)',
               totalPoints: updatedUser.cash,
               createdAt: new Date(),
-              updatedAt: new Date()
             }
           });
   

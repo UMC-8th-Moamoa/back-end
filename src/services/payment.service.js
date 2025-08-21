@@ -38,7 +38,7 @@ class PaymentService {
       const existingBonus = await prisma.pointHistory.findFirst({
         where: {
           userId: userId,
-          pointType: 'SIGNUP_BONUS'
+          pointType: 'CHARGE'
         }
       });
 
@@ -74,7 +74,7 @@ class PaymentService {
         const pointHistory = await tx.pointHistory.create({
           data: {
             userId: userId,
-            pointType: 'SIGNUP_BONUS',
+            pointType: 'CHARGE',
             pointChange: initialPoints,
             description: '회원가입 축하 보너스',
             totalPoints: updatedUser.cash,
