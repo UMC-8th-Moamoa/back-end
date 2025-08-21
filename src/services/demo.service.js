@@ -176,15 +176,40 @@ class DemoService {
   }
 
   /**
-   * ID로 데모 편지 조회
+   * ID로 데모 편지 조회 (공개용 - 권한 검사 없음)
    * @param {number} letterId - 편지 ID
    * @returns {Promise<Object>} 편지 정보
    */
-  async getDemoLetterById(letterId) {
+  async getDemoLetterByIdPublic(letterId) {
     const letter = await demoRepository.findDemoLetterById(letterId);
     if (!letter) {
       const error = new Error('편지를 찾을 수 없습니다');
       error.status = 404;
+      throw error;
+    }
+
+    return demoDto.toDemoLetterResponse(letter);
+  }
+
+  /**
+   * ID로 데모 편지 조회 (권한 검사 포함)
+   * @param {number} letterId - 편지 ID
+   * @param {number} userId - 요청 사용자 ID
+   * @returns {Promise<Object>} 편지 정보
+   */
+  async getDemoLetterById(letterId, userId) {
+    const letter = await demoRepository.findDemoLetterById(letterId);
+    if (!letter) {
+      const error = new Error('편지를 찾을 수 없습니다');
+      error.status = 404;
+      throw error;
+    }
+
+    // 권한 확인 (내 데모 이벤트에 작성된 편지인지 확인)
+    // 편지를 받은 사람(데모 이벤트 소유자)만 편지를 볼 수 있음
+    if (letter.demoEvent.userId !== userId) {
+      const error = new Error('편지를 읽을 권한이 없습니다');
+      error.status = 403;
       throw error;
     }
 

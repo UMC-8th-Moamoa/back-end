@@ -442,12 +442,58 @@ const markDemoLetterAsRead = catchAsync(async (req, res) => {
     await demoService.markDemoLetterAsRead(parseInt(id), userId);
     
     // 업데이트 후 해당 편지 다시 조회해서 확인
-    const updatedLetter = await demoService.getDemoLetterById(parseInt(id));
+    const updatedLetter = await demoService.getDemoLetterByIdPublic(parseInt(id));
     console.log('편지 읽음 처리 완료:', { letterId: id, isRead: updatedLetter?.isRead });
     
     res.json({ message: '편지를 읽음으로 처리했습니다.' });
   } catch (error) {
     console.error('편지 읽음 처리 실패:', error);
+    if (error.status === 404) {
+      return res.status(404).json({ message: error.message });
+    }
+    if (error.status === 403) {
+      return res.status(403).json({ message: error.message });
+    }
+    throw error;
+  }
+});
+
+/**
+ * @swagger
+ * /api/demo/letters/{id}:
+ *   get:
+ *     summary: 내 데모 이벤트에 작성된 편지 상세 조회
+ *     description: 내 데모 이벤트에 작성된 편지의 상세 내용을 조회합니다. 다른 사람들이 나에게 써준 편지를 읽을 수 있습니다.
+ *     tags: [Demo]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: 편지 ID
+ *     responses:
+ *       200:
+ *         description: 편지 조회 성공
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/DemoLetterResponse'
+ *       404:
+ *         description: 편지를 찾을 수 없음
+ *       403:
+ *         description: 내 데모 이벤트에 작성된 편지가 아님
+ */
+const getDemoLetterById = catchAsync(async (req, res) => {
+  const { id } = req.params;
+  const userId = req.user.id;
+
+  try {
+    const letter = await demoService.getDemoLetterById(parseInt(id), userId);
+    res.json(letter);
+  } catch (error) {
     if (error.status === 404) {
       return res.status(404).json({ message: error.message });
     }
@@ -464,5 +510,6 @@ export const demoController = {
   getDemoEventByShareLink,
   createDemoLetter,
   getMyDemoLetters,
-  markDemoLetterAsRead
+  markDemoLetterAsRead,
+  getDemoLetterById
 };
