@@ -291,10 +291,31 @@ const getLetterById = async (letterId, userId) => {
   }
 };
 
+// 사용자 아이템 목록 조회 (쇼핑 API와 동일한 보관함 조회)
+const getUserItemList = async (userId, category = null, num = null) => {
+  try {
+    // Shopping service의 getUserItemListById 메서드와 동일한 로직 사용
+    const shoppingService = await import('./shoppingService.js');
+    
+    if (category) {
+      // 특정 카테고리만 조회
+      const allItems = await shoppingService.default.getUserItemListById({ userId, num: 1000 });
+      return allItems.filter(item => item.category === category).slice(0, num || allItems.length);
+    } else {
+      // 전체 조회
+      return await shoppingService.default.getUserItemListById({ userId, num });
+    }
+  } catch (error) {
+    console.error('편지 서비스에서 사용자 아이템 조회 오류:', error);
+    throw error;
+  }
+};
+
 export const letterService = {
   getLetters,
   getLetterById,
   createLetter,
   updateLetter,
-  deleteLetter
+  deleteLetter,
+  getUserItemList
 };

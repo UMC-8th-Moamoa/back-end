@@ -608,10 +608,115 @@ const deleteLetter = async (req, res) => {
   }
 };
 
+/**
+ * @swagger
+ * /api/letters/user/items:
+ *   get:
+ *     summary: 사용자 보관함 아이템 조회 (편지 작성용)
+ *     description: 편지 작성에 필요한 아이템들을 조회합니다. 쇼핑 API와 동일한 보관함을 조회합니다.
+ *     tags: [Letters]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: category
+ *         schema:
+ *           type: string
+ *           enum: [font, paper, seal]
+ *         description: 조회할 아이템 카테고리
+ *       - in: query
+ *         name: num
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *         description: 조회할 아이템 개수
+ *     responses:
+ *       200:
+ *         description: 사용자 아이템 조회 성공
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 userItems:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       holditem_no:
+ *                         type: integer
+ *                         description: 보유 아이템 고유번호
+ *                       category:
+ *                         type: string
+ *                         description: 아이템 카테고리
+ *                       item_no:
+ *                         type: integer
+ *                         description: 아이템 번호
+ *                       name:
+ *                         type: string
+ *                         description: 아이템 이름
+ *                       price:
+ *                         type: integer
+ *                         description: 아이템 가격
+ *                       image:
+ *                         type: string
+ *                         description: 아이템 이미지 URL
+ *                       description:
+ *                         type: string
+ *                         description: 아이템 설명
+ *                       event:
+ *                         type: boolean
+ *                         description: 이벤트 아이템 여부
+ *                       purchasedAt:
+ *                         type: string
+ *                         format: date-time
+ *                         description: 구매 일시
+ *       401:
+ *         description: 인증 실패
+ *       500:
+ *         description: 서버 오류
+ */
+const getUserItems = async (req, res) => {
+  try {
+    const { user } = req;
+    const { category, num } = req.query;
+
+    if (!user || !user.id) {
+      return res.status(401).json({
+        isSuccess: false,
+        code: 401,
+        message: '인증이 필요합니다.'
+      });
+    }
+
+    const numValue = num ? parseInt(num) : null;
+    const userItems = await letterService.getUserItemList(user.id, category, numValue);
+
+    return res.status(200).json({
+      isSuccess: true,
+      code: 200,
+      message: '사용자 아이템 조회 성공',
+      data: {
+        userItems
+      }
+    });
+
+  } catch (error) {
+    console.error('사용자 아이템 조회 중 오류:', error);
+    
+    return res.status(500).json({
+      isSuccess: false,
+      code: 500,
+      message: '사용자 아이템 조회 중 오류가 발생했습니다.'
+    });
+  }
+};
+
 export const letterController = {
   getLetters,
   getLetterById,
   createLetter,
   updateLetter,
-  deleteLetter
+  deleteLetter,
+  getUserItems
 };
